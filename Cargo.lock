@@ -901,6 +901,8 @@ dependencies = [
  "discv5",
  "enr",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

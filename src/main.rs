@@ -4,16 +4,18 @@ use discv5::enr::EnrBuilder;
 use discv5::{Discv5ConfigBuilder, Discv5, Discv5Event};
 use enr::{CombinedKey, Enr, NodeId};
 use std::str::FromStr;
+use tracing::{error, info, warn};
 
 fn main() {
-    println!("Ray v0.0.1");
+    tracing_subscriber::fmt::init();
+    info!("Ray v0.0.1");
 
     let listen_addr = "0.0.0.0:19000".parse::<SocketAddr>().unwrap();
 
     // construct a local ENR
     let enr_key = CombinedKey::generate_secp256k1();
     let enr = EnrBuilder::new("v4").build(&enr_key).unwrap();
-    println!("Local ENR: {}", enr);
+    info!("Local ENR: {}", enr);
 
     // build the tokio executor
     let mut runtime = tokio::runtime::Builder::new_multi_thread()
@@ -38,28 +40,27 @@ fn main() {
         ];
         for e in enrs {
             let boot_enr: Enr<CombinedKey> = Enr::from_str(e).expect("Failed to parse ENR");
-            println!("Boot ENR: {}", boot_enr);
+            info!("Boot ENR: {}", boot_enr);
             if let Err(e) = discv5.add_enr(boot_enr) {
-                println!("Failed to add Boot ENR: {:?}", e);
+                warn!("Failed to add Boot ENR: {:?}", e);
             }
         }
     }
 
     // start the discv5 server
     if let Err(e) = runtime.block_on(discv5.start(listen_addr)) {
-        println!("Failed to start discv5 server: {:?}", e);
+        error!("Failed to start discv5 server: {:?}", e);
         exit(1);
     }
-    println!("discv5 server has been started.");
 
-    println!("Executing bootstrap query.");
+    info!("Executing bootstrap query.");
     let found = runtime.block_on(discv5.find_node(NodeId::random()));
-    println!("{:?}", found);
+    info!("{:?}", found);
 
     let mut event_stream = match runtime.block_on(discv5.event_stream()) {
         Ok(event_stream) => event_stream,
         Err(e) => {
-            println!("Failed to obtain event stream: {}", e);
+            error!("Failed to obtain event stream: {}", e);
             exit(1);
         }
     };
@@ -71,7 +72,7 @@ fn main() {
                     Some(event) = event_stream.recv() => {
                         match event {
                             Discv5Event::Discovered(enr) => {
-                                println!("{}", enr);
+                                info!("{}", enr);
                             }
                             _ => {}
                         }
