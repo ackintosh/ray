@@ -1,9 +1,14 @@
+use std::future::Future;
 use std::net::SocketAddr;
+use std::pin::Pin;
 use std::process::exit;
 use discv5::enr::EnrBuilder;
 use discv5::{Discv5ConfigBuilder, Discv5, Discv5Event};
 use enr::{CombinedKey, Enr, NodeId};
 use std::str::FromStr;
+use std::sync::{Arc, RwLock};
+use std::task::{Context, Poll};
+use tokio::signal::unix::{signal, Signal, SignalKind};
 use tracing::{error, info, warn};
 
 fn main() {
@@ -53,6 +58,7 @@ fn main() {
         exit(1);
     }
 
+    // establish a session by running a query
     info!("Executing bootstrap query.");
     let found = runtime.block_on(discv5.find_node(NodeId::random()));
     info!("{:?}", found);
@@ -65,22 +71,87 @@ fn main() {
         }
     };
 
-    runtime.block_on(
-        async {
-            loop {
-                tokio::select! {
-                    Some(event) = event_stream.recv() => {
-                        match event {
-                            Discv5Event::Discovered(enr) => {
-                                info!("{}", enr);
-                            }
-                            _ => {}
+    let peers: Arc<RwLock<Vec<Enr<CombinedKey>>>> = Arc::new(RwLock::new(vec![]));
+
+    let peers_for_discv5 = peers.clone();
+    runtime.spawn(async move {
+        loop {
+            tokio::select! {
+                Some(event) = event_stream.recv() => {
+                    match event {
+                        Discv5Event::Discovered(enr) => {
+                            info!("Discv5Event::Discovered: {}", enr);
+                            peers_for_discv5.write().unwrap().push(enr);
+                        }
+                        Discv5Event::EnrAdded { enr, replaced } => {
+                            info!("Discv5Event::EnrAdded: {}, {:?}", enr, replaced);
+                        }
+                        Discv5Event::TalkRequest(_)  => {}     // Ignore
+                        Discv5Event::NodeInserted { node_id, replaced } => {
+                            info!("Discv5Event::NodeInserted: {}, {:?}", node_id, replaced);
+                        }
+                        Discv5Event::SocketUpdated(socket_addr) => {
+                            info!("External socket address updated: {}", socket_addr);
                         }
                     }
                 }
             }
         }
-    )
+    });
+
+    // block until shutdown requested
+    let message = runtime.block_on(async {
+        let mut handles = vec![];
+
+        match signal(SignalKind::terminate()) {
+            Ok(terminate_stream) => {
+                let terminate = SignalFuture::new(terminate_stream, "Received SIGTERM");
+                handles.push(terminate);
+            }
+            Err(e) => error!("Could not register SIGTERM handler: {}", e)
+        }
+
+        match signal(SignalKind::interrupt()) {
+            Ok(interrupt_stream) => {
+                let interrupt = SignalFuture::new(interrupt_stream, "Received SIGINT");
+                handles.push(interrupt);
+            }
+            Err(e) => error!("Could not register SIGINT handler: {}", e)
+        }
+
+        futures::future::select_all(handles.into_iter()).await
+    });
+
+    info!("Shutting down: {:?}", message.0);
+    info!("peers: {:?}", peers.read().unwrap());
+
 
     // TODO: discv5.shutdown();
+}
+
+// SEE: https://github.com/sigp/lighthouse/blob/d9910f96c5f71881b88eec15253b31890bcd28d2/lighthouse/environment/src/lib.rs#L492
+#[cfg(target_family = "unix")]
+struct SignalFuture {
+    signal: Signal,
+    message: &'static str,
+}
+
+#[cfg(target_family = "unix")]
+impl SignalFuture {
+    pub fn new(signal: Signal, message: &'static str) -> SignalFuture {
+        SignalFuture { signal, message }
+    }
+}
+
+#[cfg(target_family = "unix")]
+impl Future for SignalFuture {
+    type Output = Option<&'static str>;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        match self.signal.poll_recv(cx) {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(Some(_)) => Poll::Ready(Some(self.message)),
+            Poll::Ready(None) => Poll::Ready(None),
+        }
+    }
 }

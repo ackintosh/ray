@@ -900,6 +900,7 @@ version = "0.1.0"
 dependencies = [
  "discv5",
  "enr",
+ "futures",
  "tokio",
  "tracing",
  "tracing-subscriber",
