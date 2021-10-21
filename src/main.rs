@@ -1,15 +1,22 @@
+mod rpc;
+
 use std::future::Future;
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::process::exit;
-use discv5::enr::EnrBuilder;
+use discv5::enr::{CombinedPublicKey, EnrBuilder};
 use discv5::{Discv5ConfigBuilder, Discv5, Discv5Event};
 use enr::{CombinedKey, Enr, NodeId};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
+use libp2p::swarm::SwarmBuilder;
+use libp2p::{noise, PeerId};
+use libp2p::identity::Keypair;
+use libp2p::Transport;
 use tokio::signal::unix::{signal, Signal, SignalKind};
 use tracing::{error, info, warn};
+use crate::rpc::behavior::Behavior;
 
 fn main() {
     tracing_subscriber::fmt::init();
@@ -17,10 +24,37 @@ fn main() {
 
     let listen_addr = "0.0.0.0:19000".parse::<SocketAddr>().unwrap();
 
-    // construct a local ENR
+    // generate private key
     let enr_key = CombinedKey::generate_secp256k1();
+    let key_pair = {
+        match enr_key {
+            CombinedKey::Secp256k1(ref key) => {
+                let mut key_bytes = key.to_bytes();
+                let secret_key = libp2p::core::identity::secp256k1::SecretKey::from_bytes(&mut key_bytes).expect("valid secp256k1 key");
+                let kp: libp2p::core::identity::secp256k1::Keypair = secret_key.into();
+                Keypair::Secp256k1(kp)
+            }
+            CombinedKey::Ed25519(_) => todo!() // not implemented as the ENR key is generated with secp256k1
+        }
+    };
+
+    // construct a local ENR
     let enr = EnrBuilder::new("v4").build(&enr_key).unwrap();
     info!("Local ENR: {}", enr);
+
+    // local PeerId
+    // see https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L200
+    let local_peer_id = match enr.public_key() {
+        CombinedPublicKey::Secp256k1(pk) => {
+            let pk_bytes = pk.to_bytes();
+            let libp2p_pk = libp2p::core::PublicKey::Secp256k1(
+                libp2p::core::identity::secp256k1::PublicKey::decode(&pk_bytes).expect("valid public key")
+            );
+            PeerId::from(libp2p_pk)
+        }
+        CombinedPublicKey::Ed25519(_) => todo!() // not implemented as the ENR key is generated with secp256k1
+    };
+    info!("Local PeerId: {}", local_peer_id);
 
     // build the tokio executor
     let mut runtime = tokio::runtime::Builder::new_multi_thread()
@@ -98,6 +132,60 @@ fn main() {
             }
         }
     });
+
+    // libp2p
+    // see https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
+    let mut swarm = {
+        let transport = {
+            let tcp = libp2p::tcp::TokioTcpConfig::new().nodelay(true);
+            let transport = libp2p::dns::TokioDnsConfig::system(tcp).unwrap_or_else(|e| {
+                error!("Failed to configure DNS: {}", e);
+                exit(1);
+            });
+
+            let mplex_config = libp2p::mplex::MplexConfig::default();
+            let yamux_config = libp2p::yamux::YamuxConfig::default();
+
+            let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
+                .into_authentic(&key_pair)
+                .expect("Signing libp2p-noise static DH keypair failed.");
+
+            transport
+                .upgrade(libp2p::core::upgrade::Version::V1)
+                .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
+                .multiplex(libp2p::core::upgrade::SelectUpgrade::new(
+                    libp2p::yamux::YamuxConfig::default(),
+                    libp2p::mplex::MplexConfig::default(),
+                ))
+                .timeout(std::time::Duration::from_secs(20))
+                .boxed()
+        };
+
+        let behavior = Behavior;
+
+        SwarmBuilder::new(
+            transport,
+            behavior,
+            local_peer_id,
+        ).build()
+    };
+    let listen_multiaddr = {
+        let mut multiaddr = libp2p::core::multiaddr::Multiaddr::from(std::net::Ipv4Addr::new(127, 0, 0, 1));
+        multiaddr.push(libp2p::core::multiaddr::Protocol::Tcp(9000));
+        multiaddr
+    };
+
+    match swarm.listen_on(listen_multiaddr.clone()) {
+        Ok(_) => {
+            info!("Listening established: {}", listen_multiaddr);
+        }
+        Err(e) => {
+            error!("{}", e);
+            exit(1);
+        }
+    }
+
+    // TODO: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L78
 
     // block until shutdown requested
     let message = runtime.block_on(async {
