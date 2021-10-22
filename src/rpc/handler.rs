@@ -1,6 +1,7 @@
 use libp2p::swarm::{KeepAlive, ProtocolsHandler, ProtocolsHandlerEvent, ProtocolsHandlerUpgrErr, SubstreamProtocol};
 use libp2p::swarm::protocols_handler::{InboundUpgradeSend, OutboundUpgradeSend};
 use std::task::{Context, Poll};
+use tracing::info;
 use crate::rpc::error::RPCError;
 use crate::rpc::protocol::RpcProtocol;
 
@@ -16,7 +17,8 @@ impl ProtocolsHandler for Handler {
     type OutboundOpenInfo = ();
 
     fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
-        todo!()
+        info!("Handler::listen_protocol");
+        SubstreamProtocol::new(RpcProtocol, ())
     }
 
     fn inject_fully_negotiated_inbound(

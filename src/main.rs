@@ -1,3 +1,4 @@
+mod discovery;
 mod rpc;
 
 use std::future::Future;
@@ -5,15 +6,15 @@ use std::net::SocketAddr;
 use std::pin::Pin;
 use std::process::exit;
 use discv5::enr::{CombinedPublicKey, EnrBuilder};
-use discv5::{Discv5ConfigBuilder, Discv5, Discv5Event};
+use discv5::Discv5Event;
 use enr::{CombinedKey, Enr, NodeId};
-use std::str::FromStr;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, Weak};
 use std::task::{Context, Poll};
 use libp2p::swarm::SwarmBuilder;
 use libp2p::{noise, PeerId};
 use libp2p::identity::Keypair;
 use libp2p::Transport;
+use tokio::runtime::Runtime;
 use tokio::signal::unix::{signal, Signal, SignalKind};
 use tracing::{error, info, warn};
 use crate::rpc::behavior::Behavior;
@@ -57,34 +58,16 @@ fn main() {
     info!("Local PeerId: {}", local_peer_id);
 
     // build the tokio executor
-    let mut runtime = tokio::runtime::Builder::new_multi_thread()
-        .thread_name("discv5")
-        .enable_all()
-        .build()
-        .unwrap();
+    let runtime = Arc::new(
+        tokio::runtime::Builder::new_multi_thread()
+            .thread_name("discv5")
+            .enable_all()
+            .build()
+            .unwrap()
+    );
 
-    // default configuration
-    let config = Discv5ConfigBuilder::new().build();
-
-    // construct the discv5 server
-    let mut discv5 = Discv5::new(enr, enr_key, config).unwrap();
-
-    {
-        // SEE: https://github.com/sigp/lighthouse/blob/stable/common/eth2_network_config/built_in_network_configs/pyrmont/boot_enr.yaml
-        let enrs = [
-            "enr:-Ku4QOA5OGWObY8ep_x35NlGBEj7IuQULTjkgxC_0G1AszqGEA0Wn2RNlyLFx9zGTNB1gdFBA6ZDYxCgIza1uJUUOj4Dh2F0dG5ldHOIAAAAAAAAAACEZXRoMpDVTPWXAAAgCf__________gmlkgnY0gmlwhDQPSjiJc2VjcDI1NmsxoQM6yTQB6XGWYJbI7NZFBjp4Yb9AYKQPBhVrfUclQUobb4N1ZHCCIyg",
-            "enr:-Ku4QOksdA2tabOGrfOOr6NynThMoio6Ggka2oDPqUuFeWCqcRM2alNb8778O_5bK95p3EFt0cngTUXm2H7o1jkSJ_8Dh2F0dG5ldHOIAAAAAAAAAACEZXRoMpDVTPWXAAAgCf__________gmlkgnY0gmlwhDaa13aJc2VjcDI1NmsxoQKdNQJvnohpf0VO0ZYCAJxGjT0uwJoAHbAiBMujGjK0SoN1ZHCCIyg",
-            "enr:-LK4QDiPGwNomqUqNDaM3iHYvtdX7M5qngson6Qb2xGIg1LwC8-Nic0aQwO0rVbJt5xp32sRE3S1YqvVrWO7OgVNv0kBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpA7CIeVAAAgCf__________gmlkgnY0gmlwhBKNA4qJc2VjcDI1NmsxoQKbBS4ROQ_sldJm5tMgi36qm5I5exKJFb4C8dDVS_otAoN0Y3CCIyiDdWRwgiMo",
-            "enr:-LK4QKAezYUw_R4P1vkzfw9qMQQFJvRQy3QsUblWxIZ4FSduJ2Kueik-qY5KddcVTUsZiEO-oZq0LwbaSxdYf27EjckBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpA7CIeVAAAgCf__________gmlkgnY0gmlwhCOmkIaJc2VjcDI1NmsxoQOQgTD4a8-rESfTdbCG0V6Yz1pUvze02jB2Py3vzGWhG4N0Y3CCIyiDdWRwgiMo",
-        ];
-        for e in enrs {
-            let boot_enr: Enr<CombinedKey> = Enr::from_str(e).expect("Failed to parse ENR");
-            info!("Boot ENR: {}", boot_enr);
-            if let Err(e) = discv5.add_enr(boot_enr) {
-                warn!("Failed to add Boot ENR: {:?}", e);
-            }
-        }
-    }
+    // discv5
+    let mut discv5 = crate::discovery::build_discv5(enr, enr_key);
 
     // start the discv5 server
     if let Err(e) = runtime.block_on(discv5.start(listen_addr)) {
@@ -143,9 +126,6 @@ fn main() {
                 exit(1);
             });
 
-            let mplex_config = libp2p::mplex::MplexConfig::default();
-            let yamux_config = libp2p::yamux::YamuxConfig::default();
-
             let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
                 .into_authentic(&key_pair)
                 .expect("Signing libp2p-noise static DH keypair failed.");
@@ -161,16 +141,28 @@ fn main() {
                 .boxed()
         };
 
-        let behavior = Behavior;
+        let behaviour = Behavior;
+
+        // use the executor for libp2p
+        struct Executor(Weak<Runtime>);
+        impl libp2p::core::Executor for Executor {
+            fn exec(&self, f: Pin<Box<dyn Future<Output = ()> + Send>>) {
+                if let Some(runtime) = self.0.upgrade() {
+                    runtime.spawn(f);
+                } else {
+                    warn!("Couldn't spawn task. Runtime shutting down");
+                }
+            }
+        }
 
         SwarmBuilder::new(
             transport,
-            behavior,
+            behaviour,
             local_peer_id,
-        ).build()
+        ).executor(Box::new(Executor(Arc::downgrade(&runtime)))).build()
     };
     let listen_multiaddr = {
-        let mut multiaddr = libp2p::core::multiaddr::Multiaddr::from(std::net::Ipv4Addr::new(127, 0, 0, 1));
+        let mut multiaddr = libp2p::core::multiaddr::Multiaddr::from(std::net::Ipv4Addr::new(0, 0, 0, 0));
         multiaddr.push(libp2p::core::multiaddr::Protocol::Tcp(9000));
         multiaddr
     };
