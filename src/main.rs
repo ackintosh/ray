@@ -17,7 +17,7 @@ use libp2p::Transport;
 use tokio::runtime::Runtime;
 use tokio::signal::unix::{signal, Signal, SignalKind};
 use tracing::{error, info, warn};
-use crate::rpc::behavior::Behavior;
+use crate::rpc::behavior::Behaviour;
 
 fn main() {
     tracing_subscriber::fmt::init();
@@ -141,7 +141,7 @@ fn main() {
                 .boxed()
         };
 
-        let behaviour = Behavior;
+        let behaviour = Behaviour;
 
         // use the executor for libp2p
         struct Executor(Weak<Runtime>);

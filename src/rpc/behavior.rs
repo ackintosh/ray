@@ -4,9 +4,9 @@ use libp2p::swarm::{IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourActi
 use std::task::{Context, Poll};
 use crate::rpc::handler::Handler;
 
-pub(crate) struct Behavior;
+pub(crate) struct Behaviour;
 
-impl NetworkBehaviour for Behavior {
+impl NetworkBehaviour for Behaviour {
     type ProtocolsHandler = Handler;
     type OutEvent = ();
 
