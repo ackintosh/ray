@@ -1,5 +1,6 @@
 mod discovery;
 mod rpc;
+mod signal;
 
 use std::future::Future;
 use std::net::SocketAddr;
@@ -9,13 +10,11 @@ use discv5::Discv5Event;
 use discv5::enr::{CombinedPublicKey, EnrBuilder};
 use enr::{CombinedKey, Enr, NodeId};
 use std::sync::{Arc, RwLock, Weak};
-use std::task::{Context, Poll};
 use libp2p::swarm::SwarmBuilder;
 use libp2p::{noise, PeerId};
 use libp2p::identity::Keypair;
 use libp2p::Transport;
 use tokio::runtime::Runtime;
-use tokio::signal::unix::{Signal, signal, SignalKind};
 use tracing::{error, info, warn};
 use crate::rpc::behavior::Behaviour;
 
@@ -179,62 +178,11 @@ fn main() {
         }
     });
 
-
-    // TODO: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L78
-
     // block until shutdown requested
-    let message = runtime.block_on(async {
-        let mut handles = vec![];
-
-        match signal(SignalKind::terminate()) {
-            Ok(terminate_stream) => {
-                let terminate = SignalFuture::new(terminate_stream, "Received SIGTERM");
-                handles.push(terminate);
-            }
-            Err(e) => error!("Could not register SIGTERM handler: {}", e)
-        }
-
-        match signal(SignalKind::interrupt()) {
-            Ok(interrupt_stream) => {
-                let interrupt = SignalFuture::new(interrupt_stream, "Received SIGINT");
-                handles.push(interrupt);
-            }
-            Err(e) => error!("Could not register SIGINT handler: {}", e)
-        }
-
-        futures::future::select_all(handles.into_iter()).await
-    });
+    let message = crate::signal::block_until_shutdown_requested(runtime.clone());
 
     info!("Shutting down: {:?}", message.0);
     info!("peers: {:?}", peers.read().unwrap());
 
-
     // TODO: discv5.shutdown();
-}
-
-// SEE: https://github.com/sigp/lighthouse/blob/d9910f96c5f71881b88eec15253b31890bcd28d2/lighthouse/environment/src/lib.rs#L492
-#[cfg(target_family = "unix")]
-struct SignalFuture {
-    signal: Signal,
-    message: &'static str,
-}
-
-#[cfg(target_family = "unix")]
-impl SignalFuture {
-    pub fn new(signal: Signal, message: &'static str) -> SignalFuture {
-        SignalFuture { signal, message }
-    }
-}
-
-#[cfg(target_family = "unix")]
-impl Future for SignalFuture {
-    type Output = Option<&'static str>;
-
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match self.signal.poll_recv(cx) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(Some(_)) => Poll::Ready(Some(self.message)),
-            Poll::Ready(None) => Poll::Ready(None),
-        }
-    }
 }
