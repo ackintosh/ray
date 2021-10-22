@@ -5,8 +5,8 @@ use std::future::Future;
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::process::exit;
-use discv5::enr::{CombinedPublicKey, EnrBuilder};
 use discv5::Discv5Event;
+use discv5::enr::{CombinedPublicKey, EnrBuilder};
 use enr::{CombinedKey, Enr, NodeId};
 use std::sync::{Arc, RwLock, Weak};
 use std::task::{Context, Poll};
@@ -15,15 +15,13 @@ use libp2p::{noise, PeerId};
 use libp2p::identity::Keypair;
 use libp2p::Transport;
 use tokio::runtime::Runtime;
-use tokio::signal::unix::{signal, Signal, SignalKind};
+use tokio::signal::unix::{Signal, signal, SignalKind};
 use tracing::{error, info, warn};
 use crate::rpc::behavior::Behaviour;
 
 fn main() {
     tracing_subscriber::fmt::init();
     info!("Ray v0.0.1");
-
-    let listen_addr = "0.0.0.0:19000".parse::<SocketAddr>().unwrap();
 
     // generate private key
     let enr_key = CombinedKey::generate_secp256k1();
@@ -68,8 +66,8 @@ fn main() {
 
     // discv5
     let mut discv5 = crate::discovery::build_discv5(enr, enr_key);
-
     // start the discv5 server
+    let listen_addr = "0.0.0.0:19000".parse::<SocketAddr>().unwrap();
     if let Err(e) = runtime.block_on(discv5.start(listen_addr)) {
         error!("Failed to start discv5 server: {:?}", e);
         exit(1);
@@ -159,7 +157,9 @@ fn main() {
             transport,
             behaviour,
             local_peer_id,
-        ).executor(Box::new(Executor(Arc::downgrade(&runtime)))).build()
+        )
+            .executor(Box::new(Executor(Arc::downgrade(&runtime))))
+            .build()
     };
     let listen_multiaddr = {
         let mut multiaddr = libp2p::core::multiaddr::Multiaddr::from(std::net::Ipv4Addr::new(0, 0, 0, 0));
@@ -167,15 +167,18 @@ fn main() {
         multiaddr
     };
 
-    match swarm.listen_on(listen_multiaddr.clone()) {
-        Ok(_) => {
-            info!("Listening established: {}", listen_multiaddr);
+    runtime.spawn(async move {
+        match swarm.listen_on(listen_multiaddr.clone()) {
+            Ok(_) => {
+                info!("Listening established: {}", listen_multiaddr);
+            }
+            Err(e) => {
+                error!("{}", e);
+                exit(1);
+            }
         }
-        Err(e) => {
-            error!("{}", e);
-            exit(1);
-        }
-    }
+    });
+
 
     // TODO: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L78
 
