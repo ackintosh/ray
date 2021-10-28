@@ -10,12 +10,13 @@ use discv5::Discv5Event;
 use discv5::enr::{CombinedPublicKey, EnrBuilder};
 use enr::{CombinedKey, Enr, NodeId};
 use std::sync::{Arc, RwLock, Weak};
-use libp2p::swarm::SwarmBuilder;
-use libp2p::{noise, PeerId};
+use libp2p::swarm::{DialError, SwarmBuilder};
+use libp2p::{Multiaddr, noise, PeerId};
 use libp2p::identity::Keypair;
 use libp2p::Transport;
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
+use crate::discovery::boot_multiaddrs;
 use crate::rpc::behavior::Behaviour;
 
 fn main() {
@@ -174,6 +175,16 @@ fn main() {
             Err(e) => {
                 error!("{}", e);
                 exit(1);
+            }
+        }
+
+        for addr in boot_multiaddrs() {
+            info!("Dialing libp2p peer: {}", addr);
+            match swarm.dial_addr(addr) {
+                Ok(()) => {}
+                Err(e) => {
+                    warn!("Failed to dial to the peer: {}", e);
+                }
             }
         }
     });
