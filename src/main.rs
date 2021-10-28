@@ -42,7 +42,7 @@ fn main() {
     info!("Local ENR: {}", enr);
 
     // local PeerId
-    // see https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L200
+    // SEE: https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L200
     let local_peer_id = match enr.public_key() {
         CombinedPublicKey::Secp256k1(pk) => {
             let pk_bytes = pk.to_bytes();
@@ -115,7 +115,7 @@ fn main() {
     });
 
     // libp2p
-    // see https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
+    // SEE: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
     let mut swarm = {
         let transport = {
             let tcp = libp2p::tcp::TokioTcpConfig::new().nodelay(true);

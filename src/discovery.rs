@@ -72,5 +72,15 @@ pub(crate) fn boot_multiaddrs() -> Vec<Multiaddr> {
             }
         }
     }
-    multiaddrs
+
+    // ignore UDP multiaddr as we using TcpConfig of libp2p.
+    // SEE: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L211
+    multiaddrs.into_iter().filter(|addr| {
+        let components = addr.iter().collect::<Vec<_>>();
+        if let Protocol::Udp(_) = components[1] {
+            false
+        } else {
+            true
+        }
+    }).collect()
 }
