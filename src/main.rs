@@ -10,8 +10,9 @@ use discv5::Discv5Event;
 use discv5::enr::{CombinedPublicKey, EnrBuilder};
 use enr::{CombinedKey, Enr, NodeId};
 use std::sync::{Arc, RwLock, Weak};
-use libp2p::swarm::{DialError, SwarmBuilder};
-use libp2p::{Multiaddr, noise, PeerId};
+use futures::StreamExt;
+use libp2p::swarm::SwarmBuilder;
+use libp2p::{noise, PeerId};
 use libp2p::identity::Keypair;
 use libp2p::Transport;
 use tokio::runtime::Runtime;
@@ -146,6 +147,7 @@ fn main() {
         impl libp2p::core::Executor for Executor {
             fn exec(&self, f: Pin<Box<dyn Future<Output = ()> + Send>>) {
                 if let Some(runtime) = self.0.upgrade() {
+                    info!("Spawning a task");
                     runtime.spawn(f);
                 } else {
                     warn!("Couldn't spawn task. Runtime shutting down");
@@ -184,6 +186,20 @@ fn main() {
                 Ok(()) => {}
                 Err(e) => {
                     warn!("Failed to dial to the peer: {}", e);
+                }
+            }
+        }
+
+        // SEE:
+        // https://github.com/sigp/lighthouse/blob/9667dc2f0379272fe0f36a2ec015c5a560bca652/beacon_node/network/src/service.rs#L309
+        // https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L305
+        loop {
+            match swarm.select_next_some().await {
+                libp2p::swarm::SwarmEvent::Behaviour(_behaviour_out_event) => {
+                    info!("SwarmEvent::Behaviour");
+                }
+                _ => {
+                    info!("other event");
                 }
             }
         }
