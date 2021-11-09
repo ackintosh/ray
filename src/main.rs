@@ -1,3 +1,4 @@
+mod behaviour;
 mod discovery;
 mod rpc;
 mod signal;
@@ -18,7 +19,7 @@ use libp2p::Transport;
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
 use crate::discovery::boot_multiaddrs;
-use crate::rpc::behavior::Behaviour;
+use crate::behaviour::Behaviour;
 
 fn main() {
     tracing_subscriber::fmt::init();
@@ -59,7 +60,7 @@ fn main() {
     // build the tokio executor
     let runtime = Arc::new(
         tokio::runtime::Builder::new_multi_thread()
-            .thread_name("discv5")
+            .thread_name("ray")
             .enable_all()
             .build()
             .unwrap()
@@ -140,7 +141,9 @@ fn main() {
                 .boxed()
         };
 
-        let behaviour = Behaviour;
+        let behaviour = Behaviour::new(
+            crate::rpc::behavior::Behaviour{},
+        );
 
         // use the executor for libp2p
         struct Executor(Weak<Runtime>);

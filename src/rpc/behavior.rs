@@ -9,6 +9,8 @@ use crate::rpc::handler::Handler;
 
 pub(crate) struct Behaviour;
 
+// NetworkBehaviour defines "what" bytes to send on the network.
+// SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
 impl NetworkBehaviour for Behaviour {
     type ProtocolsHandler = Handler;
     type OutEvent = ();
@@ -21,10 +23,6 @@ impl NetworkBehaviour for Behaviour {
         info!("inject_connected: {}", peer_id);
     }
 
-    fn inject_dial_failure(&mut self, peer_id: Option<PeerId>, _handler: Self::ProtocolsHandler, _error: &DialError) {
-        warn!("inject_dial_failure: {:?}", peer_id);
-    }
-
     fn inject_event(
         &mut self,
         peer_id: PeerId,
@@ -34,12 +32,15 @@ impl NetworkBehaviour for Behaviour {
         println!("inject_event: {}", peer_id);
     }
 
+    fn inject_dial_failure(&mut self, peer_id: Option<PeerId>, _handler: Self::ProtocolsHandler, _error: &DialError) {
+        warn!("inject_dial_failure: {:?}", peer_id);
+    }
+
     fn poll(
         &mut self,
         cx: &mut Context<'_>,
         params: &mut impl PollParameters
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
-        println!("poll");
         info!("poll");
         Poll::Pending
     }

@@ -7,6 +7,7 @@ use crate::rpc::protocol::RpcProtocol;
 
 pub(crate) struct Handler;
 
+// SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
 impl ProtocolsHandler for Handler {
     type InEvent = ();
     type OutEvent = ();
