@@ -35,7 +35,7 @@ fn main() {
                 let kp: libp2p::core::identity::secp256k1::Keypair = secret_key.into();
                 Keypair::Secp256k1(kp)
             }
-            CombinedKey::Ed25519(_) => todo!(), // not implemented as the ENR key is generated with secp256k1
+            CombinedKey::Ed25519(_) => unreachable!(), // not implemented as the ENR key is generated with secp256k1
         }
     };
 
@@ -54,7 +54,7 @@ fn main() {
             );
             PeerId::from(libp2p_pk)
         }
-        CombinedPublicKey::Ed25519(_) => todo!(), // not implemented as the ENR key is generated with secp256k1
+        CombinedPublicKey::Ed25519(_) => unreachable!(), // not implemented as the ENR key is generated with secp256k1
     };
     info!("Local PeerId: {}", local_peer_id);
 
