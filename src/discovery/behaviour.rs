@@ -1,22 +1,22 @@
-use std::net::SocketAddr;
-use std::task::{Context, Poll};
+use crate::discovery::boot_enrs;
 use discv5::{Discv5, Discv5ConfigBuilder};
 use enr::{CombinedKey, Enr, NodeId};
 use libp2p::core::connection::ConnectionId;
+use libp2p::swarm::{
+    IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
+    ProtocolsHandler,
+};
 use libp2p::PeerId;
-use libp2p::swarm::{IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters, ProtocolsHandler};
+use std::net::SocketAddr;
+use std::task::{Context, Poll};
 use tracing::{info, warn};
-use crate::discovery::boot_enrs;
 
 pub(crate) struct Behaviour {
     discv5: Discv5,
 }
 
 impl Behaviour {
-    pub(crate) async fn new(
-        local_enr: Enr<CombinedKey>,
-        local_enr_key: CombinedKey,
-    ) -> Self {
+    pub(crate) async fn new(local_enr: Enr<CombinedKey>, local_enr_key: CombinedKey) -> Self {
         // default configuration
         let config = Discv5ConfigBuilder::new().build();
         // construct the discv5 server
@@ -74,9 +74,7 @@ impl Behaviour {
         //     }
         // });
 
-        Behaviour{
-            discv5,
-        }
+        Behaviour { discv5 }
     }
 }
 
@@ -98,7 +96,7 @@ impl NetworkBehaviour for Behaviour {
         &mut self,
         _peer_id: PeerId,
         _connection: ConnectionId,
-        _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent
+        _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
     ) {
         // nothing to do
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L948-L954
@@ -107,8 +105,8 @@ impl NetworkBehaviour for Behaviour {
     fn poll(
         &mut self,
         _cx: &mut Context<'_>,
-        _params: &mut impl PollParameters
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent,Self::ProtocolsHandler>> {
+        _params: &mut impl PollParameters,
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         info!("poll");
         Poll::Pending
     }

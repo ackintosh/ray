@@ -9,5 +9,4 @@ impl Display for RPCError {
     }
 }
 
-impl std::error::Error for RPCError {
-}
+impl std::error::Error for RPCError {}

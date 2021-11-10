@@ -1,8 +1,8 @@
 use futures::prelude::*;
-use std::fmt::{Display, Formatter};
-use libp2p::{InboundUpgrade, OutboundUpgrade};
 use libp2p::core::{ProtocolName, UpgradeInfo};
 use libp2p::swarm::NegotiatedSubstream;
+use libp2p::{InboundUpgrade, OutboundUpgrade};
+use std::fmt::{Display, Formatter};
 use void::Void;
 
 // spec:
@@ -48,7 +48,7 @@ enum Encoding {
 impl Display for Encoding {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let encoding = match self {
-            Encoding::SSZSnappy => "ssz_snappy"
+            Encoding::SSZSnappy => "ssz_snappy",
         };
         f.write_str(encoding)
     }
@@ -64,12 +64,11 @@ pub(crate) struct ProtocolId {
 }
 
 impl ProtocolId {
-    fn new(
-        protocol: Protocol,
-        schema_version: SchemaVersion,
-        encoding: Encoding,
-    ) -> Self {
-        let protocol_id = format!("{}/{}/{}/{}", PROTOCOL_PREFIX, &protocol, schema_version, encoding);
+    fn new(protocol: Protocol, schema_version: SchemaVersion, encoding: Encoding) -> Self {
+        let protocol_id = format!(
+            "{}/{}/{}/{}",
+            PROTOCOL_PREFIX, &protocol, schema_version, encoding
+        );
 
         Self {
             protocol,
@@ -95,9 +94,11 @@ impl UpgradeInfo for RpcProtocol {
 
     // The list of supported RPC protocols
     fn protocol_info(&self) -> Self::InfoIter {
-        vec![
-            ProtocolId::new(Protocol::Status, SchemaVersion::V1, Encoding::SSZSnappy),
-        ]
+        vec![ProtocolId::new(
+            Protocol::Status,
+            SchemaVersion::V1,
+            Encoding::SSZSnappy,
+        )]
     }
 }
 

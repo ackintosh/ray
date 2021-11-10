@@ -3,10 +3,12 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use tokio::runtime::Runtime;
-use tokio::signal::unix::{Signal, signal, SignalKind};
+use tokio::signal::unix::{signal, Signal, SignalKind};
 use tracing::error;
 
-pub(crate) fn block_until_shutdown_requested(runtime: Arc<Runtime>)-> (Option<&'static str>, usize, Vec<SignalFuture>) {
+pub(crate) fn block_until_shutdown_requested(
+    runtime: Arc<Runtime>,
+) -> (Option<&'static str>, usize, Vec<SignalFuture>) {
     runtime.block_on(async {
         let mut handles = vec![];
 
@@ -15,7 +17,7 @@ pub(crate) fn block_until_shutdown_requested(runtime: Arc<Runtime>)-> (Option<&'
                 let terminate = SignalFuture::new(terminate_stream, "Received SIGTERM");
                 handles.push(terminate);
             }
-            Err(e) => error!("Could not register SIGTERM handler: {}", e)
+            Err(e) => error!("Could not register SIGTERM handler: {}", e),
         }
 
         match signal(SignalKind::interrupt()) {
@@ -23,7 +25,7 @@ pub(crate) fn block_until_shutdown_requested(runtime: Arc<Runtime>)-> (Option<&'
                 let interrupt = SignalFuture::new(interrupt_stream, "Received SIGINT");
                 handles.push(interrupt);
             }
-            Err(e) => error!("Could not register SIGINT handler: {}", e)
+            Err(e) => error!("Could not register SIGINT handler: {}", e),
         }
 
         futures::future::select_all(handles.into_iter()).await

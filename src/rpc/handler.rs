@@ -1,9 +1,11 @@
-use libp2p::swarm::{KeepAlive, ProtocolsHandler, ProtocolsHandlerEvent, ProtocolsHandlerUpgrErr, SubstreamProtocol};
-use libp2p::swarm::protocols_handler::{InboundUpgradeSend, OutboundUpgradeSend};
-use std::task::{Context, Poll};
-use tracing::info;
 use crate::rpc::error::RPCError;
 use crate::rpc::protocol::RpcProtocol;
+use libp2p::swarm::protocols_handler::{InboundUpgradeSend, OutboundUpgradeSend};
+use libp2p::swarm::{
+    KeepAlive, ProtocolsHandler, ProtocolsHandlerEvent, ProtocolsHandlerUpgrErr, SubstreamProtocol,
+};
+use std::task::{Context, Poll};
+use tracing::info;
 
 pub(crate) struct Handler;
 
@@ -25,7 +27,7 @@ impl ProtocolsHandler for Handler {
     fn inject_fully_negotiated_inbound(
         &mut self,
         _protocol: <Self::InboundProtocol as InboundUpgradeSend>::Output,
-        _info: Self::InboundOpenInfo
+        _info: Self::InboundOpenInfo,
     ) {
         todo!()
     }
@@ -33,22 +35,19 @@ impl ProtocolsHandler for Handler {
     fn inject_fully_negotiated_outbound(
         &mut self,
         _protocol: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
-        _info: Self::OutboundOpenInfo
+        _info: Self::OutboundOpenInfo,
     ) {
         todo!()
     }
 
-    fn inject_event(
-        &mut self,
-        _event: Self::InEvent
-    ) {
+    fn inject_event(&mut self, _event: Self::InEvent) {
         todo!()
     }
 
     fn inject_dial_upgrade_error(
         &mut self,
         _info: Self::OutboundOpenInfo,
-        _error: ProtocolsHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgradeSend>::Error>
+        _error: ProtocolsHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgradeSend>::Error>,
     ) {
         todo!()
     }
@@ -59,8 +58,15 @@ impl ProtocolsHandler for Handler {
 
     fn poll(
         &mut self,
-        _cx: &mut Context<'_>
-    ) -> Poll<ProtocolsHandlerEvent<Self::OutboundProtocol, Self::OutboundOpenInfo, Self::OutEvent, Self::Error>> {
+        _cx: &mut Context<'_>,
+    ) -> Poll<
+        ProtocolsHandlerEvent<
+            Self::OutboundProtocol,
+            Self::OutboundOpenInfo,
+            Self::OutEvent,
+            Self::Error,
+        >,
+    > {
         todo!()
     }
 }

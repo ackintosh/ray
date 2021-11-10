@@ -3,21 +3,21 @@ mod discovery;
 mod rpc;
 mod signal;
 
+use crate::behaviour::BehaviourComposer;
+use crate::discovery::boot_multiaddrs;
+use discv5::enr::{CombinedPublicKey, EnrBuilder};
+use enr::CombinedKey;
+use futures::StreamExt;
+use libp2p::identity::Keypair;
+use libp2p::swarm::SwarmBuilder;
+use libp2p::Transport;
+use libp2p::{noise, PeerId};
 use std::future::Future;
 use std::pin::Pin;
 use std::process::exit;
-use discv5::enr::{CombinedPublicKey, EnrBuilder};
-use enr::CombinedKey;
 use std::sync::{Arc, Weak};
-use futures::StreamExt;
-use libp2p::swarm::SwarmBuilder;
-use libp2p::{noise, PeerId};
-use libp2p::identity::Keypair;
-use libp2p::Transport;
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
-use crate::discovery::boot_multiaddrs;
-use crate::behaviour::BehaviourComposer;
 
 fn main() {
     tracing_subscriber::fmt::init();
@@ -29,11 +29,13 @@ fn main() {
         match enr_key {
             CombinedKey::Secp256k1(ref key) => {
                 let mut key_bytes = key.to_bytes();
-                let secret_key = libp2p::core::identity::secp256k1::SecretKey::from_bytes(&mut key_bytes).expect("valid secp256k1 key");
+                let secret_key =
+                    libp2p::core::identity::secp256k1::SecretKey::from_bytes(&mut key_bytes)
+                        .expect("valid secp256k1 key");
                 let kp: libp2p::core::identity::secp256k1::Keypair = secret_key.into();
                 Keypair::Secp256k1(kp)
             }
-            CombinedKey::Ed25519(_) => todo!() // not implemented as the ENR key is generated with secp256k1
+            CombinedKey::Ed25519(_) => todo!(), // not implemented as the ENR key is generated with secp256k1
         }
     };
 
@@ -47,11 +49,12 @@ fn main() {
         CombinedPublicKey::Secp256k1(pk) => {
             let pk_bytes = pk.to_bytes();
             let libp2p_pk = libp2p::core::PublicKey::Secp256k1(
-                libp2p::core::identity::secp256k1::PublicKey::decode(&pk_bytes).expect("valid public key")
+                libp2p::core::identity::secp256k1::PublicKey::decode(&pk_bytes)
+                    .expect("valid public key"),
             );
             PeerId::from(libp2p_pk)
         }
-        CombinedPublicKey::Ed25519(_) => todo!() // not implemented as the ENR key is generated with secp256k1
+        CombinedPublicKey::Ed25519(_) => todo!(), // not implemented as the ENR key is generated with secp256k1
     };
     info!("Local PeerId: {}", local_peer_id);
 
@@ -61,7 +64,7 @@ fn main() {
             .thread_name("ray")
             .enable_all()
             .build()
-            .unwrap()
+            .unwrap(),
     );
 
     // libp2p
@@ -89,14 +92,9 @@ fn main() {
                 .boxed()
         };
 
-        let discovery = runtime.block_on(
-            crate::discovery::behaviour::Behaviour::new(enr, enr_key)
-        );
+        let discovery = runtime.block_on(crate::discovery::behaviour::Behaviour::new(enr, enr_key));
 
-        let behaviour = BehaviourComposer::new(
-            discovery,
-            crate::rpc::behaviour::Behaviour{},
-        );
+        let behaviour = BehaviourComposer::new(discovery, crate::rpc::behaviour::Behaviour {});
 
         // use the executor for libp2p
         struct Executor(Weak<Runtime>);
@@ -111,16 +109,13 @@ fn main() {
             }
         }
 
-        SwarmBuilder::new(
-            transport,
-            behaviour,
-            local_peer_id,
-        )
+        SwarmBuilder::new(transport, behaviour, local_peer_id)
             .executor(Box::new(Executor(Arc::downgrade(&runtime))))
             .build()
     };
     let listen_multiaddr = {
-        let mut multiaddr = libp2p::core::multiaddr::Multiaddr::from(std::net::Ipv4Addr::new(0, 0, 0, 0));
+        let mut multiaddr =
+            libp2p::core::multiaddr::Multiaddr::from(std::net::Ipv4Addr::new(0, 0, 0, 0));
         multiaddr.push(libp2p::core::multiaddr::Protocol::Tcp(9000));
         multiaddr
     };

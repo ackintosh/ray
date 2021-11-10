@@ -13,9 +13,6 @@ impl BehaviourComposer {
         discovery: crate::discovery::behaviour::Behaviour,
         rpc: crate::rpc::behaviour::Behaviour,
     ) -> Self {
-        Self {
-            discovery,
-            rpc,
-        }
+        Self { discovery, rpc }
     }
 }

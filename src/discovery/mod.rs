@@ -1,9 +1,9 @@
 pub(crate) mod behaviour;
 
 use enr::{CombinedKey, Enr};
-use std::str::FromStr;
-use libp2p::Multiaddr;
 use libp2p::multiaddr::Protocol;
+use libp2p::Multiaddr;
+use std::str::FromStr;
 
 // SEE: https://github.com/sigp/lighthouse/blob/stable/common/eth2_network_config/built_in_network_configs/pyrmont/boot_enr.yaml
 const BOOT_ENRS: [&str; 4] = [
@@ -14,9 +14,10 @@ const BOOT_ENRS: [&str; 4] = [
 ];
 
 fn boot_enrs() -> Vec<Enr<CombinedKey>> {
-    BOOT_ENRS.iter().map(|&str| {
-        Enr::from_str(str).expect("Failed to parse ENR")
-    }).collect()
+    BOOT_ENRS
+        .iter()
+        .map(|&str| Enr::from_str(str).expect("Failed to parse ENR"))
+        .collect()
 }
 
 // SEE: https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L49
@@ -53,12 +54,15 @@ pub(crate) fn boot_multiaddrs() -> Vec<Multiaddr> {
 
     // ignore UDP multiaddr as we using TcpConfig of libp2p.
     // SEE: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L211
-    multiaddrs.into_iter().filter(|addr| {
-        let components = addr.iter().collect::<Vec<_>>();
-        if let Protocol::Udp(_) = components[1] {
-            false
-        } else {
-            true
-        }
-    }).collect()
+    multiaddrs
+        .into_iter()
+        .filter(|addr| {
+            let components = addr.iter().collect::<Vec<_>>();
+            if let Protocol::Udp(_) = components[1] {
+                false
+            } else {
+                true
+            }
+        })
+        .collect()
 }
