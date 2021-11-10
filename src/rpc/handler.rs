@@ -24,31 +24,31 @@ impl ProtocolsHandler for Handler {
 
     fn inject_fully_negotiated_inbound(
         &mut self,
-        protocol: <Self::InboundProtocol as InboundUpgradeSend>::Output,
-        info: Self::InboundOpenInfo
+        _protocol: <Self::InboundProtocol as InboundUpgradeSend>::Output,
+        _info: Self::InboundOpenInfo
     ) {
         todo!()
     }
 
     fn inject_fully_negotiated_outbound(
         &mut self,
-        protocol: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
-        info: Self::OutboundOpenInfo
+        _protocol: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
+        _info: Self::OutboundOpenInfo
     ) {
         todo!()
     }
 
     fn inject_event(
         &mut self,
-        event: Self::InEvent
+        _event: Self::InEvent
     ) {
         todo!()
     }
 
     fn inject_dial_upgrade_error(
         &mut self,
-        info: Self::OutboundOpenInfo,
-        error: ProtocolsHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgradeSend>::Error>
+        _info: Self::OutboundOpenInfo,
+        _error: ProtocolsHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgradeSend>::Error>
     ) {
         todo!()
     }
@@ -59,7 +59,7 @@ impl ProtocolsHandler for Handler {
 
     fn poll(
         &mut self,
-        cx: &mut Context<'_>
+        _cx: &mut Context<'_>
     ) -> Poll<ProtocolsHandlerEvent<Self::OutboundProtocol, Self::OutboundOpenInfo, Self::OutEvent, Self::Error>> {
         todo!()
     }

@@ -24,8 +24,8 @@ impl NetworkBehaviour for Behaviour {
     fn inject_event(
         &mut self,
         peer_id: PeerId,
-        connection: ConnectionId,
-        event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent
+        _connection: ConnectionId,
+        _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent
     ) {
         println!("inject_event: {}", peer_id);
     }
@@ -36,8 +36,8 @@ impl NetworkBehaviour for Behaviour {
 
     fn poll(
         &mut self,
-        cx: &mut Context<'_>,
-        params: &mut impl PollParameters
+        _cx: &mut Context<'_>,
+        _params: &mut impl PollParameters
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         info!("poll");
         Poll::Pending
