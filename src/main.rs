@@ -95,7 +95,7 @@ fn main() {
 
         let behaviour = BehaviourComposer::new(
             discovery,
-            crate::rpc::behavior::Behaviour{},
+            crate::rpc::behaviour::Behaviour{},
         );
 
         // use the executor for libp2p
