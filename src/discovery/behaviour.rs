@@ -9,10 +9,14 @@ use libp2p::swarm::{
 use libp2p::PeerId;
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
+use futures::{Future, FutureExt};
+use futures::stream::FuturesUnordered;
 use tracing::{info, warn};
 
 pub(crate) struct Behaviour {
     discv5: Discv5,
+    /// Active discovery queries.
+    active_queries: FuturesUnordered<std::pin::Pin<Box<dyn Future<Output = QueryResult> + Send>>>,
 }
 
 impl Behaviour {
@@ -36,9 +40,13 @@ impl Behaviour {
         discv5.start(listen_addr).await.unwrap();
 
         // establish a session by running a query
-        info!("Executing bootstrap query.");
-        let found = discv5.find_node(NodeId::random()).await.unwrap();
-        info!("Found: {:?}", found);
+        // info!("Executing bootstrap query.");
+        // let found = discv5
+        //     .find_node(NodeId::random())
+        //     .map(|result| {
+        //         QueryResult { result }
+        //     });
+        // info!("Found: {:?}", found);
 
         // let mut event_stream = match runtime.block_on(discv5.event_stream()) {
         //     Ok(event_stream) => event_stream,
@@ -74,7 +82,22 @@ impl Behaviour {
         //     }
         // });
 
-        Behaviour { discv5 }
+        Behaviour {
+            discv5,
+            active_queries: FuturesUnordered::new(),
+        }
+    }
+
+    pub(crate) async fn discover_peers(&mut self) {
+        let target_node = NodeId::random();
+        let query_future = self.discv5
+            .find_node(target_node.clone())
+            .map(|result| {
+                QueryResult { result }
+            });
+
+        info!("Active query for discovery: target_node -> {}", target_node);
+        self.active_queries.push(Box::pin(query_future));
     }
 }
 
@@ -110,4 +133,9 @@ impl NetworkBehaviour for Behaviour {
         info!("poll");
         Poll::Pending
     }
+}
+
+/// The result of a query.
+struct QueryResult {
+    result: Result<Vec<Enr<CombinedKey>>, discv5::QueryError>,
 }

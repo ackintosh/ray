@@ -92,7 +92,9 @@ fn main() {
                 .boxed()
         };
 
-        let discovery = runtime.block_on(crate::discovery::behaviour::Behaviour::new(enr, enr_key));
+        let mut discovery = runtime.block_on(crate::discovery::behaviour::Behaviour::new(enr, enr_key));
+        // start searching for peers
+        runtime.block_on(discovery.discover_peers());
 
         let behaviour = BehaviourComposer::new(discovery, crate::rpc::behaviour::Behaviour {});
 
