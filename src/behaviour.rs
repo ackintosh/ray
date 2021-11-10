@@ -1,15 +1,20 @@
 use libp2p::NetworkBehaviour;
 
-// core behaviour that combines the sub-behaviours.
+// The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]
-pub(crate) struct Behaviour {
+pub(crate) struct BehaviourComposer {
     /* Sub-Behaviours */
+    discovery: crate::discovery::behaviour::Behaviour,
     rpc: crate::rpc::behavior::Behaviour,
 }
 
-impl Behaviour {
-    pub(crate) fn new(rpc: crate::rpc::behavior::Behaviour) -> Self {
+impl BehaviourComposer {
+    pub(crate) fn new(
+        discovery: crate::discovery::behaviour::Behaviour,
+        rpc: crate::rpc::behavior::Behaviour,
+    ) -> Self {
         Self {
+            discovery,
             rpc,
         }
     }

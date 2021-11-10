@@ -19,7 +19,7 @@ use libp2p::Transport;
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
 use crate::discovery::boot_multiaddrs;
-use crate::behaviour::Behaviour;
+use crate::behaviour::BehaviourComposer;
 
 fn main() {
     tracing_subscriber::fmt::init();
@@ -141,7 +141,8 @@ fn main() {
                 .boxed()
         };
 
-        let behaviour = Behaviour::new(
+        let behaviour = BehaviourComposer::new(
+            crate::discovery::behaviour::Behaviour{},
             crate::rpc::behavior::Behaviour{},
         );
 
@@ -212,7 +213,7 @@ fn main() {
     let message = crate::signal::block_until_shutdown_requested(runtime.clone());
 
     info!("Shutting down: {:?}", message.0);
-    info!("peers: {:?}", peers.read().unwrap());
+    // info!("peers: {:?}", peers.read().unwrap());
 
     // TODO: discv5.shutdown();
 }

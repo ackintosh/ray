@@ -1,3 +1,5 @@
+pub(crate) mod behaviour;
+
 use discv5::{Discv5ConfigBuilder, Discv5};
 use enr::{CombinedKey, Enr};
 use std::str::FromStr;
