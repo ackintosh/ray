@@ -4,13 +4,11 @@ mod rpc;
 mod signal;
 
 use std::future::Future;
-use std::net::SocketAddr;
 use std::pin::Pin;
 use std::process::exit;
-use discv5::Discv5Event;
 use discv5::enr::{CombinedPublicKey, EnrBuilder};
-use enr::{CombinedKey, Enr, NodeId};
-use std::sync::{Arc, RwLock, Weak};
+use enr::CombinedKey;
+use std::sync::{Arc, Weak};
 use futures::StreamExt;
 use libp2p::swarm::SwarmBuilder;
 use libp2p::{noise, PeerId};
@@ -66,56 +64,6 @@ fn main() {
             .unwrap()
     );
 
-    // discv5
-    let mut discv5 = crate::discovery::build_discv5(enr, enr_key);
-    // start the discv5 server
-    let listen_addr = "0.0.0.0:19000".parse::<SocketAddr>().unwrap();
-    if let Err(e) = runtime.block_on(discv5.start(listen_addr)) {
-        error!("Failed to start discv5 server: {:?}", e);
-        exit(1);
-    }
-
-    // establish a session by running a query
-    info!("Executing bootstrap query.");
-    let found = runtime.block_on(discv5.find_node(NodeId::random()));
-    info!("{:?}", found);
-
-    let mut event_stream = match runtime.block_on(discv5.event_stream()) {
-        Ok(event_stream) => event_stream,
-        Err(e) => {
-            error!("Failed to obtain event stream: {}", e);
-            exit(1);
-        }
-    };
-
-    let peers: Arc<RwLock<Vec<Enr<CombinedKey>>>> = Arc::new(RwLock::new(vec![]));
-
-    let peers_for_discv5 = peers.clone();
-    runtime.spawn(async move {
-        loop {
-            tokio::select! {
-                Some(event) = event_stream.recv() => {
-                    match event {
-                        Discv5Event::Discovered(enr) => {
-                            info!("Discv5Event::Discovered: {}", enr);
-                            peers_for_discv5.write().unwrap().push(enr);
-                        }
-                        Discv5Event::EnrAdded { enr, replaced } => {
-                            info!("Discv5Event::EnrAdded: {}, {:?}", enr, replaced);
-                        }
-                        Discv5Event::TalkRequest(_)  => {}     // Ignore
-                        Discv5Event::NodeInserted { node_id, replaced } => {
-                            info!("Discv5Event::NodeInserted: {}, {:?}", node_id, replaced);
-                        }
-                        Discv5Event::SocketUpdated(socket_addr) => {
-                            info!("External socket address updated: {}", socket_addr);
-                        }
-                    }
-                }
-            }
-        }
-    });
-
     // libp2p
     // SEE: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
     let mut swarm = {
@@ -141,8 +89,12 @@ fn main() {
                 .boxed()
         };
 
+        let discovery = runtime.block_on(
+            crate::discovery::behaviour::Behaviour::new(enr, enr_key)
+        );
+
         let behaviour = BehaviourComposer::new(
-            crate::discovery::behaviour::Behaviour{},
+            discovery,
             crate::rpc::behavior::Behaviour{},
         );
 
@@ -213,7 +165,6 @@ fn main() {
     let message = crate::signal::block_until_shutdown_requested(runtime.clone());
 
     info!("Shutting down: {:?}", message.0);
-    // info!("peers: {:?}", peers.read().unwrap());
 
     // TODO: discv5.shutdown();
 }
