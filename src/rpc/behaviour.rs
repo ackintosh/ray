@@ -14,7 +14,7 @@ pub(crate) struct Behaviour;
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
 impl NetworkBehaviour for Behaviour {
     type ProtocolsHandler = Handler;
-    type OutEvent = ();
+    type OutEvent = RpcEvent;
 
     fn new_handler(&mut self) -> Self::ProtocolsHandler {
         Handler
@@ -50,4 +50,8 @@ impl NetworkBehaviour for Behaviour {
         info!("poll");
         Poll::Pending
     }
+}
+
+pub enum RpcEvent {
+    DummyEvent, // TODO
 }

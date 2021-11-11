@@ -1,6 +1,8 @@
 use crate::discovery::boot_enrs;
 use discv5::{Discv5, Discv5ConfigBuilder};
 use enr::{CombinedKey, Enr, NodeId};
+use futures::stream::FuturesUnordered;
+use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
     IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
@@ -9,9 +11,7 @@ use libp2p::swarm::{
 use libp2p::PeerId;
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
-use futures::{Future, FutureExt};
-use futures::stream::FuturesUnordered;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 pub(crate) struct Behaviour {
     discv5: Discv5,
@@ -90,11 +90,10 @@ impl Behaviour {
 
     pub(crate) async fn discover_peers(&mut self) {
         let target_node = NodeId::random();
-        let query_future = self.discv5
+        let query_future = self
+            .discv5
             .find_node(target_node.clone())
-            .map(|result| {
-                QueryResult { result }
-            });
+            .map(|result| QueryResult { result });
 
         info!("Active query for discovery: target_node -> {}", target_node);
         self.active_queries.push(Box::pin(query_future));
@@ -109,7 +108,7 @@ impl Behaviour {
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
 impl NetworkBehaviour for Behaviour {
     type ProtocolsHandler = libp2p::swarm::protocols_handler::DummyProtocolsHandler;
-    type OutEvent = ();
+    type OutEvent = DiscoveryEvent;
 
     fn new_handler(&mut self) -> Self::ProtocolsHandler {
         libp2p::swarm::protocols_handler::DummyProtocolsHandler::default()
@@ -121,16 +120,34 @@ impl NetworkBehaviour for Behaviour {
         _connection: ConnectionId,
         _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
     ) {
-        // nothing to do
+        info!("inject_event: nothing to do");
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L948-L954
     }
 
     fn poll(
         &mut self,
-        _cx: &mut Context<'_>,
+        cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         info!("poll");
+        if let Poll::Ready(Some(query_result)) = self.active_queries.poll_next_unpin(cx) {
+            return match query_result.result {
+                Ok(enrs) if enrs.is_empty() => {
+                    info!("Discovery query yielded no results.");
+                    Poll::Pending
+                }
+                Ok(enrs) => {
+                    info!("Discovery query completed. found peers: {:?}", enrs);
+                    Poll::Ready(NetworkBehaviourAction::GenerateEvent(
+                        DiscoveryEvent::QueryResult(enrs),
+                    ))
+                }
+                Err(query_error) => {
+                    error!("Discovery query failed: {}", query_error);
+                    Poll::Pending
+                }
+            };
+        }
         Poll::Pending
     }
 }
@@ -138,4 +155,9 @@ impl NetworkBehaviour for Behaviour {
 /// The result of a query.
 struct QueryResult {
     result: Result<Vec<Enr<CombinedKey>>, discv5::QueryError>,
+}
+
+/// The events emitted by polling discovery.
+pub enum DiscoveryEvent {
+    QueryResult(Vec<Enr<CombinedKey>>),
 }
