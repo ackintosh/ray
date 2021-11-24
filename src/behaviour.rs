@@ -9,7 +9,7 @@ use tracing::info;
 
 // The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]
-#[behaviour(event_process = true, poll_method = "poll")]
+#[behaviour(event_process = true, poll_method = "poll")] // By default `event_process` is false since libp2p-swarm-derive v0.25.0 SEE https://github.com/libp2p/rust-libp2p/blob/v0.40.0/swarm-derive/CHANGELOG.md#0250-2021-11-01
 pub(crate) struct BehaviourComposer {
     /* Sub-Behaviours */
     discovery: crate::discovery::behaviour::Behaviour,
@@ -46,6 +46,21 @@ impl BehaviourComposer {
         >,
     > {
         info!("poll");
+
+        // Handle internal events
+        // see https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/behaviour/mod.rs#L1047
+        // if let Some(event) = self.internal_events.pop_front() {
+        //     match event {
+        //         InternalComposerMessage::DialPeer(enr) => {
+        //             return Poll::Ready(
+        //                 NetworkBehaviourAction::DialPeer {
+        //                     peer_id: enr.pee
+        //                 }
+        //             )
+        //         }
+        //     }
+        // }
+
         Poll::Pending
     }
 }

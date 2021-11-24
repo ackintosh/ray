@@ -30,7 +30,7 @@ impl NetworkBehaviour for Behaviour {
         _connection: ConnectionId,
         _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
     ) {
-        println!("inject_event: {}", peer_id);
+        info!("inject_event: {}", peer_id);
     }
 
     fn inject_dial_failure(
