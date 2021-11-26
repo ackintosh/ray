@@ -1,4 +1,4 @@
 pub(crate) mod behaviour;
 mod error;
-mod handler;
+pub(crate) mod handler;
 mod protocol;

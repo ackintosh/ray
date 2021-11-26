@@ -1,17 +1,18 @@
 mod behaviour;
 mod discovery;
+mod identity;
 mod rpc;
 mod signal;
 
 use crate::behaviour::BehaviourComposer;
 use crate::discovery::boot_multiaddrs;
-use discv5::enr::{CombinedPublicKey, EnrBuilder};
+use discv5::enr::EnrBuilder;
 use enr::CombinedKey;
 use futures::StreamExt;
 use libp2p::identity::Keypair;
+use libp2p::noise;
 use libp2p::swarm::SwarmBuilder;
 use libp2p::Transport;
-use libp2p::{noise, PeerId};
 use std::future::Future;
 use std::pin::Pin;
 use std::process::exit;
@@ -35,7 +36,7 @@ fn main() {
                 let kp: libp2p::core::identity::secp256k1::Keypair = secret_key.into();
                 Keypair::Secp256k1(kp)
             }
-            CombinedKey::Ed25519(_) => todo!(), // not implemented as the ENR key is generated with secp256k1
+            CombinedKey::Ed25519(_) => unreachable!(), // not implemented as the ENR key is generated with secp256k1
         }
     };
 
@@ -44,18 +45,7 @@ fn main() {
     info!("Local ENR: {}", enr);
 
     // local PeerId
-    // SEE: https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L200
-    let local_peer_id = match enr.public_key() {
-        CombinedPublicKey::Secp256k1(pk) => {
-            let pk_bytes = pk.to_bytes();
-            let libp2p_pk = libp2p::core::PublicKey::Secp256k1(
-                libp2p::core::identity::secp256k1::PublicKey::decode(&pk_bytes)
-                    .expect("valid public key"),
-            );
-            PeerId::from(libp2p_pk)
-        }
-        CombinedPublicKey::Ed25519(_) => todo!(), // not implemented as the ENR key is generated with secp256k1
-    };
+    let local_peer_id = crate::identity::enr_to_peer_id(&enr);
     info!("Local PeerId: {}", local_peer_id);
 
     // build the tokio executor
@@ -92,7 +82,10 @@ fn main() {
                 .boxed()
         };
 
-        let discovery = runtime.block_on(crate::discovery::behaviour::Behaviour::new(enr, enr_key));
+        let mut discovery =
+            runtime.block_on(crate::discovery::behaviour::Behaviour::new(enr, enr_key));
+        // start searching for peers
+        runtime.block_on(discovery.discover_peers());
 
         let behaviour = BehaviourComposer::new(discovery, crate::rpc::behaviour::Behaviour {});
 
@@ -131,15 +124,15 @@ fn main() {
             }
         }
 
-        for addr in boot_multiaddrs() {
-            info!("Dialing libp2p peer: {}", addr);
-            match swarm.dial_addr(addr) {
-                Ok(()) => {}
-                Err(e) => {
-                    warn!("Failed to dial to the peer: {}", e);
-                }
-            }
-        }
+        // for addr in boot_multiaddrs() {
+        //     info!("Dialing boot nodes: {}", addr);
+        //     match swarm.dial_addr(addr) {
+        //         Ok(()) => {}
+        //         Err(e) => {
+        //             warn!("Failed to dial to the peer: {}", e);
+        //         }
+        //     }
+        // }
 
         // SEE:
         // https://github.com/sigp/lighthouse/blob/9667dc2f0379272fe0f36a2ec015c5a560bca652/beacon_node/network/src/service.rs#L309
@@ -149,8 +142,8 @@ fn main() {
                 libp2p::swarm::SwarmEvent::Behaviour(_behaviour_out_event) => {
                     info!("SwarmEvent::Behaviour");
                 }
-                _ => {
-                    info!("other event");
+                event => {
+                    info!("other event: {:?}", event);
                 }
             }
         }

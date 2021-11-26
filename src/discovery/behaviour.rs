@@ -1,18 +1,25 @@
 use crate::discovery::boot_enrs;
 use discv5::{Discv5, Discv5ConfigBuilder};
 use enr::{CombinedKey, Enr, NodeId};
+use futures::stream::FuturesUnordered;
+use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
-    IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
-    ProtocolsHandler,
+    DialPeerCondition, IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction,
+    PollParameters, ProtocolsHandler,
 };
-use libp2p::PeerId;
+use libp2p::{Multiaddr, PeerId};
+use std::collections::VecDeque;
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 pub(crate) struct Behaviour {
     discv5: Discv5,
+    /// Active discovery queries.
+    active_queries: FuturesUnordered<std::pin::Pin<Box<dyn Future<Output = QueryResult> + Send>>>,
+    /// Found peers via the discovery queries.
+    found_enr: VecDeque<Enr<CombinedKey>>,
 }
 
 impl Behaviour {
@@ -36,9 +43,13 @@ impl Behaviour {
         discv5.start(listen_addr).await.unwrap();
 
         // establish a session by running a query
-        info!("Executing bootstrap query.");
-        let found = discv5.find_node(NodeId::random()).await.unwrap();
-        info!("Found: {:?}", found);
+        // info!("Executing bootstrap query.");
+        // let found = discv5
+        //     .find_node(NodeId::random())
+        //     .map(|result| {
+        //         QueryResult { result }
+        //     });
+        // info!("Found: {:?}", found);
 
         // let mut event_stream = match runtime.block_on(discv5.event_stream()) {
         //     Ok(event_stream) => event_stream,
@@ -74,7 +85,22 @@ impl Behaviour {
         //     }
         // });
 
-        Behaviour { discv5 }
+        Behaviour {
+            discv5,
+            active_queries: FuturesUnordered::new(),
+            found_enr: VecDeque::new(),
+        }
+    }
+
+    pub(crate) async fn discover_peers(&mut self) {
+        let target_node = NodeId::random();
+        let query_future = self
+            .discv5
+            .find_node(target_node.clone())
+            .map(|result| QueryResult { result });
+
+        info!("Active query for discovery: target_node -> {}", target_node);
+        self.active_queries.push(Box::pin(query_future));
     }
 }
 
@@ -86,10 +112,15 @@ impl Behaviour {
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
 impl NetworkBehaviour for Behaviour {
     type ProtocolsHandler = libp2p::swarm::protocols_handler::DummyProtocolsHandler;
-    type OutEvent = ();
+    type OutEvent = DiscoveryEvent;
 
     fn new_handler(&mut self) -> Self::ProtocolsHandler {
         libp2p::swarm::protocols_handler::DummyProtocolsHandler::default()
+    }
+
+    fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
+        info!("addresses_of_peer: {}", peer_id);
+        todo!()
     }
 
     fn inject_event(
@@ -98,16 +129,56 @@ impl NetworkBehaviour for Behaviour {
         _connection: ConnectionId,
         _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
     ) {
-        // nothing to do
+        info!("inject_event: nothing to do");
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L948-L954
     }
 
     fn poll(
         &mut self,
-        _cx: &mut Context<'_>,
+        cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         info!("poll");
+        if let Some(found_enr) = self.found_enr.pop_front() {
+            info!("poll -> self.found_enr");
+            return Poll::Ready(NetworkBehaviourAction::DialPeer {
+                peer_id: crate::identity::enr_to_peer_id(&found_enr),
+                condition: DialPeerCondition::Disconnected,
+                handler: self.new_handler(),
+            });
+        }
+
+        if let Poll::Ready(Some(query_result)) = self.active_queries.poll_next_unpin(cx) {
+            info!("poll -> self.active_queries");
+            return match query_result.result {
+                Ok(enrs) if enrs.is_empty() => {
+                    info!("Discovery query yielded no results.");
+                    Poll::Pending
+                }
+                Ok(enrs) => {
+                    info!("Discovery query completed. found peers: {:?}", enrs);
+                    for enr in enrs {
+                        self.found_enr.push_back(enr);
+                    }
+                    Poll::Pending
+                }
+                Err(query_error) => {
+                    error!("Discovery query failed: {}", query_error);
+                    Poll::Pending
+                }
+            };
+        }
         Poll::Pending
     }
+}
+
+/// The result of a query.
+struct QueryResult {
+    result: Result<Vec<Enr<CombinedKey>>, discv5::QueryError>,
+}
+
+/// The events emitted by polling discovery.
+// NOTE: unused for now
+pub enum DiscoveryEvent {
+    //     QueryResult(Vec<Enr<CombinedKey>>),
 }

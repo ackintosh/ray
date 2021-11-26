@@ -4,7 +4,7 @@ use libp2p::swarm::{
     DialError, IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
     ProtocolsHandler,
 };
-use libp2p::PeerId;
+use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use tracing::{info, warn};
 
@@ -14,10 +14,16 @@ pub(crate) struct Behaviour;
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
 impl NetworkBehaviour for Behaviour {
     type ProtocolsHandler = Handler;
-    type OutEvent = ();
+    type OutEvent = RpcEvent;
 
     fn new_handler(&mut self) -> Self::ProtocolsHandler {
         Handler
+    }
+
+    fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
+        info!("addresses_of_peer: {}", peer_id);
+        info!("addresses_of_peer -> nothing to do because this event is handled by discovery.");
+        vec![]
     }
 
     fn inject_connected(&mut self, peer_id: &PeerId) {
@@ -30,16 +36,19 @@ impl NetworkBehaviour for Behaviour {
         _connection: ConnectionId,
         _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
     ) {
-        println!("inject_event: {}", peer_id);
+        info!("inject_event: {}", peer_id);
     }
 
     fn inject_dial_failure(
         &mut self,
         peer_id: Option<PeerId>,
         _handler: Self::ProtocolsHandler,
-        _error: &DialError,
+        error: &DialError,
     ) {
-        warn!("inject_dial_failure: {:?}", peer_id);
+        warn!(
+            "inject_dial_failure: peer_id: {:?}, error: {}",
+            peer_id, error
+        );
     }
 
     fn poll(
@@ -50,4 +59,8 @@ impl NetworkBehaviour for Behaviour {
         info!("poll");
         Poll::Pending
     }
+}
+
+pub enum RpcEvent {
+    DummyEvent, // TODO
 }
