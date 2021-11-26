@@ -120,7 +120,21 @@ impl NetworkBehaviour for Behaviour {
 
     fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
         info!("addresses_of_peer: {}", peer_id);
-        todo!()
+        match crate::identity::peer_id_to_node_id(peer_id) {
+            Ok(node_id) => {
+                match self.discv5.find_enr(&node_id) {
+                    Some(enr) => crate::identity::enr_to_multiaddrs(&enr),
+                    None => {
+                        warn!("No addresses found from the DHT. node_id: {}", node_id);
+                        vec![]
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("Failed to derive node_id from peer_id: {:?}", e);
+                vec![]
+            }
+        }
     }
 
     fn inject_event(
