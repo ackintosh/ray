@@ -121,17 +121,21 @@ impl NetworkBehaviour for Behaviour {
     fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
         info!("addresses_of_peer: {}", peer_id);
         match crate::identity::peer_id_to_node_id(peer_id) {
-            Ok(node_id) => {
-                match self.discv5.find_enr(&node_id) {
-                    Some(enr) => crate::identity::enr_to_multiaddrs(&enr),
-                    None => {
-                        warn!("No addresses found from the DHT. node_id: {}", node_id);
-                        vec![]
-                    }
+            Ok(node_id) => match self.discv5.find_enr(&node_id) {
+                Some(enr) => crate::identity::enr_to_multiaddrs(&enr),
+                None => {
+                    warn!(
+                        "addresses_of_peer -> No addresses found from the DHT. node_id: {}",
+                        node_id
+                    );
+                    vec![]
                 }
-            }
+            },
             Err(e) => {
-                warn!("Failed to derive node_id from peer_id: {:?}", e);
+                warn!(
+                    "addresses_of_peer -> Failed to derive node_id from peer_id. error: {:?}",
+                    e
+                );
                 vec![]
             }
         }
@@ -143,7 +147,7 @@ impl NetworkBehaviour for Behaviour {
         _connection: ConnectionId,
         _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
     ) {
-        info!("inject_event: nothing to do");
+        info!("inject_event -> nothing to do");
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L948-L954
     }
 

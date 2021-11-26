@@ -1,7 +1,7 @@
 use enr::{CombinedKey, CombinedPublicKey, Enr, NodeId};
 use libp2p::identity::PublicKey;
-use libp2p::{Multiaddr, PeerId};
 use libp2p::multiaddr::Protocol;
+use libp2p::{Multiaddr, PeerId};
 use tiny_keccak::{Hasher, Keccak};
 
 // SEE: https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L200
