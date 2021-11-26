@@ -1,6 +1,5 @@
 use crate::discovery::behaviour::DiscoveryEvent;
 use crate::rpc::behaviour::RpcEvent;
-use enr::{CombinedKey, Enr};
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::NetworkBehaviour;
 use std::collections::VecDeque;
@@ -17,7 +16,7 @@ pub(crate) struct BehaviourComposer {
 
     /* Auxiliary Fields */
     #[behaviour(ignore)]
-    internal_events: VecDeque<InternalComposerMessage>,
+    internal_events: VecDeque<InternalComposerMessage>, // NOTE: unused for now
 }
 
 impl BehaviourComposer {
@@ -50,14 +49,7 @@ impl BehaviourComposer {
         // Handle internal events
         // see https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/behaviour/mod.rs#L1047
         // if let Some(event) = self.internal_events.pop_front() {
-        //     match event {
-        //         InternalComposerMessage::DialPeer(enr) => {
-        //             return Poll::Ready(
-        //                 NetworkBehaviourAction::DialPeer {
-        //                     peer_id: enr.pee
-        //                 }
-        //             )
-        //         }
+        //     return match event {
         //     }
         // }
 
@@ -65,23 +57,13 @@ impl BehaviourComposer {
     }
 }
 
+// NOTE: unused for now
 /// Internal type to pass messages from sub-behaviours to the poll of the BehaviourComposer.
-enum InternalComposerMessage {
-    /// Dial a Peer.
-    DialPeer(Enr<CombinedKey>),
-}
+enum InternalComposerMessage {}
 
 impl NetworkBehaviourEventProcess<DiscoveryEvent> for BehaviourComposer {
-    fn inject_event(&mut self, event: DiscoveryEvent) {
+    fn inject_event(&mut self, _event: DiscoveryEvent) {
         info!("NetworkBehaviourEventProcess<DiscoveryEvent>::inject_event");
-        match event {
-            DiscoveryEvent::QueryResult(enrs) => {
-                for enr in enrs {
-                    self.internal_events
-                        .push_back(InternalComposerMessage::DialPeer(enr));
-                }
-            }
-        }
     }
 }
 

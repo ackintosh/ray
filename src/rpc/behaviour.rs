@@ -4,7 +4,7 @@ use libp2p::swarm::{
     DialError, IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
     ProtocolsHandler,
 };
-use libp2p::PeerId;
+use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use tracing::{info, warn};
 
@@ -18,6 +18,12 @@ impl NetworkBehaviour for Behaviour {
 
     fn new_handler(&mut self) -> Self::ProtocolsHandler {
         Handler
+    }
+
+    fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
+        info!("addresses_of_peer: {}", peer_id);
+        info!("addresses_of_peer -> nothing to do because this event is handled by discovery.");
+        vec![]
     }
 
     fn inject_connected(&mut self, peer_id: &PeerId) {
@@ -37,9 +43,12 @@ impl NetworkBehaviour for Behaviour {
         &mut self,
         peer_id: Option<PeerId>,
         _handler: Self::ProtocolsHandler,
-        _error: &DialError,
+        error: &DialError,
     ) {
-        warn!("inject_dial_failure: {:?}", peer_id);
+        warn!(
+            "inject_dial_failure: peer_id: {:?}, error: {}",
+            peer_id, error
+        );
     }
 
     fn poll(

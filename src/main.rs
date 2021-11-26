@@ -1,18 +1,18 @@
 mod behaviour;
 mod discovery;
+mod identity;
 mod rpc;
 mod signal;
-mod identity;
 
 use crate::behaviour::BehaviourComposer;
 use crate::discovery::boot_multiaddrs;
-use discv5::enr::{CombinedPublicKey, EnrBuilder};
+use discv5::enr::EnrBuilder;
 use enr::CombinedKey;
 use futures::StreamExt;
 use libp2p::identity::Keypair;
+use libp2p::noise;
 use libp2p::swarm::SwarmBuilder;
 use libp2p::Transport;
-use libp2p::noise;
 use std::future::Future;
 use std::pin::Pin;
 use std::process::exit;
