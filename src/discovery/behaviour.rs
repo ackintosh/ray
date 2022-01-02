@@ -92,7 +92,7 @@ impl Behaviour {
         }
     }
 
-    pub(crate) async fn discover_peers(&mut self) {
+    pub(crate) fn discover_peers(&mut self) {
         let target_node = NodeId::random();
         let query_future = self
             .discv5
@@ -175,6 +175,8 @@ impl NetworkBehaviour for Behaviour {
                 }
                 Ok(enrs) => {
                     info!("Discovery query completed. found peers: {:?}", enrs);
+                    // NOTE: Ideally we need to filter out peers from the result.
+                    //       https://github.com/sigp/lighthouse/blob/9c5a8ab7f2098d1ffc567af27f385c55f471cb9c/beacon_node/eth2_libp2p/src/peer_manager/mod.rs#L256
                     for enr in enrs {
                         self.found_enr.push_back(enr);
                     }

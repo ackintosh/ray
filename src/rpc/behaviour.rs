@@ -25,10 +25,6 @@ impl NetworkBehaviour for Behaviour {
         vec![]
     }
 
-    fn inject_connected(&mut self, peer_id: &PeerId) {
-        info!("inject_connected: {}", peer_id);
-    }
-
     fn inject_event(
         &mut self,
         peer_id: PeerId,
