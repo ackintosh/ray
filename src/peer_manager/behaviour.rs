@@ -27,17 +27,31 @@ impl NetworkBehaviour for PeerManager {
         &mut self,
         peer_id: &PeerId,
         _connection_id: &ConnectionId,
-        _endpoint: &ConnectedPoint,
+        endpoint: &ConnectedPoint,
         _failed_addresses: Option<&Vec<Multiaddr>>,
     ) {
         info!("inject_connection_established: peer_id: {}", peer_id);
         // TODO: Check the connection limits
         // https://github.com/sigp/lighthouse/blob/81c667b58e78243df38dc2d7311cb285f7c1d4f4/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L142
 
-        self.peers.insert(*peer_id, ());
+        let address = match endpoint {
+            // We dialed the node
+            ConnectedPoint::Dialer { address } => {
+                self.peers.insert(*peer_id, address.clone());
+                address
+            }
+            // We received the node
+            ConnectedPoint::Listener {
+                local_addr: _,
+                send_back_addr,
+            } => {
+                self.peers.insert(*peer_id, send_back_addr.clone());
+                send_back_addr
+            }
+        };
         info!(
-            "inject_connection_established -> Registered a peer: peer_id: {}",
-            peer_id
+            "inject_connection_established -> Registered a peer. peer_id: {} address: {}",
+            peer_id, address,
         );
     }
 

@@ -1,10 +1,10 @@
-use libp2p::PeerId;
+use libp2p::{Multiaddr, PeerId};
 use std::collections::HashMap;
 
 pub(crate) mod behaviour;
 
 pub(crate) struct PeerManager {
-    peers: HashMap<PeerId, ()>,
+    peers: HashMap<PeerId, Multiaddr>,
 }
 
 impl PeerManager {
