@@ -6,7 +6,6 @@ mod rpc;
 mod signal;
 
 use crate::behaviour::BehaviourComposer;
-use crate::discovery::boot_multiaddrs;
 use discv5::enr::EnrBuilder;
 use enr::CombinedKey;
 use futures::StreamExt;
@@ -91,7 +90,7 @@ fn main() {
 
         let behaviour = BehaviourComposer::new(
             discovery,
-            crate::peer_manager::behaviour::Behaviour {},
+            crate::peer_manager::PeerManager::new(),
             crate::rpc::behaviour::Behaviour {},
         );
 
