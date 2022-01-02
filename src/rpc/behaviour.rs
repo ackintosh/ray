@@ -20,14 +20,9 @@ impl NetworkBehaviour for Behaviour {
         Handler
     }
 
-    fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
-        info!("addresses_of_peer: {}", peer_id);
+    fn addresses_of_peer(&mut self, _peer_id: &PeerId) -> Vec<Multiaddr> {
         info!("addresses_of_peer -> nothing to do because this event is handled by discovery.");
         vec![]
-    }
-
-    fn inject_connected(&mut self, peer_id: &PeerId) {
-        info!("inject_connected: {}", peer_id);
     }
 
     fn inject_event(
@@ -36,7 +31,7 @@ impl NetworkBehaviour for Behaviour {
         _connection: ConnectionId,
         _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
     ) {
-        info!("inject_event: {}", peer_id);
+        info!("inject_event -> {}", peer_id);
     }
 
     fn inject_dial_failure(

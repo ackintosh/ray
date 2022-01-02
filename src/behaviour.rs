@@ -1,4 +1,5 @@
 use crate::discovery::behaviour::DiscoveryEvent;
+use crate::peer_manager::behaviour::PeerManagerEvent;
 use crate::rpc::behaviour::RpcEvent;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::NetworkBehaviour;
@@ -12,6 +13,7 @@ use tracing::info;
 pub(crate) struct BehaviourComposer {
     /* Sub-Behaviours */
     discovery: crate::discovery::behaviour::Behaviour,
+    peer_manager: crate::peer_manager::PeerManager,
     rpc: crate::rpc::behaviour::Behaviour,
 
     /* Auxiliary Fields */
@@ -22,10 +24,12 @@ pub(crate) struct BehaviourComposer {
 impl BehaviourComposer {
     pub(crate) fn new(
         discovery: crate::discovery::behaviour::Behaviour,
+        peer_manager: crate::peer_manager::PeerManager,
         rpc: crate::rpc::behaviour::Behaviour,
     ) -> Self {
         Self {
             discovery,
+            peer_manager,
             rpc,
             internal_events: VecDeque::new(),
         }
@@ -39,7 +43,10 @@ impl BehaviourComposer {
         NetworkBehaviourAction<
             (),
             libp2p::swarm::IntoProtocolsHandlerSelect<
-                libp2p::swarm::protocols_handler::DummyProtocolsHandler,
+                libp2p::swarm::IntoProtocolsHandlerSelect<
+                    libp2p::swarm::protocols_handler::DummyProtocolsHandler,
+                    libp2p::swarm::protocols_handler::DummyProtocolsHandler,
+                >,
                 crate::rpc::handler::Handler,
             >,
         >,
@@ -64,6 +71,12 @@ enum InternalComposerMessage {}
 impl NetworkBehaviourEventProcess<DiscoveryEvent> for BehaviourComposer {
     fn inject_event(&mut self, _event: DiscoveryEvent) {
         info!("NetworkBehaviourEventProcess<DiscoveryEvent>::inject_event");
+    }
+}
+
+impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
+    fn inject_event(&mut self, _event: PeerManagerEvent) {
+        info!("NetworkBehaviourEventProcess<PeerManagerEvent>::inject_event");
     }
 }
 

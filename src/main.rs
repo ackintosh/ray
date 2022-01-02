@@ -1,11 +1,11 @@
 mod behaviour;
 mod discovery;
 mod identity;
+mod peer_manager;
 mod rpc;
 mod signal;
 
 use crate::behaviour::BehaviourComposer;
-use crate::discovery::boot_multiaddrs;
 use discv5::enr::EnrBuilder;
 use enr::CombinedKey;
 use futures::StreamExt;
@@ -85,9 +85,14 @@ fn main() {
         let mut discovery =
             runtime.block_on(crate::discovery::behaviour::Behaviour::new(enr, enr_key));
         // start searching for peers
-        runtime.block_on(discovery.discover_peers());
+        discovery.discover_peers();
+        // runtime.block_on(discovery.discover_peers());
 
-        let behaviour = BehaviourComposer::new(discovery, crate::rpc::behaviour::Behaviour {});
+        let behaviour = BehaviourComposer::new(
+            discovery,
+            crate::peer_manager::PeerManager::new(),
+            crate::rpc::behaviour::Behaviour {},
+        );
 
         // use the executor for libp2p
         struct Executor(Weak<Runtime>);
@@ -141,6 +146,14 @@ fn main() {
             match swarm.select_next_some().await {
                 libp2p::swarm::SwarmEvent::Behaviour(_behaviour_out_event) => {
                     info!("SwarmEvent::Behaviour");
+                }
+                libp2p::swarm::SwarmEvent::ConnectionEstablished {
+                    peer_id,
+                    endpoint,
+                    num_established,
+                    concurrent_dial_errors,
+                } => {
+                    info!("SwarmEvent::ConnectionEstablished. peer_id: {}", peer_id);
                 }
                 event => {
                     info!("other event: {:?}", event);
