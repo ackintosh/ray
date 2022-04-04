@@ -99,10 +99,10 @@ fn main() {
         impl libp2p::core::Executor for Executor {
             fn exec(&self, f: Pin<Box<dyn Future<Output = ()> + Send>>) {
                 if let Some(runtime) = self.0.upgrade() {
-                    info!("Spawning a task");
+                    info!("Executor: Spawning a task");
                     runtime.spawn(f);
                 } else {
-                    warn!("Couldn't spawn task. Runtime shutting down");
+                    warn!("Executor: Couldn't spawn task. Runtime shutting down");
                 }
             }
         }
