@@ -7,7 +7,7 @@ Not intended for mainnet. This project provides developers with an opportunity t
 We aim for a simpler implementation, by narrowing down the functions.
 
 - Implemented for macOS
-- Runs for Pyrmont testnet
+- Runs for Kiln testnet
 - Simplicity over multifunctionality
 
 ## Getting started
