@@ -1,6 +1,6 @@
 use libp2p::{Multiaddr, PeerId};
+use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
-use smallvec::{SmallVec, smallvec};
 
 pub(crate) mod behaviour;
 

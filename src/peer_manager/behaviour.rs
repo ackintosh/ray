@@ -1,27 +1,23 @@
+use crate::peer_manager::PeerManagerEvent::{PeerConnectedIncoming, PeerConnectedOutgoing};
 use crate::peer_manager::{PeerManager, PeerManagerEvent};
 use libp2p::core::connection::ConnectionId;
 use libp2p::core::ConnectedPoint;
-use libp2p::swarm::protocols_handler::DummyProtocolsHandler;
+use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::{
-    IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
-    ProtocolsHandler,
+    ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
+    PollParameters,
 };
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use tracing::info;
-use crate::peer_manager::PeerManagerEvent::{PeerConnectedIncoming, PeerConnectedOutgoing};
 
 // SEE https://github.com/sigp/lighthouse/blob/eee0260a68696db58e92385ebd11a9a08e4c4665/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L21
 impl NetworkBehaviour for PeerManager {
-    type ProtocolsHandler = DummyProtocolsHandler;
+    type ConnectionHandler = DummyConnectionHandler;
     type OutEvent = PeerManagerEvent;
 
-    fn new_handler(&mut self) -> Self::ProtocolsHandler {
-        libp2p::swarm::protocols_handler::DummyProtocolsHandler::default()
-    }
-
-    fn inject_connected(&mut self, peer_id: &PeerId) {
-        info!("inject_connected: peer_id: {}", peer_id);
+    fn new_handler(&mut self) -> Self::ConnectionHandler {
+        DummyConnectionHandler::default()
     }
 
     fn inject_connection_established(
@@ -30,6 +26,7 @@ impl NetworkBehaviour for PeerManager {
         _connection_id: &ConnectionId,
         endpoint: &ConnectedPoint,
         _failed_addresses: Option<&Vec<Multiaddr>>,
+        _other_established: usize,
     ) {
         info!("inject_connection_established: peer_id: {}", peer_id);
         // TODO: Check the connection limits
@@ -37,7 +34,10 @@ impl NetworkBehaviour for PeerManager {
 
         let address = match endpoint {
             // We dialed the node
-            ConnectedPoint::Dialer { address } => {
+            ConnectedPoint::Dialer {
+                address,
+                role_override: _,
+            } => {
                 self.peers.insert(*peer_id, address.clone());
                 self.events.push(PeerConnectedOutgoing(peer_id.clone()));
                 address
@@ -62,7 +62,7 @@ impl NetworkBehaviour for PeerManager {
         &mut self,
         _peer_id: PeerId,
         _connection: ConnectionId,
-        _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
+        _event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as ConnectionHandler>::OutEvent,
     ) {
         unreachable!("PeerManager does not emit events")
     }
@@ -71,7 +71,7 @@ impl NetworkBehaviour for PeerManager {
         &mut self,
         _cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
         info!("poll");
         if !self.events.is_empty() {
             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(self.events.remove(0)));

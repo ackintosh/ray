@@ -1,8 +1,8 @@
 use crate::rpc::handler::Handler;
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
-    DialError, IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
-    ProtocolsHandler,
+    ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
+    PollParameters,
 };
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
@@ -13,10 +13,10 @@ pub(crate) struct Behaviour;
 // NetworkBehaviour defines "what" bytes to send on the network.
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
 impl NetworkBehaviour for Behaviour {
-    type ProtocolsHandler = Handler;
+    type ConnectionHandler = Handler;
     type OutEvent = RpcEvent;
 
-    fn new_handler(&mut self) -> Self::ProtocolsHandler {
+    fn new_handler(&mut self) -> Self::ConnectionHandler {
         Handler
     }
 
@@ -29,7 +29,7 @@ impl NetworkBehaviour for Behaviour {
         &mut self,
         peer_id: PeerId,
         _connection: ConnectionId,
-        _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
+        _event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as ConnectionHandler>::OutEvent,
     ) {
         info!("inject_event -> {}", peer_id);
     }
@@ -37,7 +37,7 @@ impl NetworkBehaviour for Behaviour {
     fn inject_dial_failure(
         &mut self,
         peer_id: Option<PeerId>,
-        _handler: Self::ProtocolsHandler,
+        _handler: Self::ConnectionHandler,
         error: &DialError,
     ) {
         warn!(
@@ -50,7 +50,7 @@ impl NetworkBehaviour for Behaviour {
         &mut self,
         _cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
         info!("poll");
         Poll::Pending
     }
