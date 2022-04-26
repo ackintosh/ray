@@ -40,7 +40,7 @@ impl ProtocolsHandler for Handler {
         todo!()
     }
 
-    fn inject_event(&mut self, _event: Self::InEvent) {
+    fn inject_event(&mut self, event: Self::InEvent) {
         todo!()
     }
 
@@ -67,6 +67,8 @@ impl ProtocolsHandler for Handler {
             Self::Error,
         >,
     > {
-        todo!()
+        info!("poll");
+        // TODO; establish outbound substreams
+        Poll::Pending
     }
 }

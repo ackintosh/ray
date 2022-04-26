@@ -1,4 +1,4 @@
-use crate::peer_manager::PeerManager;
+use crate::peer_manager::{PeerManager, PeerManagerEvent};
 use libp2p::core::connection::ConnectionId;
 use libp2p::core::ConnectedPoint;
 use libp2p::swarm::protocols_handler::DummyProtocolsHandler;
@@ -9,6 +9,7 @@ use libp2p::swarm::{
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use tracing::info;
+use crate::peer_manager::PeerManagerEvent::{PeerConnectedIncoming, PeerConnectedOutgoing};
 
 // SEE https://github.com/sigp/lighthouse/blob/eee0260a68696db58e92385ebd11a9a08e4c4665/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L21
 impl NetworkBehaviour for PeerManager {
@@ -38,6 +39,7 @@ impl NetworkBehaviour for PeerManager {
             // We dialed the node
             ConnectedPoint::Dialer { address } => {
                 self.peers.insert(*peer_id, address.clone());
+                self.events.push(PeerConnectedOutgoing(peer_id.clone()));
                 address
             }
             // We received the node
@@ -46,6 +48,7 @@ impl NetworkBehaviour for PeerManager {
                 send_back_addr,
             } => {
                 self.peers.insert(*peer_id, send_back_addr.clone());
+                self.events.push(PeerConnectedIncoming(peer_id.clone()));
                 send_back_addr
             }
         };
@@ -70,10 +73,10 @@ impl NetworkBehaviour for PeerManager {
         _params: &mut impl PollParameters,
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
         info!("poll");
+        if !self.events.is_empty() {
+            return Poll::Ready(NetworkBehaviourAction::GenerateEvent(self.events.remove(0)));
+        }
+
         Poll::Pending
     }
 }
-
-/// The events emitted from PeerManager to BehaviourComposer.
-// NOTE: unused for now
-pub(crate) enum PeerManagerEvent {}

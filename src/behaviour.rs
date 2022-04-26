@@ -1,11 +1,11 @@
 use crate::discovery::behaviour::DiscoveryEvent;
-use crate::peer_manager::behaviour::PeerManagerEvent;
 use crate::rpc::behaviour::RpcEvent;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::NetworkBehaviour;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
 use tracing::info;
+use crate::peer_manager::PeerManagerEvent;
 
 // The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]
@@ -75,8 +75,8 @@ impl NetworkBehaviourEventProcess<DiscoveryEvent> for BehaviourComposer {
 }
 
 impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
-    fn inject_event(&mut self, _event: PeerManagerEvent) {
-        info!("NetworkBehaviourEventProcess<PeerManagerEvent>::inject_event");
+    fn inject_event(&mut self, event: PeerManagerEvent) {
+        info!("NetworkBehaviourEventProcess<PeerManagerEvent>::inject_event. event: {:?}", event);
     }
 }
 
