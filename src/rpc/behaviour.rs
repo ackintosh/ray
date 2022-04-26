@@ -1,6 +1,9 @@
 use crate::rpc::handler::Handler;
 use libp2p::core::connection::ConnectionId;
-use libp2p::swarm::{ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters};
+use libp2p::swarm::{
+    ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
+    PollParameters,
+};
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use tracing::{info, warn};

@@ -4,12 +4,15 @@ use enr::{CombinedKey, Enr, NodeId};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::connection::ConnectionId;
-use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters};
+use libp2p::swarm::handler::DummyConnectionHandler;
+use libp2p::swarm::{
+    ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
+    PollParameters,
+};
 use libp2p::{Multiaddr, PeerId};
 use std::collections::VecDeque;
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
-use libp2p::swarm::handler::DummyConnectionHandler;
 use tracing::{error, info, warn};
 
 pub(crate) struct Behaviour {

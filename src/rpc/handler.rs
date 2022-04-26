@@ -1,8 +1,11 @@
 use crate::rpc::error::RPCError;
 use crate::rpc::protocol::RpcProtocol;
-use libp2p::swarm::{ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive, SubstreamProtocol};
-use std::task::{Context, Poll};
 use libp2p::swarm::handler::{InboundUpgradeSend, OutboundUpgradeSend};
+use libp2p::swarm::{
+    ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive,
+    SubstreamProtocol,
+};
+use std::task::{Context, Poll};
 use tracing::info;
 
 pub(crate) struct Handler;

@@ -1,12 +1,15 @@
+use crate::peer_manager::PeerManagerEvent::{PeerConnectedIncoming, PeerConnectedOutgoing};
 use crate::peer_manager::{PeerManager, PeerManagerEvent};
 use libp2p::core::connection::ConnectionId;
 use libp2p::core::ConnectedPoint;
-use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters};
+use libp2p::swarm::handler::DummyConnectionHandler;
+use libp2p::swarm::{
+    ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
+    PollParameters,
+};
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
-use libp2p::swarm::handler::DummyConnectionHandler;
 use tracing::info;
-use crate::peer_manager::PeerManagerEvent::{PeerConnectedIncoming, PeerConnectedOutgoing};
 
 // SEE https://github.com/sigp/lighthouse/blob/eee0260a68696db58e92385ebd11a9a08e4c4665/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L21
 impl NetworkBehaviour for PeerManager {
@@ -31,7 +34,10 @@ impl NetworkBehaviour for PeerManager {
 
         let address = match endpoint {
             // We dialed the node
-            ConnectedPoint::Dialer { address, role_override: _ } => {
+            ConnectedPoint::Dialer {
+                address,
+                role_override: _,
+            } => {
                 self.peers.insert(*peer_id, address.clone());
                 self.events.push(PeerConnectedOutgoing(peer_id.clone()));
                 address
