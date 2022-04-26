@@ -11,7 +11,7 @@ enr = { version = "0.5.1", features = ["ed25519", "k256"] }
 futures = "0.3.7"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 tracing = "0.1"
-tracing-subscriber = "0.2"
+tracing-subscriber = "0.3"
 tokio = { version = "1.10.0", features = ["full"] }
 void = "1.0.2"
 
