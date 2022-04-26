@@ -1,16 +1,14 @@
 use crate::rpc::error::RPCError;
 use crate::rpc::protocol::RpcProtocol;
-use libp2p::swarm::protocols_handler::{InboundUpgradeSend, OutboundUpgradeSend};
-use libp2p::swarm::{
-    KeepAlive, ProtocolsHandler, ProtocolsHandlerEvent, ProtocolsHandlerUpgrErr, SubstreamProtocol,
-};
+use libp2p::swarm::{ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive, SubstreamProtocol};
 use std::task::{Context, Poll};
+use libp2p::swarm::handler::{InboundUpgradeSend, OutboundUpgradeSend};
 use tracing::info;
 
 pub(crate) struct Handler;
 
 // SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
-impl ProtocolsHandler for Handler {
+impl ConnectionHandler for Handler {
     type InEvent = ();
     type OutEvent = ();
     type Error = RPCError;
@@ -47,7 +45,7 @@ impl ProtocolsHandler for Handler {
     fn inject_dial_upgrade_error(
         &mut self,
         _info: Self::OutboundOpenInfo,
-        _error: ProtocolsHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgradeSend>::Error>,
+        _error: ConnectionHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgradeSend>::Error>,
     ) {
         todo!()
     }
@@ -60,7 +58,7 @@ impl ProtocolsHandler for Handler {
         &mut self,
         _cx: &mut Context<'_>,
     ) -> Poll<
-        ProtocolsHandlerEvent<
+        ConnectionHandlerEvent<
             Self::OutboundProtocol,
             Self::OutboundOpenInfo,
             Self::OutEvent,

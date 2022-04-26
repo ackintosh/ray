@@ -4,6 +4,7 @@ use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollPa
 use libp2p::NetworkBehaviour;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
+use libp2p::swarm::handler::DummyConnectionHandler;
 use tracing::info;
 use crate::peer_manager::PeerManagerEvent;
 
@@ -42,10 +43,10 @@ impl BehaviourComposer {
     ) -> Poll<
         NetworkBehaviourAction<
             (),
-            libp2p::swarm::IntoProtocolsHandlerSelect<
-                libp2p::swarm::IntoProtocolsHandlerSelect<
-                    libp2p::swarm::protocols_handler::DummyProtocolsHandler,
-                    libp2p::swarm::protocols_handler::DummyProtocolsHandler,
+            libp2p::swarm::IntoConnectionHandlerSelect<
+                libp2p::swarm::IntoConnectionHandlerSelect<
+                    DummyConnectionHandler,
+                    DummyConnectionHandler,
                 >,
                 crate::rpc::handler::Handler,
             >,

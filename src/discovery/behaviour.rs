@@ -4,14 +4,12 @@ use enr::{CombinedKey, Enr, NodeId};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::connection::ConnectionId;
-use libp2p::swarm::{
-    DialPeerCondition, IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction,
-    PollParameters, ProtocolsHandler,
-};
+use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::{Multiaddr, PeerId};
 use std::collections::VecDeque;
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
+use libp2p::swarm::handler::DummyConnectionHandler;
 use tracing::{error, info, warn};
 
 pub(crate) struct Behaviour {
@@ -111,11 +109,11 @@ impl Behaviour {
 // NetworkBehaviour defines "what" bytes to send on the network.
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
 impl NetworkBehaviour for Behaviour {
-    type ProtocolsHandler = libp2p::swarm::protocols_handler::DummyProtocolsHandler;
+    type ConnectionHandler = DummyConnectionHandler;
     type OutEvent = DiscoveryEvent;
 
-    fn new_handler(&mut self) -> Self::ProtocolsHandler {
-        libp2p::swarm::protocols_handler::DummyProtocolsHandler::default()
+    fn new_handler(&mut self) -> Self::ConnectionHandler {
+        DummyConnectionHandler::default()
     }
 
     fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
@@ -155,7 +153,7 @@ impl NetworkBehaviour for Behaviour {
         &mut self,
         _peer_id: PeerId,
         _connection: ConnectionId,
-        _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
+        _event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as ConnectionHandler>::OutEvent,
     ) {
         info!("inject_event -> nothing to do");
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L948-L954
@@ -165,13 +163,12 @@ impl NetworkBehaviour for Behaviour {
         &mut self,
         cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
         info!("poll");
         if let Some(found_enr) = self.found_enr.pop_front() {
             info!("poll -> self.found_enr");
-            return Poll::Ready(NetworkBehaviourAction::DialPeer {
-                peer_id: crate::identity::enr_to_peer_id(&found_enr),
-                condition: DialPeerCondition::Disconnected,
+            return Poll::Ready(NetworkBehaviourAction::Dial {
+                opts: crate::identity::enr_to_peer_id(&found_enr).into(),
                 handler: self.new_handler(),
             });
         }
