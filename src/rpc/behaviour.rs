@@ -2,13 +2,29 @@ use crate::rpc::handler::Handler;
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
     ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
-    PollParameters,
+    NotifyHandler, PollParameters,
 };
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use tracing::{info, warn};
 
-pub(crate) struct Behaviour;
+pub(crate) struct Behaviour {
+    events: Vec<NetworkBehaviourAction<RpcEvent, Handler>>,
+}
+
+impl Behaviour {
+    pub(crate) fn new() -> Self {
+        Behaviour { events: vec![] }
+    }
+
+    pub(crate) fn send_status(&mut self, peer_id: PeerId) {
+        self.events.push(NetworkBehaviourAction::NotifyHandler {
+            peer_id,
+            handler: NotifyHandler::Any,
+            event: RpcEvent::SendStatus,
+        })
+    }
+}
 
 // NetworkBehaviour defines "what" bytes to send on the network.
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
@@ -52,10 +68,17 @@ impl NetworkBehaviour for Behaviour {
         _params: &mut impl PollParameters,
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
         info!("poll");
+
+        if !self.events.is_empty() {
+            return Poll::Ready(self.events.remove(0));
+        }
+
         Poll::Pending
     }
 }
 
+// RPC events sent to handlers
+#[derive(Debug)]
 pub enum RpcEvent {
-    DummyEvent, // TODO
+    SendStatus,
 }

@@ -74,6 +74,7 @@ impl NetworkBehaviour for PeerManager {
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
         info!("poll");
         if !self.events.is_empty() {
+            // Emit peer manager event
             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(self.events.remove(0)));
         }
 

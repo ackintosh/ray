@@ -1,3 +1,4 @@
+use crate::rpc::behaviour::RpcEvent;
 use crate::rpc::error::RPCError;
 use crate::rpc::protocol::RpcProtocol;
 use libp2p::swarm::handler::{InboundUpgradeSend, OutboundUpgradeSend};
@@ -12,7 +13,7 @@ pub(crate) struct Handler;
 
 // SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
 impl ConnectionHandler for Handler {
-    type InEvent = ();
+    type InEvent = RpcEvent;
     type OutEvent = ();
     type Error = RPCError;
     type InboundProtocol = RpcProtocol;

@@ -81,6 +81,13 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
             "NetworkBehaviourEventProcess<PeerManagerEvent>::inject_event. event: {:?}",
             event
         );
+
+        match event {
+            PeerManagerEvent::PeerConnectedIncoming(_) => {}
+            PeerManagerEvent::PeerConnectedOutgoing(peer_id) => {
+                self.rpc.send_status(peer_id);
+            }
+        }
     }
 }
 
