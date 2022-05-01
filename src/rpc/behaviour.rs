@@ -1,4 +1,5 @@
 use crate::rpc::handler::Handler;
+use crate::rpc::message::Status;
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
     ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
@@ -21,7 +22,14 @@ impl Behaviour {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,
-            event: RpcEvent::SendStatus,
+            // TODO: Fill the fields with the real values
+            event: RpcEvent::SendStatus(Status {
+                fork_digest: 0,
+                finalized_root: 0,
+                finalized_epoch: 0,
+                head_root: 0,
+                head_slot: 0,
+            }),
         })
     }
 }
@@ -33,7 +41,7 @@ impl NetworkBehaviour for Behaviour {
     type OutEvent = RpcEvent;
 
     fn new_handler(&mut self) -> Self::ConnectionHandler {
-        Handler
+        Handler::new()
     }
 
     fn addresses_of_peer(&mut self, _peer_id: &PeerId) -> Vec<Multiaddr> {
@@ -79,6 +87,6 @@ impl NetworkBehaviour for Behaviour {
 
 // RPC events sent to handlers
 #[derive(Debug)]
-pub enum RpcEvent {
-    SendStatus,
+pub(crate) enum RpcEvent {
+    SendStatus(Status),
 }
