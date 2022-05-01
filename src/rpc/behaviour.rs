@@ -1,23 +1,47 @@
 use crate::rpc::handler::Handler;
+use crate::rpc::message::Status;
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
-    DialError, IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
-    ProtocolsHandler,
+    ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
+    NotifyHandler, PollParameters,
 };
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use tracing::{info, warn};
 
-pub(crate) struct Behaviour;
+pub(crate) struct Behaviour {
+    events: Vec<NetworkBehaviourAction<RpcEvent, Handler>>,
+}
+
+impl Behaviour {
+    pub(crate) fn new() -> Self {
+        Behaviour { events: vec![] }
+    }
+
+    pub(crate) fn send_status(&mut self, peer_id: PeerId) {
+        self.events.push(NetworkBehaviourAction::NotifyHandler {
+            peer_id,
+            handler: NotifyHandler::Any,
+            // TODO: Fill the fields with the real values
+            event: RpcEvent::SendStatus(Status {
+                fork_digest: 0,
+                finalized_root: 0,
+                finalized_epoch: 0,
+                head_root: 0,
+                head_slot: 0,
+            }),
+        })
+    }
+}
 
 // NetworkBehaviour defines "what" bytes to send on the network.
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
 impl NetworkBehaviour for Behaviour {
-    type ProtocolsHandler = Handler;
+    type ConnectionHandler = Handler;
     type OutEvent = RpcEvent;
 
-    fn new_handler(&mut self) -> Self::ProtocolsHandler {
-        Handler
+    fn new_handler(&mut self) -> Self::ConnectionHandler {
+        Handler::new()
     }
 
     fn addresses_of_peer(&mut self, _peer_id: &PeerId) -> Vec<Multiaddr> {
@@ -29,7 +53,7 @@ impl NetworkBehaviour for Behaviour {
         &mut self,
         peer_id: PeerId,
         _connection: ConnectionId,
-        _event: <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
+        _event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as ConnectionHandler>::OutEvent,
     ) {
         info!("inject_event -> {}", peer_id);
     }
@@ -37,7 +61,7 @@ impl NetworkBehaviour for Behaviour {
     fn inject_dial_failure(
         &mut self,
         peer_id: Option<PeerId>,
-        _handler: Self::ProtocolsHandler,
+        _handler: Self::ConnectionHandler,
         error: &DialError,
     ) {
         warn!(
@@ -50,12 +74,19 @@ impl NetworkBehaviour for Behaviour {
         &mut self,
         _cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ProtocolsHandler>> {
+    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
         info!("poll");
+
+        if !self.events.is_empty() {
+            return Poll::Ready(self.events.remove(0));
+        }
+
         Poll::Pending
     }
 }
 
-pub enum RpcEvent {
-    DummyEvent, // TODO
+// RPC events sent to handlers
+#[derive(Debug)]
+pub(crate) enum RpcEvent {
+    SendStatus(Status),
 }

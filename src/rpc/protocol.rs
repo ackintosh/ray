@@ -1,8 +1,12 @@
+use crate::rpc::message::Status;
+use futures::future::BoxFuture;
 use futures::prelude::*;
 use libp2p::core::{ProtocolName, UpgradeInfo};
 use libp2p::swarm::NegotiatedSubstream;
 use libp2p::{InboundUpgrade, OutboundUpgrade};
 use std::fmt::{Display, Formatter};
+use std::io::Error;
+use tracing::info;
 use void::Void;
 
 // spec:
@@ -85,7 +89,53 @@ impl ProtocolName for ProtocolId {
     }
 }
 
-// ref: https://github.com/sigp/lighthouse/blob/e8c0d1f19b2736efb83c67a247e0022da5eaa7bb/beacon_node/eth2_libp2p/src/rpc/protocol.rs#L159
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+// Request
+// * implements `UpgradeInfo` and `OutboundUpgrade`
+// * ref: https://github.com/libp2p/rust-libp2p/blob/master/protocols/request-response/src/handler/protocol.rs -> `RequestProtocol`
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+pub(crate) struct RpcRequestProtocol {
+    pub(crate) request: Status, // TODO: Generalize the type of request
+}
+
+impl UpgradeInfo for RpcRequestProtocol {
+    type Info = ProtocolId;
+    type InfoIter = Vec<Self::Info>;
+
+    // The list of supported RPC protocols
+    fn protocol_info(&self) -> Self::InfoIter {
+        vec![ProtocolId::new(
+            Protocol::Status,
+            SchemaVersion::V1,
+            Encoding::SSZSnappy,
+        )]
+    }
+}
+
+impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
+    type Output = NegotiatedSubstream;
+    type Error = RpcError;
+    type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
+
+    fn upgrade_outbound(self, mut socket: NegotiatedSubstream, _info: Self::Info) -> Self::Future {
+        info!("upgrade_outbound: request: {:?}", self.request);
+
+        async move {
+            // TODO: encoding
+            let _number_of_bytes_written = socket.write("todo".as_bytes()).await?;
+            socket.close().await?;
+            Ok(socket)
+        }
+        .boxed()
+    }
+}
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+// Response
+// * implements `UpgradeInfo` and `InboundUpgrade`
+// * ref: https://github.com/libp2p/rust-libp2p/blob/master/protocols/request-response/src/handler/protocol.rs -> `ResponseProtocol`
+// * ref: https://github.com/sigp/lighthouse/blob/e8c0d1f19b2736efb83c67a247e0022da5eaa7bb/beacon_node/eth2_libp2p/src/rpc/protocol.rs#L159
+// /////////////////////////////////////////////////////////////////////////////////////////////////
 pub(crate) struct RpcProtocol;
 
 impl UpgradeInfo for RpcProtocol {
@@ -112,12 +162,15 @@ impl InboundUpgrade<NegotiatedSubstream> for RpcProtocol {
     }
 }
 
-impl OutboundUpgrade<NegotiatedSubstream> for RpcProtocol {
-    type Output = NegotiatedSubstream;
-    type Error = Void;
-    type Future = future::Ready<Result<Self::Output, Self::Error>>;
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+// Error
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+pub(crate) enum RpcError {
+    IoError(String),
+}
 
-    fn upgrade_outbound(self, socket: NegotiatedSubstream, _info: Self::Info) -> Self::Future {
-        future::ok(socket)
+impl From<std::io::Error> for RpcError {
+    fn from(error: Error) -> Self {
+        RpcError::IoError(error.to_string())
     }
 }

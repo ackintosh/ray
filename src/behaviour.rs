@@ -1,6 +1,7 @@
 use crate::discovery::behaviour::DiscoveryEvent;
-use crate::peer_manager::behaviour::PeerManagerEvent;
+use crate::peer_manager::PeerManagerEvent;
 use crate::rpc::behaviour::RpcEvent;
+use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::NetworkBehaviour;
 use std::collections::VecDeque;
@@ -42,10 +43,10 @@ impl BehaviourComposer {
     ) -> Poll<
         NetworkBehaviourAction<
             (),
-            libp2p::swarm::IntoProtocolsHandlerSelect<
-                libp2p::swarm::IntoProtocolsHandlerSelect<
-                    libp2p::swarm::protocols_handler::DummyProtocolsHandler,
-                    libp2p::swarm::protocols_handler::DummyProtocolsHandler,
+            libp2p::swarm::IntoConnectionHandlerSelect<
+                libp2p::swarm::IntoConnectionHandlerSelect<
+                    DummyConnectionHandler,
+                    DummyConnectionHandler,
                 >,
                 crate::rpc::handler::Handler,
             >,
@@ -75,8 +76,23 @@ impl NetworkBehaviourEventProcess<DiscoveryEvent> for BehaviourComposer {
 }
 
 impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
-    fn inject_event(&mut self, _event: PeerManagerEvent) {
-        info!("NetworkBehaviourEventProcess<PeerManagerEvent>::inject_event");
+    fn inject_event(&mut self, event: PeerManagerEvent) {
+        info!(
+            "NetworkBehaviourEventProcess<PeerManagerEvent>::inject_event. event: {:?}",
+            event
+        );
+
+        match event {
+            PeerManagerEvent::PeerConnectedIncoming(_) => {}
+            PeerManagerEvent::PeerConnectedOutgoing(peer_id) => {
+                // The dialing client MUST send a Status request upon connection.
+                // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
+
+                // ref: Building a `StatusMessage`
+                // https://github.com/sigp/lighthouse/blob/4bf1af4e8520f235de8fe5f94afedf953df5e6a4/beacon_node/network/src/router/processor.rs#L374
+                self.rpc.send_status(peer_id);
+            }
+        }
     }
 }
 
