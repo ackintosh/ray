@@ -97,7 +97,7 @@ impl Behaviour {
         let target_node = NodeId::random();
         let query_future = self
             .discv5
-            .find_node(target_node.clone())
+            .find_node(target_node)
             .map(|result| QueryResult { result });
 
         info!("Active query for discovery: target_node -> {}", target_node);

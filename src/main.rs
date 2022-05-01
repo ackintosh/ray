@@ -149,9 +149,9 @@ fn main() {
                 }
                 libp2p::swarm::SwarmEvent::ConnectionEstablished {
                     peer_id,
-                    endpoint,
-                    num_established,
-                    concurrent_dial_errors,
+                    endpoint: _,
+                    num_established: _,
+                    concurrent_dial_errors: _,
                 } => {
                     info!("SwarmEvent::ConnectionEstablished. peer_id: {}", peer_id);
                 }
@@ -163,7 +163,7 @@ fn main() {
     });
 
     // block until shutdown requested
-    let message = crate::signal::block_until_shutdown_requested(runtime.clone());
+    let message = crate::signal::block_until_shutdown_requested(runtime);
 
     info!("Shutting down: {:?}", message.0);
 

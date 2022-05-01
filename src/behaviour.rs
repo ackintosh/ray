@@ -19,6 +19,7 @@ pub(crate) struct BehaviourComposer {
 
     /* Auxiliary Fields */
     #[behaviour(ignore)]
+    #[allow(dead_code)]
     internal_events: VecDeque<InternalComposerMessage>, // NOTE: unused for now
 }
 
@@ -36,6 +37,9 @@ impl BehaviourComposer {
         }
     }
 
+    // TODO: Consider factoring parts into `type` definitions
+    // https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
+    #[allow(clippy::type_complexity)]
     fn poll(
         &mut self,
         _cx: &mut Context<'_>,
