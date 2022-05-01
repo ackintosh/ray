@@ -1,8 +1,6 @@
 pub(crate) mod behaviour;
 
 use enr::{CombinedKey, Enr};
-use libp2p::multiaddr::Protocol;
-use libp2p::Multiaddr;
 use std::str::FromStr;
 
 // SEE: https://github.com/sigp/lighthouse/blob/stable/common/eth2_network_config/built_in_network_configs/kiln/boot_enr.yaml
@@ -20,48 +18,48 @@ fn boot_enrs() -> Vec<Enr<CombinedKey>> {
 }
 
 // SEE: https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L49
-pub(crate) fn boot_multiaddrs() -> Vec<Multiaddr> {
-    let mut multiaddrs: Vec<Multiaddr> = vec![];
-    for enr in boot_enrs() {
-        if let Some(ip) = enr.ip() {
-            if let Some(udp) = enr.udp() {
-                let mut multiaddr: Multiaddr = ip.into();
-                multiaddr.push(Protocol::Udp(udp));
-                multiaddrs.push(multiaddr);
-            }
-
-            if let Some(tcp) = enr.tcp() {
-                let mut multiaddr: Multiaddr = ip.into();
-                multiaddr.push(Protocol::Tcp(tcp));
-                multiaddrs.push(multiaddr);
-            }
-        }
-        if let Some(ip6) = enr.ip6() {
-            if let Some(udp6) = enr.udp6() {
-                let mut multiaddr: Multiaddr = ip6.into();
-                multiaddr.push(Protocol::Udp(udp6));
-                multiaddrs.push(multiaddr);
-            }
-
-            if let Some(tcp6) = enr.tcp6() {
-                let mut multiaddr: Multiaddr = ip6.into();
-                multiaddr.push(Protocol::Tcp(tcp6));
-                multiaddrs.push(multiaddr);
-            }
-        }
-    }
-
-    // ignore UDP multiaddr as we using TcpConfig of libp2p.
-    // SEE: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L211
-    multiaddrs
-        .into_iter()
-        .filter(|addr| {
-            let components = addr.iter().collect::<Vec<_>>();
-            if let Protocol::Udp(_) = components[1] {
-                false
-            } else {
-                true
-            }
-        })
-        .collect()
-}
+// pub(crate) fn boot_multiaddrs() -> Vec<Multiaddr> {
+//     let mut multiaddrs: Vec<Multiaddr> = vec![];
+//     for enr in boot_enrs() {
+//         if let Some(ip) = enr.ip() {
+//             if let Some(udp) = enr.udp() {
+//                 let mut multiaddr: Multiaddr = ip.into();
+//                 multiaddr.push(Protocol::Udp(udp));
+//                 multiaddrs.push(multiaddr);
+//             }
+//
+//             if let Some(tcp) = enr.tcp() {
+//                 let mut multiaddr: Multiaddr = ip.into();
+//                 multiaddr.push(Protocol::Tcp(tcp));
+//                 multiaddrs.push(multiaddr);
+//             }
+//         }
+//         if let Some(ip6) = enr.ip6() {
+//             if let Some(udp6) = enr.udp6() {
+//                 let mut multiaddr: Multiaddr = ip6.into();
+//                 multiaddr.push(Protocol::Udp(udp6));
+//                 multiaddrs.push(multiaddr);
+//             }
+//
+//             if let Some(tcp6) = enr.tcp6() {
+//                 let mut multiaddr: Multiaddr = ip6.into();
+//                 multiaddr.push(Protocol::Tcp(tcp6));
+//                 multiaddrs.push(multiaddr);
+//             }
+//         }
+//     }
+//
+//     // ignore UDP multiaddr as we using TcpConfig of libp2p.
+//     // SEE: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L211
+//     multiaddrs
+//         .into_iter()
+//         .filter(|addr| {
+//             let components = addr.iter().collect::<Vec<_>>();
+//             if let Protocol::Udp(_) = components[1] {
+//                 false
+//             } else {
+//                 true
+//             }
+//         })
+//         .collect()
+// }

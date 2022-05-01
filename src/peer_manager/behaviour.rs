@@ -39,7 +39,7 @@ impl NetworkBehaviour for PeerManager {
                 role_override: _,
             } => {
                 self.peers.insert(*peer_id, address.clone());
-                self.events.push(PeerConnectedOutgoing(peer_id.clone()));
+                self.events.push(PeerConnectedOutgoing(*peer_id));
                 address
             }
             // We received the node
@@ -48,7 +48,7 @@ impl NetworkBehaviour for PeerManager {
                 send_back_addr,
             } => {
                 self.peers.insert(*peer_id, send_back_addr.clone());
-                self.events.push(PeerConnectedIncoming(peer_id.clone()));
+                self.events.push(PeerConnectedIncoming(*peer_id));
                 send_back_addr
             }
         };
