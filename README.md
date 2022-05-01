@@ -4,6 +4,8 @@ An Ethereum Consensus Layer implementation for learning opportunities for to-be-
 
 [![CI](https://github.com/ackintosh/ray/actions/workflows/ci.yml/badge.svg)](https://github.com/ackintosh/ray/actions/workflows/ci.yml)
 
+![banner image](https://raw.githubusercontent.com/ackintosh/ray/898488c66bf520a5df71a8d28c562b12355af9ee/banner.jpeg)
+
 This project is not intended for mainnet, provides developers with an opportunity to learn how to implement the Consensus Layer via running the binary on testnet or reading the source codes. 
 
 We aim for a simpler implementation, by narrowing down the functions.
