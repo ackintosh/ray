@@ -2,6 +2,8 @@
 
 A chain synchronization implementation for Ethereum Consensus Layer.
 
+[![CI](https://github.com/ackintosh/ray/actions/workflows/ci.yml/badge.svg)](https://github.com/ackintosh/ray/actions/workflows/ci.yml)
+
 Not intended for mainnet. This project provides developers with an opportunity to learn how to implement the Consensus layer via running the binary or reading the source codes. 
 
 We aim for a simpler implementation, by narrowing down the functions.
