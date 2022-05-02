@@ -1,5 +1,6 @@
 use crate::rpc::handler::Handler;
-use crate::rpc::message::{default_finalized_root, Epoch, Root, Slot, Status};
+use crate::rpc::message::Status;
+use crate::types::{Epoch, ForkDigest, Root, Slot};
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
     ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
@@ -18,17 +19,25 @@ impl Behaviour {
         Behaviour { events: vec![] }
     }
 
-    pub(crate) fn send_status(&mut self, peer_id: PeerId) {
+    // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
+    pub(crate) fn send_status(
+        &mut self,
+        peer_id: PeerId,
+        fork_digest: ForkDigest,
+        finalized_root: Root,
+        finalized_epoch: Epoch,
+        head_root: Root,
+        head_slot: Slot,
+    ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,
-            // TODO: Fill the fields with the real values
             event: RpcEvent::SendStatus(Status {
-                fork_digest: [0; 4],
-                finalized_root: default_finalized_root(),
-                finalized_epoch: Epoch::new(0),
-                head_root: Root::from_low_u64_le(0),
-                head_slot: Slot::new(0),
+                fork_digest,
+                finalized_root,
+                finalized_epoch,
+                head_root,
+                head_slot,
             }),
         })
     }

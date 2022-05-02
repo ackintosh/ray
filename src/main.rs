@@ -4,6 +4,7 @@ mod identity;
 mod peer_manager;
 mod rpc;
 mod signal;
+mod types;
 
 use crate::behaviour::BehaviourComposer;
 use discv5::enr::EnrBuilder;
