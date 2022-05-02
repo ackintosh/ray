@@ -29,6 +29,7 @@ impl Behaviour {
         head_root: Root,
         head_slot: Slot,
     ) {
+        // Notify ConnectionHandler, then the handler's `inject_event` is invoked with the event.
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,
