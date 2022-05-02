@@ -58,6 +58,10 @@ impl Display for Encoding {
     }
 }
 
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+// Protocol identification
+// https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#protocol-identification
+// /////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Clone)]
 pub(crate) struct ProtocolId {
     #[allow(dead_code)]
@@ -66,7 +70,8 @@ pub(crate) struct ProtocolId {
     schema_version: SchemaVersion,
     #[allow(dead_code)]
     encoding: Encoding,
-    // see https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#protocol-identification
+    // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#protocol-identification
+    // > /ProtocolPrefix/MessageName/SchemaVersion/Encoding
     protocol_id: String,
 }
 

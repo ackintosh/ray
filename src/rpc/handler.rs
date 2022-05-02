@@ -49,7 +49,10 @@ impl ConnectionHandler for Handler {
         _protocol: <Self::InboundProtocol as InboundUpgradeSend>::Output,
         _info: Self::InboundOpenInfo,
     ) {
-        todo!()
+        // NOTE: Nothing to do for now.
+
+        // TODO: Handle `Goodbye` message
+        // spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
     }
 
     fn inject_fully_negotiated_outbound(
@@ -96,6 +99,7 @@ impl ConnectionHandler for Handler {
         // Establish outbound substreams
         if !self.dial_queue.is_empty() {
             let request = self.dial_queue.remove(0);
+            info!("ConnectionHandlerEvent::OutboundSubstreamRequest. request: {:?}", request);
             return Poll::Ready(ConnectionHandlerEvent::OutboundSubstreamRequest {
                 protocol: SubstreamProtocol::new(RpcRequestProtocol { request }, ()),
             });
