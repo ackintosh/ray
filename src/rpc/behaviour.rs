@@ -1,5 +1,5 @@
 use crate::rpc::handler::Handler;
-use crate::rpc::message::Status;
+use crate::rpc::message::{default_finalized_root, Epoch, Root, Slot, Status};
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
     ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
@@ -24,11 +24,11 @@ impl Behaviour {
             handler: NotifyHandler::Any,
             // TODO: Fill the fields with the real values
             event: RpcEvent::SendStatus(Status {
-                fork_digest: 0,
-                finalized_root: 0,
-                finalized_epoch: 0,
-                head_root: 0,
-                head_slot: 0,
+                fork_digest: [0; 4],
+                finalized_root: default_finalized_root(),
+                finalized_epoch: Epoch::new(0),
+                head_root: Root::from_low_u64_le(0),
+                head_slot: Slot::new(0),
             }),
         })
     }
