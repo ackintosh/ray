@@ -1,13 +1,14 @@
 use crate::discovery::behaviour::DiscoveryEvent;
 use crate::peer_manager::PeerManagerEvent;
 use crate::rpc::behaviour::RpcEvent;
-use crate::types::{default_finalized_root, Epoch, Root, Slot};
+use crate::types::{default_finalized_root, Root};
 use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::NetworkBehaviour;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
+use types::{Epoch, Slot};
 
 // The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]

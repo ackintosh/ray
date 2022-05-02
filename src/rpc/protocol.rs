@@ -8,6 +8,7 @@ use std::fmt::{Display, Formatter};
 use std::io::Error;
 use tracing::info;
 use void::Void;
+use crate::rpc::codec::OutboundCodec;
 
 // spec:
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#protocol-identification
@@ -125,8 +126,15 @@ impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
     type Error = RpcError;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
-    fn upgrade_outbound(self, mut socket: NegotiatedSubstream, _info: Self::Info) -> Self::Future {
+    fn upgrade_outbound(self, mut socket: NegotiatedSubstream, protocol_id: Self::Info) -> Self::Future {
         info!("upgrade_outbound: request: {:?}", self.request);
+
+        // TODO
+        let _codec = match protocol_id.encoding {
+            Encoding::SSZSnappy => {
+                OutboundCodec::SSZSnappy
+            }
+        };
 
         async move {
             // TODO: encoding

@@ -1,6 +1,6 @@
 use crate::rpc::handler::Handler;
 use crate::rpc::message::Status;
-use crate::types::{Epoch, ForkDigest, Root, Slot};
+use crate::types::{ForkDigest, Root};
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
     ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
@@ -9,6 +9,7 @@ use libp2p::swarm::{
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use tracing::{info, warn};
+use types::{Epoch, Slot};
 
 pub(crate) struct Behaviour {
     events: Vec<NetworkBehaviourAction<RpcEvent, Handler>>,

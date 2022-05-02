@@ -1,4 +1,6 @@
-use crate::types::{Epoch, ForkDigest, Root, Slot};
+use types::{Epoch, Slot};
+use crate::types::{ForkDigest, Root};
+use ssz_derive::Encode;
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////
 // `Status` request/response handshake message.
@@ -6,7 +8,7 @@ use crate::types::{Epoch, ForkDigest, Root, Slot};
 //
 // lighthouse: https://github.com/sigp/lighthouse/blob/580d2f7873093114bafe5f84f862173eab7d4ff5/beacon_node/lighthouse_network/src/rpc/methods.rs#L61
 // /////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug)]
+#[derive(Debug, Encode)]
 #[allow(dead_code)] // TODO: Remove this
 pub(crate) struct Status {
     // The node's ForkDigest.
