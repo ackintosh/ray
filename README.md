@@ -54,3 +54,9 @@ Here are the specifications / documentations that Consensus Layer Implementers s
 ### Documents
 
 - https://github.com/timbeiko/eth-roadmap-faq
+
+## Author
+
+Authored and maintained by ackintosh.
+
+> GitHub [@ackintosh](https://github.com/ackintosh) / Twitter [@NAKANO_Akihito](https://twitter.com/NAKANO_Akihito)
