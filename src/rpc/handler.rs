@@ -99,7 +99,10 @@ impl ConnectionHandler for Handler {
         // Establish outbound substreams
         if !self.dial_queue.is_empty() {
             let request = self.dial_queue.remove(0);
-            info!("ConnectionHandlerEvent::OutboundSubstreamRequest. request: {:?}", request);
+            info!(
+                "ConnectionHandlerEvent::OutboundSubstreamRequest. request: {:?}",
+                request
+            );
             return Poll::Ready(ConnectionHandlerEvent::OutboundSubstreamRequest {
                 protocol: SubstreamProtocol::new(RpcRequestProtocol { request }, ()),
             });

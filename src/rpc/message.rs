@@ -1,6 +1,6 @@
-use types::{Epoch, Slot};
 use crate::types::{ForkDigest, Root};
 use ssz_derive::Encode;
+use types::{Epoch, Slot};
 
 // /////////////////////////////////////////////////////////////////////////////////////////////////
 // `Status` request/response handshake message.

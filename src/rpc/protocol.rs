@@ -4,11 +4,11 @@ use futures::prelude::*;
 use libp2p::core::{ProtocolName, UpgradeInfo};
 use libp2p::swarm::NegotiatedSubstream;
 use libp2p::{InboundUpgrade, OutboundUpgrade};
+use ssz::Encode;
 use std::fmt::{Display, Formatter};
 use std::io::Error;
-use tracing::info;
+use tracing::{debug, info};
 use void::Void;
-use crate::rpc::codec::OutboundCodec;
 
 // spec:
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#protocol-identification
@@ -126,19 +126,22 @@ impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
     type Error = RpcError;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
-    fn upgrade_outbound(self, mut socket: NegotiatedSubstream, protocol_id: Self::Info) -> Self::Future {
+    fn upgrade_outbound(
+        self,
+        mut socket: NegotiatedSubstream,
+        protocol_id: Self::Info,
+    ) -> Self::Future {
         info!("upgrade_outbound: request: {:?}", self.request);
 
-        // TODO
-        let _codec = match protocol_id.encoding {
-            Encoding::SSZSnappy => {
-                OutboundCodec::SSZSnappy
-            }
+        let encoded_message: Vec<u8> = match protocol_id.encoding {
+            // https://github.com/sigp/lighthouse/blob/fff4dd6311695c1d772a9d6991463915edf223d5/beacon_node/lighthouse_network/src/rpc/codec/ssz_snappy.rs#L214
+            Encoding::SSZSnappy => self.request.as_ssz_bytes(),
         };
+        debug!("Encoded request message: {:?}", encoded_message);
 
         async move {
-            // TODO: encoding
-            let _number_of_bytes_written = socket.write("todo".as_bytes()).await?;
+            let number_of_bytes_written = socket.write(&encoded_message).await?;
+            info!("Sent a request message. {}bytes", number_of_bytes_written);
             socket.close().await?;
             Ok(socket)
         }
