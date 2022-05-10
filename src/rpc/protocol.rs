@@ -4,9 +4,10 @@ use futures::prelude::*;
 use libp2p::core::{ProtocolName, UpgradeInfo};
 use libp2p::swarm::NegotiatedSubstream;
 use libp2p::{InboundUpgrade, OutboundUpgrade};
+use ssz::Encode;
 use std::fmt::{Display, Formatter};
 use std::io::Error;
-use tracing::info;
+use tracing::{debug, info};
 use void::Void;
 
 // spec:
@@ -14,7 +15,7 @@ use void::Void;
 // ProtocolPrefix
 const PROTOCOL_PREFIX: &str = "/eth2/beacon_chain/req";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum Protocol {
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     Status,
@@ -29,7 +30,7 @@ impl Display for Protocol {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum SchemaVersion {
     V1,
 }
@@ -43,7 +44,7 @@ impl Display for SchemaVersion {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum Encoding {
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#encoding-strategies
     SSZSnappy,
@@ -58,7 +59,11 @@ impl Display for Encoding {
     }
 }
 
-#[derive(Clone)]
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+// Protocol identification
+// https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#protocol-identification
+// /////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Clone, Debug)]
 pub(crate) struct ProtocolId {
     #[allow(dead_code)]
     protocol: Protocol,
@@ -66,7 +71,8 @@ pub(crate) struct ProtocolId {
     schema_version: SchemaVersion,
     #[allow(dead_code)]
     encoding: Encoding,
-    // see https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#protocol-identification
+    // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#protocol-identification
+    // > /ProtocolPrefix/MessageName/SchemaVersion/Encoding
     protocol_id: String,
 }
 
@@ -120,12 +126,22 @@ impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
     type Error = RpcError;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
-    fn upgrade_outbound(self, mut socket: NegotiatedSubstream, _info: Self::Info) -> Self::Future {
+    fn upgrade_outbound(
+        self,
+        mut socket: NegotiatedSubstream,
+        protocol_id: Self::Info,
+    ) -> Self::Future {
         info!("upgrade_outbound: request: {:?}", self.request);
 
+        let encoded_message: Vec<u8> = match protocol_id.encoding {
+            // https://github.com/sigp/lighthouse/blob/fff4dd6311695c1d772a9d6991463915edf223d5/beacon_node/lighthouse_network/src/rpc/codec/ssz_snappy.rs#L214
+            Encoding::SSZSnappy => self.request.as_ssz_bytes(),
+        };
+        debug!("Encoded request message: {:?}", encoded_message);
+
         async move {
-            // TODO: encoding
-            let _number_of_bytes_written = socket.write("todo".as_bytes()).await?;
+            let number_of_bytes_written = socket.write(&encoded_message).await?;
+            info!("Sent a request message. {}bytes", number_of_bytes_written);
             socket.close().await?;
             Ok(socket)
         }
@@ -160,7 +176,8 @@ impl InboundUpgrade<NegotiatedSubstream> for RpcProtocol {
     type Error = Void;
     type Future = future::Ready<Result<Self::Output, Self::Error>>;
 
-    fn upgrade_inbound(self, socket: NegotiatedSubstream, _info: Self::Info) -> Self::Future {
+    fn upgrade_inbound(self, socket: NegotiatedSubstream, info: Self::Info) -> Self::Future {
+        info!("upgrade_inbound: info: {:?}", info);
         future::ok(socket)
     }
 }

@@ -4,6 +4,7 @@ mod identity;
 mod peer_manager;
 mod rpc;
 mod signal;
+mod types;
 
 use crate::behaviour::BehaviourComposer;
 use discv5::enr::EnrBuilder;
@@ -86,7 +87,6 @@ fn main() {
             runtime.block_on(crate::discovery::behaviour::Behaviour::new(enr, enr_key));
         // start searching for peers
         discovery.discover_peers();
-        // runtime.block_on(discovery.discover_peers());
 
         let behaviour = BehaviourComposer::new(
             discovery,
