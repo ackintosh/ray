@@ -1,6 +1,6 @@
 # Ray
 
-An Ethereum Consensus Layer implementation _for learning opportunities for to-be-implementers_.
+An Ethereum Beacon Node implementation _for learning opportunities for to-be-implementers_.
 
 [![CI](https://github.com/ackintosh/ray/actions/workflows/ci.yml/badge.svg)](https://github.com/ackintosh/ray/actions/workflows/ci.yml)
 
@@ -10,13 +10,37 @@ An Ethereum Consensus Layer implementation _for learning opportunities for to-be
 
 ## Overview
 
-This project is not intended for mainnet, provides developers with an opportunity to learn how to implement the Consensus Layer via running the binary on testnet or reading the source codes. 
+This project provides developers with an opportunity to learn how to implement Beacon Node, which is one of component of Ethereum Consensus Layer, via running the binary on testnet or reading the source codes. 
+
+> NOTE: Ray is under active development.
 
 We aim for a simpler implementation, by narrowing down the functions.
 
 - Implemented for macOS
 - Runs for Kiln testnet
 - Simplicity over multifunctionality
+
+### What does the Beacon Node do
+
+- [x] [Node discovery](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#the-discovery-domain-discv5)
+- RPC
+  - [ ] [Status](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status)
+  - [ ] Goodbye
+  - [ ] BeaconBlocksByRange
+  - [ ] BeaconBlocksByRoot
+  - [ ] Ping
+  - [ ] GetMetaData
+- [ ] Sync the Beacon Chain
+
+## Getting started
+
+### Running `ray`
+
+```shell
+$ git clone https://github.com/ackintosh/ray.git
+$ cd ray
+$ RUST_LOG=info cargo run
+```
 
 ## Resources for the Consensus Layer implementers
 
@@ -31,12 +55,8 @@ Here are the specifications / documentations that Consensus Layer Implementers s
 
 - https://github.com/timbeiko/eth-roadmap-faq
 
-## Getting started
+## Author
 
-### Running `ray`
+Authored and maintained by ackintosh.
 
-```shell
-$ git clone https://github.com/ackintosh/ray.git
-$ cd ray
-$ RUST_LOG=info cargo run
-```
+> GitHub [@ackintosh](https://github.com/ackintosh) / Twitter [@NAKANO_Akihito](https://twitter.com/NAKANO_Akihito)
