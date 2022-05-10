@@ -15,7 +15,7 @@ use void::Void;
 // ProtocolPrefix
 const PROTOCOL_PREFIX: &str = "/eth2/beacon_chain/req";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum Protocol {
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     Status,
@@ -30,7 +30,7 @@ impl Display for Protocol {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum SchemaVersion {
     V1,
 }
@@ -44,7 +44,7 @@ impl Display for SchemaVersion {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum Encoding {
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#encoding-strategies
     SSZSnappy,
@@ -63,7 +63,7 @@ impl Display for Encoding {
 // Protocol identification
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#protocol-identification
 // /////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct ProtocolId {
     #[allow(dead_code)]
     protocol: Protocol,
@@ -176,7 +176,8 @@ impl InboundUpgrade<NegotiatedSubstream> for RpcProtocol {
     type Error = Void;
     type Future = future::Ready<Result<Self::Output, Self::Error>>;
 
-    fn upgrade_inbound(self, socket: NegotiatedSubstream, _info: Self::Info) -> Self::Future {
+    fn upgrade_inbound(self, socket: NegotiatedSubstream, info: Self::Info) -> Self::Future {
+        info!("upgrade_inbound: info: {:?}", info);
         future::ok(socket)
     }
 }
