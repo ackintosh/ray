@@ -9,6 +9,7 @@ use std::collections::VecDeque;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
 use types::{Epoch, Slot};
+use crate::beacon_chain::BeaconChain;
 
 // The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]
@@ -23,6 +24,8 @@ pub(crate) struct BehaviourComposer {
     #[behaviour(ignore)]
     #[allow(dead_code)]
     internal_events: VecDeque<InternalComposerMessage>, // NOTE: unused for now
+    #[behaviour(ignore)]
+    beacon_chain: BeaconChain,
 }
 
 impl BehaviourComposer {
@@ -30,12 +33,14 @@ impl BehaviourComposer {
         discovery: crate::discovery::behaviour::Behaviour,
         peer_manager: crate::peer_manager::PeerManager,
         rpc: crate::rpc::behaviour::Behaviour,
+        beacon_chain: BeaconChain,
     ) -> Self {
         Self {
             discovery,
             peer_manager,
             rpc,
             internal_events: VecDeque::new(),
+            beacon_chain,
         }
     }
 

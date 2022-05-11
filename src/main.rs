@@ -1,3 +1,4 @@
+mod beacon_chain;
 mod behaviour;
 mod discovery;
 mod identity;
@@ -20,6 +21,7 @@ use std::process::exit;
 use std::sync::{Arc, Weak};
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
+use crate::beacon_chain::BeaconChain;
 
 fn main() {
     tracing_subscriber::fmt::init();
@@ -92,6 +94,7 @@ fn main() {
             discovery,
             crate::peer_manager::PeerManager::new(),
             crate::rpc::behaviour::Behaviour::new(),
+            BeaconChain::new(),
         );
 
         // use the executor for libp2p
