@@ -1,3 +1,4 @@
+use crate::beacon_chain::BeaconChain;
 use crate::discovery::behaviour::DiscoveryEvent;
 use crate::peer_manager::PeerManagerEvent;
 use crate::rpc::behaviour::RpcEvent;
@@ -9,7 +10,6 @@ use std::collections::VecDeque;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
 use types::{Epoch, Slot};
-use crate::beacon_chain::BeaconChain;
 
 // The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]
