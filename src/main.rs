@@ -9,7 +9,7 @@ mod types;
 
 use crate::beacon_chain::BeaconChain;
 use crate::behaviour::BehaviourComposer;
-use ::types::Config;
+use ::types::{ChainSpec, Config, MainnetEthSpec};
 use discv5::enr::EnrBuilder;
 use enr::CombinedKey;
 use futures::StreamExt;
@@ -54,7 +54,10 @@ fn main() {
     let local_peer_id = crate::identity::enr_to_peer_id(&enr);
     info!("Local PeerId: {}", local_peer_id);
 
-    let _config = load_config().expect("should load config");
+    // Load network configs
+    let config = load_config().expect("should load config");
+    let chain_spec = ChainSpec::from_config::<MainnetEthSpec>(&config)
+        .expect("should apply config to chain spec");
 
     // build the tokio executor
     let runtime = Arc::new(
@@ -99,7 +102,7 @@ fn main() {
             discovery,
             crate::peer_manager::PeerManager::new(),
             crate::rpc::behaviour::Behaviour::new(),
-            BeaconChain::new(),
+            BeaconChain::new(chain_spec),
         );
 
         // use the executor for libp2p
