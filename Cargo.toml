@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 discv5 = "0.1.0-beta.13"
-enr = { version = "0.5.1", features = ["ed25519", "k256"] }
+enr = { version = "0.6.0", features = ["ed25519", "k256"] }
 futures = "0.3.7"
 primitive-types = "0.11.1"
 serde_yaml = "0.8.24"

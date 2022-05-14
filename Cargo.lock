@@ -845,7 +845,7 @@ dependencies = [
  "aes-gcm",
  "arrayvec 0.7.2",
  "digest 0.10.3",
- "enr",
+ "enr 0.5.1",
  "fnv",
  "futures",
  "hashlink",
@@ -945,6 +945,26 @@ name = "enr"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "809869a1328bfb586b48c9c0f87761c47c41793a85bcb06f66074a87cafc1bcd"
+dependencies = [
+ "base64",
+ "bs58",
+ "bytes",
+ "ed25519-dalek",
+ "hex",
+ "k256",
+ "log",
+ "rand 0.8.5",
+ "rlp",
+ "serde",
+ "sha3",
+ "zeroize",
+]
+
+[[package]]
+name = "enr"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78d404e58d809811e491badc0bbd49c7441b84c3e9b3dac3baf50ac21f168a1e"
 dependencies = [
  "base64",
  "bs58",
@@ -3145,7 +3165,7 @@ name = "ray"
 version = "0.1.0"
 dependencies = [
  "discv5",
- "enr",
+ "enr 0.6.0",
  "eth2_ssz",
  "eth2_ssz_derive 0.3.0 (git+https://github.com/sigp/lighthouse.git?rev=10795f1c867b0c8536e3c35c989f39b4353ece0e)",
  "futures",
