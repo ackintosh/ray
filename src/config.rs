@@ -1,8 +1,10 @@
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
-use types::Config;
+use types::{BeaconState, ChainSpec, Config, MainnetEthSpec};
 
+// Ref: kiln-testnet config
+// https://github.com/eth-clients/merge-testnets/tree/main/kiln
 pub(crate) struct NetworkConfig {
     pub(crate) config: Config,
     pub(crate) genesis_state_bytes: Vec<u8>,
@@ -18,6 +20,18 @@ impl NetworkConfig {
         Ok(NetworkConfig {
             config: load_config(&network_config_dir)?,
             genesis_state_bytes: load_genesis_state(&network_config_dir)?,
+        })
+    }
+
+    pub(crate) fn genesis_beacon_state(&self) -> Result<BeaconState<MainnetEthSpec>, String> {
+        let spec = self.chain_spec()?;
+        BeaconState::from_ssz_bytes(&self.genesis_state_bytes, &spec)
+            .map_err(|e| format!("Failed to decode genesis state bytes: {:?}", e))
+    }
+
+    pub(crate) fn chain_spec(&self) -> Result<ChainSpec, String> {
+        ChainSpec::from_config::<MainnetEthSpec>(&self.config).ok_or_else(|| {
+            format!("YAML configuration incompatible with spec constants for MainnetEthSpec")
         })
     }
 }

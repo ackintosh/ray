@@ -11,7 +11,6 @@ mod types;
 use crate::beacon_chain::BeaconChain;
 use crate::behaviour::BehaviourComposer;
 use crate::config::NetworkConfig;
-use ::types::{ChainSpec, MainnetEthSpec};
 use discv5::enr::EnrBuilder;
 use enr::CombinedKey;
 use futures::StreamExt;
@@ -57,8 +56,6 @@ fn main() {
     // Load network configs
     // Ref: https://github.com/sigp/lighthouse/blob/b6493d5e2400234ce7148e3a400d6663c3f0af89/common/clap_utils/src/lib.rs#L20
     let network_config = NetworkConfig::new().expect("should load network configs");
-    let chain_spec = ChainSpec::from_config::<MainnetEthSpec>(&network_config.config)
-        .expect("should apply config to chain spec");
 
     // build the tokio executor
     let runtime = Arc::new(
@@ -103,7 +100,13 @@ fn main() {
             discovery,
             crate::peer_manager::PeerManager::new(),
             crate::rpc::behaviour::Behaviour::new(),
-            BeaconChain::new(chain_spec),
+            BeaconChain::new(
+                network_config.chain_spec().expect("chain spec"),
+                network_config
+                    .genesis_beacon_state()
+                    .expect("genesis beacon chain")
+                    .genesis_validators_root(),
+            ),
         );
 
         // use the executor for libp2p

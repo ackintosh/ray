@@ -104,9 +104,11 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 // TODO: Fill the fields with the real values
                 // ref: Building a `StatusMessage`
                 // https://github.com/sigp/lighthouse/blob/4bf1af4e8520f235de8fe5f94afedf953df5e6a4/beacon_node/network/src/router/processor.rs#L374
+
+                let enr_fork_id = self.beacon_chain.enr_fork_id();
                 self.rpc.send_status(
                     peer_id,
-                    [0; 4],
+                    enr_fork_id.fork_digest,
                     default_finalized_root(),
                     Epoch::new(0),
                     Root::from_low_u64_le(0),
