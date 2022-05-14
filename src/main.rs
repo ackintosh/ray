@@ -1,5 +1,6 @@
 mod beacon_chain;
 mod behaviour;
+mod config;
 mod discovery;
 mod identity;
 mod peer_manager;
@@ -9,7 +10,7 @@ mod types;
 
 use crate::beacon_chain::BeaconChain;
 use crate::behaviour::BehaviourComposer;
-use ::types::{ChainSpec, Config, MainnetEthSpec};
+use ::types::{ChainSpec, MainnetEthSpec};
 use discv5::enr::EnrBuilder;
 use enr::CombinedKey;
 use futures::StreamExt;
@@ -17,14 +18,13 @@ use libp2p::identity::Keypair;
 use libp2p::noise;
 use libp2p::swarm::SwarmBuilder;
 use libp2p::Transport;
-use std::fs::File;
 use std::future::Future;
-use std::path::PathBuf;
 use std::pin::Pin;
 use std::process::exit;
 use std::sync::{Arc, Weak};
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
+use crate::config::NetworkConfig;
 
 fn main() {
     tracing_subscriber::fmt::init();
@@ -56,8 +56,8 @@ fn main() {
 
     // Load network configs
     // Ref: https://github.com/sigp/lighthouse/blob/b6493d5e2400234ce7148e3a400d6663c3f0af89/common/clap_utils/src/lib.rs#L20
-    let config = load_config().expect("should load config");
-    let chain_spec = ChainSpec::from_config::<MainnetEthSpec>(&config)
+    let network_config = NetworkConfig::new().expect("should load network configs");
+    let chain_spec = ChainSpec::from_config::<MainnetEthSpec>(&network_config.config)
         .expect("should apply config to chain spec");
 
     // build the tokio executor
@@ -180,19 +180,4 @@ fn main() {
     info!("Shutting down: {:?}", message.0);
 
     // TODO: discv5.shutdown();
-}
-
-fn load_config() -> Result<Config, String> {
-    let path = env!("CARGO_MANIFEST_DIR")
-        .parse::<PathBuf>()
-        .expect("should parse manifest dir as path")
-        .join("network_config")
-        .join("config.yaml");
-
-    File::open(path.clone())
-        .map_err(|e| format!("Unable to open {}: {:?}", path.display(), e))
-        .and_then(|file| {
-            serde_yaml::from_reader(file)
-                .map_err(|e| format!("Unable to parse config {}: {:?}", path.display(), e))
-        })
 }
