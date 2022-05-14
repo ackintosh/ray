@@ -1,4 +1,6 @@
+mod beacon_chain;
 mod behaviour;
+mod config;
 mod discovery;
 mod identity;
 mod peer_manager;
@@ -6,7 +8,9 @@ mod rpc;
 mod signal;
 mod types;
 
+use crate::beacon_chain::BeaconChain;
 use crate::behaviour::BehaviourComposer;
+use crate::config::NetworkConfig;
 use discv5::enr::EnrBuilder;
 use enr::CombinedKey;
 use futures::StreamExt;
@@ -49,6 +53,10 @@ fn main() {
     let local_peer_id = crate::identity::enr_to_peer_id(&enr);
     info!("Local PeerId: {}", local_peer_id);
 
+    // Load network configs
+    // Ref: https://github.com/sigp/lighthouse/blob/b6493d5e2400234ce7148e3a400d6663c3f0af89/common/clap_utils/src/lib.rs#L20
+    let network_config = NetworkConfig::new().expect("should load network configs");
+
     // build the tokio executor
     let runtime = Arc::new(
         tokio::runtime::Builder::new_multi_thread()
@@ -59,7 +67,7 @@ fn main() {
     );
 
     // libp2p
-    // SEE: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
+    // Ref: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
     let mut swarm = {
         let transport = {
             let tcp = libp2p::tcp::TokioTcpConfig::new().nodelay(true);
@@ -92,6 +100,13 @@ fn main() {
             discovery,
             crate::peer_manager::PeerManager::new(),
             crate::rpc::behaviour::Behaviour::new(),
+            BeaconChain::new(
+                network_config.chain_spec().expect("chain spec"),
+                network_config
+                    .genesis_beacon_state()
+                    .expect("genesis beacon state"),
+            )
+            .expect("beacon chain"),
         );
 
         // use the executor for libp2p

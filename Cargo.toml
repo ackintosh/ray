@@ -10,6 +10,7 @@ discv5 = "0.1.0-beta.13"
 enr = { version = "0.5.1", features = ["ed25519", "k256"] }
 futures = "0.3.7"
 primitive-types = "0.11.1"
+serde_yaml = "0.8.24"
 smallvec = "1.8.0"
 types = { git = "https://github.com/sigp/lighthouse.git", rev = "10795f1c867b0c8536e3c35c989f39b4353ece0e" }
 eth2_ssz = { git = "https://github.com/sigp/lighthouse.git", rev = "10795f1c867b0c8536e3c35c989f39b4353ece0e" }
@@ -21,6 +22,9 @@ tokio = { version = "1.18.2", features = ["full"] }
 void = "1.0.2"
 
 libp2p = { version = "0.44.0", features = ["dns-tokio", "tcp-tokio"] }
+
+[build-dependencies]
+zip = "0.6.2"
 
 [patch]
 [patch.crates-io]
