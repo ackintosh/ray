@@ -104,9 +104,9 @@ fn main() {
                 network_config.chain_spec().expect("chain spec"),
                 network_config
                     .genesis_beacon_state()
-                    .expect("genesis beacon chain")
-                    .genesis_validators_root(),
-            ),
+                    .expect("genesis beacon state"),
+            )
+            .expect("beacon chain"),
         );
 
         // use the executor for libp2p

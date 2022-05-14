@@ -2,14 +2,12 @@ use crate::beacon_chain::BeaconChain;
 use crate::discovery::behaviour::DiscoveryEvent;
 use crate::peer_manager::PeerManagerEvent;
 use crate::rpc::behaviour::RpcEvent;
-use crate::types::{default_finalized_root, Root};
 use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::NetworkBehaviour;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
-use types::{Epoch, Slot};
 
 // The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]
@@ -101,18 +99,19 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 // The dialing client MUST send a Status request upon connection.
                 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
 
-                // TODO: Fill the fields with the real values
-                // ref: Building a `StatusMessage`
+                // Ref: Building a `StatusMessage`
                 // https://github.com/sigp/lighthouse/blob/4bf1af4e8520f235de8fe5f94afedf953df5e6a4/beacon_node/network/src/router/processor.rs#L374
 
                 let enr_fork_id = self.beacon_chain.enr_fork_id();
+                let head = self.beacon_chain.head();
+                let finalized_checkpoint = head.beacon_state.finalized_checkpoint();
                 self.rpc.send_status(
                     peer_id,
                     enr_fork_id.fork_digest,
-                    default_finalized_root(),
-                    Epoch::new(0),
-                    Root::from_low_u64_le(0),
-                    Slot::new(0),
+                    finalized_checkpoint.root,
+                    finalized_checkpoint.epoch,
+                    head.beacon_block.canonical_root(),
+                    head.beacon_block.slot(),
                 );
             }
         }
