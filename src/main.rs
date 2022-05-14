@@ -55,6 +55,7 @@ fn main() {
     info!("Local PeerId: {}", local_peer_id);
 
     // Load network configs
+    // Ref: https://github.com/sigp/lighthouse/blob/b6493d5e2400234ce7148e3a400d6663c3f0af89/common/clap_utils/src/lib.rs#L20
     let config = load_config().expect("should load config");
     let chain_spec = ChainSpec::from_config::<MainnetEthSpec>(&config)
         .expect("should apply config to chain spec");
@@ -69,7 +70,7 @@ fn main() {
     );
 
     // libp2p
-    // SEE: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
+    // Ref: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
     let mut swarm = {
         let transport = {
             let tcp = libp2p::tcp::TokioTcpConfig::new().nodelay(true);

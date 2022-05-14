@@ -1,5 +1,5 @@
 # ############################################################################
-# Copied from: https://github.com/sigp/lighthouse/blob/15b88115804fd8de4ed81e773aadecfe9afdd674/common/eth2_network_config/built_in_network_configs/kiln/config.yaml
+# Copied from: https://github.com/eth-clients/merge-testnets/tree/main/kiln
 # ############################################################################
 
 # Extends the mainnet preset
