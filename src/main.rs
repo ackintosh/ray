@@ -10,6 +10,7 @@ mod types;
 
 use crate::beacon_chain::BeaconChain;
 use crate::behaviour::BehaviourComposer;
+use crate::config::NetworkConfig;
 use ::types::{ChainSpec, MainnetEthSpec};
 use discv5::enr::EnrBuilder;
 use enr::CombinedKey;
@@ -24,7 +25,6 @@ use std::process::exit;
 use std::sync::{Arc, Weak};
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
-use crate::config::NetworkConfig;
 
 fn main() {
     tracing_subscriber::fmt::init();

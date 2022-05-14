@@ -35,8 +35,8 @@ fn uncompress_genesis_state() -> Result<(), String> {
         .by_name("genesis.ssz")
         .map_err(|e| format!("should retrieve genesis.ssz: {}", e))?;
 
-    let mut dest =
-        File::create(path_to_genesis_ssz).map_err(|e| format!("Failed to create genesis.ssz: {}", e))?;
+    let mut dest = File::create(path_to_genesis_ssz)
+        .map_err(|e| format!("Failed to create genesis.ssz: {}", e))?;
 
     std::io::copy(&mut genesis_ssz_file, &mut dest)
         .map_err(|e| format!("Failed to copy genesis.ssz: {}", e))?;
