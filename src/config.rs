@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, Read};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use types::{BeaconState, ChainSpec, Config, MainnetEthSpec};
 
 // Ref: kiln-testnet config
@@ -31,12 +31,12 @@ impl NetworkConfig {
 
     pub(crate) fn chain_spec(&self) -> Result<ChainSpec, String> {
         ChainSpec::from_config::<MainnetEthSpec>(&self.config).ok_or_else(|| {
-            format!("YAML configuration incompatible with spec constants for MainnetEthSpec")
+            "YAML configuration incompatible with spec constants for MainnetEthSpec".to_string()
         })
     }
 }
 
-fn load_config(network_config_dir: &PathBuf) -> Result<Config, String> {
+fn load_config(network_config_dir: &Path) -> Result<Config, String> {
     let path_to_config = network_config_dir.join("config.yaml");
 
     File::open(path_to_config.clone())
@@ -52,7 +52,7 @@ fn load_config(network_config_dir: &PathBuf) -> Result<Config, String> {
         })
 }
 
-fn load_genesis_state(network_config_dir: &PathBuf) -> Result<Vec<u8>, String> {
+fn load_genesis_state(network_config_dir: &Path) -> Result<Vec<u8>, String> {
     let file = File::open(network_config_dir.join("genesis.ssz"))
         .map_err(|e| format!("Failed to open genesis.ssz: {}", e))?;
     let mut reader = BufReader::new(file);
