@@ -1,6 +1,6 @@
 use crate::discovery::boot_enrs;
-use discv5::{Discv5, Discv5ConfigBuilder};
-use enr::{CombinedKey, Enr, NodeId};
+use discv5::enr::{CombinedKey, NodeId};
+use discv5::{Discv5, Discv5ConfigBuilder, Enr};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::connection::ConnectionId;
@@ -20,11 +20,11 @@ pub(crate) struct Behaviour {
     /// Active discovery queries.
     active_queries: FuturesUnordered<std::pin::Pin<Box<dyn Future<Output = QueryResult> + Send>>>,
     /// Found peers via the discovery queries.
-    found_enr: VecDeque<Enr<CombinedKey>>,
+    found_enr: VecDeque<Enr>,
 }
 
 impl Behaviour {
-    pub(crate) async fn new(local_enr: Enr<CombinedKey>, local_enr_key: CombinedKey) -> Self {
+    pub(crate) async fn new(local_enr: Enr, local_enr_key: CombinedKey) -> Self {
         // default configuration
         let config = Discv5ConfigBuilder::new().build();
         // construct the discv5 server
@@ -204,7 +204,7 @@ impl NetworkBehaviour for Behaviour {
 
 /// The result of a query.
 struct QueryResult {
-    result: Result<Vec<Enr<CombinedKey>>, discv5::QueryError>,
+    result: Result<Vec<Enr>, discv5::QueryError>,
 }
 
 /// The events emitted by polling discovery.

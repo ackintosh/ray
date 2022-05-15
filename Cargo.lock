@@ -3145,7 +3145,6 @@ name = "ray"
 version = "0.1.0"
 dependencies = [
  "discv5",
- "enr",
  "eth2_ssz",
  "eth2_ssz_derive 0.3.0 (git+https://github.com/sigp/lighthouse.git?rev=10795f1c867b0c8536e3c35c989f39b4353ece0e)",
  "futures",
