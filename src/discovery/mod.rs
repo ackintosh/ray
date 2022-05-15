@@ -1,6 +1,6 @@
 pub(crate) mod behaviour;
 
-use enr::{CombinedKey, Enr};
+use discv5::Enr;
 use std::str::FromStr;
 
 // SEE: https://github.com/sigp/lighthouse/blob/stable/common/eth2_network_config/built_in_network_configs/kiln/boot_enr.yaml
@@ -10,7 +10,7 @@ const BOOT_ENRS: [&str; 3] = [
     "enr:-MK4QI-wkVW1PxL4ksUM4H_hMgTTwxKMzvvDMfoiwPBuRxcsGkrGPLo4Kho3Ri1DEtJG4B6pjXddbzA9iF2gVctxv42GAX9v5WG5h2F0dG5ldHOIAAAAAAAAAACEZXRoMpBzql9ccAAAcDIAAAAAAAAAgmlkgnY0gmlwhKRcjMiJc2VjcDI1NmsxoQK1fc46pmVHKq8HNYLkSVaUv4uK2UBsGgjjGWU6AAhAY4hzeW5jbmV0cwCDdGNwgiMog3VkcIIjKA",
 ];
 
-fn boot_enrs() -> Vec<Enr<CombinedKey>> {
+fn boot_enrs() -> Vec<Enr> {
     BOOT_ENRS
         .iter()
         .map(|&str| Enr::from_str(str).expect("Failed to parse ENR"))

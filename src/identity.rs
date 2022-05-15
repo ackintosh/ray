@@ -1,11 +1,12 @@
-use enr::{CombinedKey, CombinedPublicKey, Enr, NodeId};
+use discv5::enr::{CombinedPublicKey, NodeId};
+use discv5::Enr;
 use libp2p::identity::PublicKey;
 use libp2p::multiaddr::Protocol;
 use libp2p::{Multiaddr, PeerId};
 use tiny_keccak::{Hasher, Keccak};
 
 // SEE: https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L200
-pub(crate) fn enr_to_peer_id(enr: &Enr<CombinedKey>) -> PeerId {
+pub(crate) fn enr_to_peer_id(enr: &Enr) -> PeerId {
     match enr.public_key() {
         CombinedPublicKey::Secp256k1(pk) => {
             let pk_bytes = pk.to_bytes();
@@ -52,7 +53,7 @@ pub(crate) fn peer_id_to_node_id(peer_id: &PeerId) -> Result<NodeId, String> {
 }
 
 // SEE: https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L174
-pub(crate) fn enr_to_multiaddrs(enr: &Enr<CombinedKey>) -> Vec<Multiaddr> {
+pub(crate) fn enr_to_multiaddrs(enr: &Enr) -> Vec<Multiaddr> {
     let mut multiaddrs: Vec<Multiaddr> = Vec::new();
     if let Some(ip) = enr.ip() {
         if let Some(tcp) = enr.tcp() {
