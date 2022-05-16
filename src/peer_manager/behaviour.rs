@@ -1,4 +1,3 @@
-use crate::peer_manager::PeerManagerEvent::{PeerConnectedIncoming, PeerConnectedOutgoing};
 use crate::peer_manager::{PeerManager, PeerManagerEvent};
 use libp2p::core::connection::ConnectionId;
 use libp2p::core::ConnectedPoint;
@@ -28,7 +27,6 @@ impl NetworkBehaviour for PeerManager {
         _failed_addresses: Option<&Vec<Multiaddr>>,
         _other_established: usize,
     ) {
-        info!("inject_connection_established: peer_id: {}", peer_id);
         // TODO: Check the connection limits
         // https://github.com/sigp/lighthouse/blob/81c667b58e78243df38dc2d7311cb285f7c1d4f4/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L142
 
@@ -39,7 +37,8 @@ impl NetworkBehaviour for PeerManager {
                 role_override: _,
             } => {
                 self.peers.insert(*peer_id, address.clone());
-                self.events.push(PeerConnectedOutgoing(*peer_id));
+                self.events
+                    .push(PeerManagerEvent::PeerConnectedOutgoing(*peer_id));
                 address
             }
             // We received the node
@@ -48,7 +47,8 @@ impl NetworkBehaviour for PeerManager {
                 send_back_addr,
             } => {
                 self.peers.insert(*peer_id, send_back_addr.clone());
-                self.events.push(PeerConnectedIncoming(*peer_id));
+                self.events
+                    .push(PeerManagerEvent::PeerConnectedIncoming(*peer_id));
                 send_back_addr
             }
         };
@@ -56,6 +56,12 @@ impl NetworkBehaviour for PeerManager {
             "inject_connection_established -> Registered a peer. peer_id: {} address: {}",
             peer_id, address,
         );
+
+        info!("Current peers count: {}", self.peers.len());
+        if self.peers.len() < self.target_peers_count {
+            info!("Current peers count is lower that the target count ({}), requesting more peers to be discovered.", self.target_peers_count);
+            self.events.push(PeerManagerEvent::NeedToDiscoverMorePeers);
+        }
     }
 
     fn inject_event(
