@@ -24,6 +24,9 @@ use std::sync::{Arc, Weak};
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
 
+// Target number of peers to connect to.
+const TARGET_PEERS_COUNT: usize = 50;
+
 fn main() {
     tracing_subscriber::fmt::init();
     info!("Ray v0.0.1");
@@ -97,7 +100,7 @@ fn main() {
 
         let behaviour = BehaviourComposer::new(
             discovery,
-            crate::peer_manager::PeerManager::new(),
+            crate::peer_manager::PeerManager::new(TARGET_PEERS_COUNT),
             crate::rpc::behaviour::Behaviour::new(),
             BeaconChain::new(
                 network_config.chain_spec().expect("chain spec"),

@@ -1,6 +1,6 @@
 use crate::discovery::boot_enrs;
 use discv5::enr::{CombinedKey, NodeId};
-use discv5::{Discv5, Discv5ConfigBuilder, Enr};
+use discv5::{Discv5, Discv5ConfigBuilder, Enr, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::connection::ConnectionId;
@@ -98,9 +98,12 @@ impl Behaviour {
         let query_future = self
             .discv5
             .find_node(target_node)
-            .map(|result| QueryResult { result });
+            .map(|result: Result<Vec<Enr>, QueryError>| QueryResult { result });
 
-        info!("Active query for discovery: target_node -> {}", target_node);
+        info!(
+            "Active query for discovery: target_node(random) -> {}",
+            target_node
+        );
         self.active_queries.push(Box::pin(query_future));
     }
 }
