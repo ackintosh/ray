@@ -114,7 +114,7 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                     head.beacon_block.slot(),
                 );
             }
-            PeerManagerEvent::NeedToDiscoverMorePeers => {
+            PeerManagerEvent::NeedMorePeers => {
                 self.discovery.discover_peers();
             }
         }

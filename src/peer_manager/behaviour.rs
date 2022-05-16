@@ -60,7 +60,7 @@ impl NetworkBehaviour for PeerManager {
         info!("Current peers count: {}", self.peers.len());
         if self.peers.len() < self.target_peers_count {
             info!("Current peers count is lower that the target count ({}), requesting more peers to be discovered.", self.target_peers_count);
-            self.events.push(PeerManagerEvent::NeedToDiscoverMorePeers);
+            self.events.push(PeerManagerEvent::NeedMorePeers);
         }
     }
 

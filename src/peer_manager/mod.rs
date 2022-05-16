@@ -19,7 +19,7 @@ pub(crate) enum PeerManagerEvent {
     /// A peer has been dialed.
     PeerConnectedOutgoing(PeerId),
     /// Request the behaviour to discover more peers.
-    NeedToDiscoverMorePeers,
+    NeedMorePeers,
 }
 
 impl PeerManager {
