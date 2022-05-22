@@ -56,12 +56,6 @@ impl NetworkBehaviour for PeerManager {
             "inject_connection_established -> Registered a peer. peer_id: {} address: {}",
             peer_id, address,
         );
-
-        info!("Current peers count: {}", self.peers.len());
-        if self.peers.len() < self.target_peers_count {
-            info!("Current peers count is lower that the target count ({}), requesting more peers to be discovered.", self.target_peers_count);
-            self.events.push(PeerManagerEvent::NeedMorePeers);
-        }
     }
 
     fn inject_event(
@@ -75,10 +69,19 @@ impl NetworkBehaviour for PeerManager {
 
     fn poll(
         &mut self,
-        _cx: &mut Context<'_>,
+        cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
         info!("poll");
+
+        while self.heartbeat.poll_tick(cx).is_ready() {
+            if self.need_more_peers() {
+                return Poll::Ready(NetworkBehaviourAction::GenerateEvent(
+                    PeerManagerEvent::NeedMorePeers,
+                ));
+            }
+        }
+
         if !self.events.is_empty() {
             // Emit peer manager event
             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(self.events.remove(0)));
