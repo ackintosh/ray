@@ -11,6 +11,8 @@ mod types;
 use crate::beacon_chain::BeaconChain;
 use crate::behaviour::BehaviourComposer;
 use crate::config::NetworkConfig;
+use ::types::fork_context::ForkContext;
+use ::types::MainnetEthSpec;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use futures::StreamExt;
 use libp2p::identity::Keypair;
@@ -98,17 +100,25 @@ fn main() {
         // start searching for peers
         discovery.discover_peers();
 
+        let beacon_chain = BeaconChain::new(
+            network_config.chain_spec().expect("chain spec"),
+            network_config
+                .genesis_beacon_state()
+                .expect("genesis beacon state"),
+        )
+        .expect("beacon chain");
+
+        let fork_context = Arc::new(ForkContext::new::<MainnetEthSpec>(
+            beacon_chain.slot(),
+            beacon_chain.genesis_validators_root,
+            &beacon_chain.chain_spec,
+        ));
+
         let behaviour = BehaviourComposer::new(
             discovery,
             crate::peer_manager::PeerManager::new(TARGET_PEERS_COUNT),
-            crate::rpc::behaviour::Behaviour::new(),
-            BeaconChain::new(
-                network_config.chain_spec().expect("chain spec"),
-                network_config
-                    .genesis_beacon_state()
-                    .expect("genesis beacon state"),
-            )
-            .expect("beacon chain"),
+            crate::rpc::behaviour::Behaviour::new(fork_context),
+            beacon_chain,
         );
 
         // use the executor for libp2p

@@ -7,17 +7,22 @@ use libp2p::swarm::{
     NotifyHandler, PollParameters,
 };
 use libp2p::{Multiaddr, PeerId};
+use std::sync::Arc;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
-use types::{Epoch, Slot};
+use types::{Epoch, ForkContext, Slot};
 
 pub(crate) struct Behaviour {
     events: Vec<NetworkBehaviourAction<RpcEvent, Handler>>,
+    fork_context: Arc<ForkContext>,
 }
 
 impl Behaviour {
-    pub(crate) fn new() -> Self {
-        Behaviour { events: vec![] }
+    pub(crate) fn new(fork_context: Arc<ForkContext>) -> Self {
+        Behaviour {
+            events: vec![],
+            fork_context,
+        }
     }
 
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
@@ -52,7 +57,7 @@ impl NetworkBehaviour for Behaviour {
     type OutEvent = RpcEvent;
 
     fn new_handler(&mut self) -> Self::ConnectionHandler {
-        Handler::new()
+        Handler::new(self.fork_context.clone())
     }
 
     fn addresses_of_peer(&mut self, _peer_id: &PeerId) -> Vec<Multiaddr> {

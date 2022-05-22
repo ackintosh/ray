@@ -1,12 +1,12 @@
 use types::{
     BeaconBlock, BeaconState, ChainSpec, EnrForkId, Hash256, MainnetEthSpec, Signature,
-    SignedBeaconBlock,
+    SignedBeaconBlock, Slot,
 };
 
 pub(crate) struct BeaconChain {
-    chain_spec: ChainSpec,
+    pub(crate) chain_spec: ChainSpec,
     // The root of the list of genesis validators, used during syncing.
-    genesis_validators_root: Hash256,
+    pub(crate) genesis_validators_root: Hash256,
     // Stores a "snapshot" of the chain at the time the head-of-the-chain block was received.
     canonical_head: BeaconSnapshot,
 }
@@ -43,6 +43,11 @@ impl BeaconChain {
 
     pub(crate) fn head(&self) -> BeaconSnapshot {
         self.canonical_head.clone()
+    }
+
+    pub(crate) fn slot(&self) -> Slot {
+        // NOTE: Fixing to the genesis for now as we don't implement beacon chain yet.
+        self.chain_spec.genesis_slot
     }
 }
 
