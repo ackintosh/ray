@@ -1,6 +1,7 @@
 use crate::beacon_chain::BeaconChain;
 use crate::discovery::behaviour::DiscoveryEvent;
 use crate::peer_manager::PeerManagerEvent;
+use crate::rpc::behaviour::RpcEvent;
 use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::NetworkBehaviour;
@@ -9,7 +10,6 @@ use libp2p::{NetworkBehaviour, PeerId};
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
-use crate::rpc::behaviour::RpcEvent;
 
 // The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]

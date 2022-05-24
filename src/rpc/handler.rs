@@ -12,12 +12,24 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use tracing::info;
 use types::fork_context::ForkContext;
+use types::MainnetEthSpec;
+
+// RPC internal message sent from handler to the behaviour
+#[derive(Debug)]
+pub(crate) enum HandlerReceived {
+    // A request received from the outside.
+    Request(lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>),
+    // A response received from the outside.
+    // TODO: Response
+}
 
 pub(crate) struct Handler {
-    /// Queue of outbound substreams to open.
+    // Queue of outbound substreams to open.
     dial_queue: SmallVec<[Status; 4]>, // TODO: Generalize the type of request
     fork_context: Arc<ForkContext>,
     max_rpc_size: usize,
+    // Queue of events to produce in `poll()`.
+    out_events: SmallVec<[HandlerReceived; 4]>,
 }
 
 impl Handler {
@@ -28,6 +40,7 @@ impl Handler {
             dial_queue: SmallVec::new(),
             fork_context,
             max_rpc_size,
+            out_events: SmallVec::new(),
         }
     }
 
@@ -40,7 +53,7 @@ impl Handler {
 // SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
 impl ConnectionHandler for Handler {
     type InEvent = MessageToHandler;
-    type OutEvent = ();
+    type OutEvent = HandlerReceived;
     type Error = RPCError;
     type InboundProtocol = RpcProtocol;
     type OutboundProtocol = RpcRequestProtocol;
@@ -64,11 +77,13 @@ impl ConnectionHandler for Handler {
         inbound: <Self::InboundProtocol as InboundUpgradeSend>::Output,
         _info: Self::InboundOpenInfo,
     ) {
-        // NOTE: Nothing to do for now.
         info!("inject_fully_negotiated_inbound. request: {:?}", inbound.0);
 
         // TODO: Handle `Goodbye` message
         // spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
+
+        // Inform the received request to the behaviour
+        self.out_events.push(HandlerReceived::Request(inbound.0));
     }
 
     // Injects the output of a successful upgrade on a new outbound substream
@@ -124,6 +139,11 @@ impl ConnectionHandler for Handler {
             return Poll::Ready(ConnectionHandlerEvent::OutboundSubstreamRequest {
                 protocol: SubstreamProtocol::new(RpcRequestProtocol { request }, ()),
             });
+        }
+
+        // Inform events to the behaviour. `inject_event` of the behaviour is called with the event.
+        if !self.out_events.is_empty() {
+            return Poll::Ready(ConnectionHandlerEvent::Custom(self.out_events.remove(0)));
         }
 
         Poll::Pending
