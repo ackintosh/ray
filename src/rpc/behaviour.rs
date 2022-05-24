@@ -1,4 +1,4 @@
-use crate::rpc::handler::Handler;
+use crate::rpc::handler::{Handler, HandlerReceived};
 use crate::rpc::message::Status;
 use crate::types::{ForkDigest, Root};
 use libp2p::core::connection::ConnectionId;
@@ -10,13 +10,19 @@ use libp2p::{Multiaddr, PeerId};
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
-use types::{Epoch, ForkContext, Slot};
+use types::{Epoch, ForkContext, MainnetEthSpec, Slot};
 
 // RPC events sent from RPC behaviour to the composer
 #[derive(Debug)]
 #[allow(dead_code)]
 pub(crate) enum RpcEvent {
-    Dummy,
+    ReceivedRequest(ReceivedRequest),
+}
+
+#[derive(Debug)]
+pub(crate) struct ReceivedRequest {
+    peer_id: PeerId,
+    request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
 }
 
 // RPC internal message sent from behaviour to handlers
@@ -86,6 +92,16 @@ impl NetworkBehaviour for Behaviour {
         event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as ConnectionHandler>::OutEvent,
     ) {
         info!("inject_event. peer_id: {}, event: {:?}", peer_id, event);
+        match event {
+            HandlerReceived::Request(inbound_request) => {
+                self.events.push(NetworkBehaviourAction::GenerateEvent(
+                    RpcEvent::ReceivedRequest(ReceivedRequest {
+                        peer_id,
+                        request: inbound_request,
+                    }),
+                ));
+            }
+        };
     }
 
     fn inject_dial_failure(

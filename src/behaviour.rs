@@ -151,7 +151,8 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
 }
 
 impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
-    fn inject_event(&mut self, _event: RpcEvent) {
-        info!("NetworkBehaviourEventProcess<RpcEvent>");
+    fn inject_event(&mut self, event: RpcEvent) {
+        info!("NetworkBehaviourEventProcess<RpcEvent> event: {:?}", event);
+        // TODO: handle the event
     }
 }
