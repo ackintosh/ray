@@ -84,10 +84,10 @@ fn main() {
         }
     }
     let mut swarm = SwarmBuilder::new(transport, behaviour, local_peer_id)
-        .executor(Box::new(Executor(Arc::downgrade(&runtime.clone()))))
+        .executor(Box::new(Executor(Arc::downgrade(&runtime))))
         .build();
 
-    runtime.clone().spawn(async move {
+    runtime.spawn(async move {
         let listen_multiaddr = {
             let mut multiaddr =
                 libp2p::core::multiaddr::Multiaddr::from(std::net::Ipv4Addr::new(0, 0, 0, 0));

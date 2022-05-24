@@ -102,7 +102,7 @@ impl ProtocolId {
         }
     }
 
-    fn into_lighthouse_protocol_id(&self) -> lighthouse_network::rpc::protocol::ProtocolId {
+    fn lighthouse_protocol_id(&self) -> lighthouse_network::rpc::protocol::ProtocolId {
         // TODO:
         lighthouse_network::rpc::protocol::ProtocolId::new(
             lighthouse_network::rpc::protocol::Protocol::Status,
@@ -222,7 +222,7 @@ where
                         let ssz_snappy_codec =
                         lighthouse_network::rpc::codec::base::BaseInboundCodec::new(
                             lighthouse_network::rpc::codec::ssz_snappy::SSZSnappyInboundCodec::new(
-                                protocol_id.into_lighthouse_protocol_id(),
+                                protocol_id.lighthouse_protocol_id(),
                                 self.max_rpc_size,
                                 self.fork_context.clone(),
                             ),

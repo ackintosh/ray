@@ -183,10 +183,7 @@ impl NetworkBehaviour for Behaviour {
                     info!("Discovery query completed. found peers: {:?}", enrs);
                     // NOTE: Ideally we need to filter out peers from the result.
                     //       https://github.com/sigp/lighthouse/blob/9c5a8ab7f2098d1ffc567af27f385c55f471cb9c/beacon_node/eth2_libp2p/src/peer_manager/mod.rs#L256
-                    let peers = enrs
-                        .iter()
-                        .map(|enr| crate::identity::enr_to_peer_id(&enr))
-                        .collect();
+                    let peers = enrs.iter().map(crate::identity::enr_to_peer_id).collect();
                     Poll::Ready(NetworkBehaviourAction::GenerateEvent(
                         DiscoveryEvent::FoundPeers(peers),
                     ))
