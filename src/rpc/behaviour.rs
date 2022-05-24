@@ -12,6 +12,19 @@ use std::task::{Context, Poll};
 use tracing::{info, warn};
 use types::{Epoch, ForkContext, Slot};
 
+// RPC events sent from RPC behaviour to the composer
+#[derive(Debug)]
+#[allow(dead_code)]
+pub(crate) enum RpcEvent {
+    Dummy,
+}
+
+// RPC message sent from behaviour to handlers
+#[derive(Debug)]
+pub(crate) enum MessageToHandler {
+    SendStatus(Status),
+}
+
 pub(crate) struct Behaviour {
     events: Vec<NetworkBehaviourAction<RpcEvent, Handler>>,
     fork_context: Arc<ForkContext>,
@@ -39,7 +52,7 @@ impl Behaviour {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,
-            event: RpcEvent::SendStatus(Status {
+            event: MessageToHandler::SendStatus(Status {
                 fork_digest,
                 finalized_root,
                 finalized_epoch,
@@ -99,10 +112,4 @@ impl NetworkBehaviour for Behaviour {
 
         Poll::Pending
     }
-}
-
-// RPC events sent to handlers
-#[derive(Debug)]
-pub(crate) enum RpcEvent {
-    SendStatus(Status),
 }

@@ -1,4 +1,4 @@
-use crate::rpc::behaviour::RpcEvent;
+use crate::rpc::behaviour::MessageToHandler;
 use crate::rpc::error::RPCError;
 use crate::rpc::message::Status;
 use crate::rpc::protocol::{RpcProtocol, RpcRequestProtocol};
@@ -39,7 +39,7 @@ impl Handler {
 
 // SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
 impl ConnectionHandler for Handler {
-    type InEvent = RpcEvent;
+    type InEvent = MessageToHandler;
     type OutEvent = ();
     type Error = RPCError;
     type InboundProtocol = RpcProtocol;
@@ -85,7 +85,7 @@ impl ConnectionHandler for Handler {
     fn inject_event(&mut self, event: Self::InEvent) {
         info!("inject_event. event: {:?}", event);
         match event {
-            RpcEvent::SendStatus(status_request) => self.send_status(status_request),
+            MessageToHandler::SendStatus(status_request) => self.send_status(status_request),
         }
     }
 
