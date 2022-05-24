@@ -123,7 +123,7 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 warn!("PeerManagerEvent::PeerConnectedIncoming, but no implementation for the event for now. peer_id: {}", peer_id);
             }
             PeerManagerEvent::PeerConnectedOutgoing(peer_id) => {
-                // The dialing client MUST send a Status request upon connection.
+                // Spec: The dialing client MUST send a Status request upon connection.
                 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
 
                 // Ref: Building a `StatusMessage`
