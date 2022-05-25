@@ -1,5 +1,6 @@
 use crate::rpc::handler::{Handler, HandlerReceived};
 use crate::rpc::message::Status;
+use crate::rpc::{ReceivedRequest, RpcEvent};
 use crate::types::{ForkDigest, Root};
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
@@ -10,28 +11,21 @@ use libp2p::{Multiaddr, PeerId};
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
-use types::{Epoch, ForkContext, MainnetEthSpec, Slot};
+use types::{Epoch, ForkContext, Slot};
 
-// RPC events sent from RPC behaviour to the composer
-#[derive(Debug)]
-#[allow(dead_code)]
-pub(crate) enum RpcEvent {
-    ReceivedRequest(ReceivedRequest),
-}
-
-#[derive(Debug)]
-pub(crate) struct ReceivedRequest {
-    #[allow(dead_code)]
-    peer_id: PeerId,
-    #[allow(dead_code)]
-    request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
-}
+// ////////////////////////////////////////////////////////
+// Internal message of RPC module sent by Behaviour
+// ////////////////////////////////////////////////////////
 
 // RPC internal message sent from behaviour to handlers
 #[derive(Debug)]
 pub(crate) enum MessageToHandler {
     SendStatus(Status),
 }
+
+// ////////////////////////////////////////////////////////
+// Behaviour
+// ////////////////////////////////////////////////////////
 
 pub(crate) struct Behaviour {
     events: Vec<NetworkBehaviourAction<RpcEvent, Handler>>,

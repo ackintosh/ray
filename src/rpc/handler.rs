@@ -14,6 +14,10 @@ use tracing::info;
 use types::fork_context::ForkContext;
 use types::MainnetEthSpec;
 
+// ////////////////////////////////////////////////////////
+// Internal events of RPC module sent by Handler
+// ////////////////////////////////////////////////////////
+
 // RPC internal message sent from handler to the behaviour
 #[derive(Debug)]
 pub(crate) enum HandlerReceived {
@@ -22,6 +26,10 @@ pub(crate) enum HandlerReceived {
     // A response received from the outside.
     // TODO: Response
 }
+
+// ////////////////////////////////////////////////////////
+// Handler
+// ////////////////////////////////////////////////////////
 
 pub(crate) struct Handler {
     // Queue of outbound substreams to open.

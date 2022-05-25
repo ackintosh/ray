@@ -1,6 +1,7 @@
 pub(crate) mod behaviour;
 
 use discv5::Enr;
+use libp2p::PeerId;
 use std::str::FromStr;
 
 // SEE: https://github.com/sigp/lighthouse/blob/stable/common/eth2_network_config/built_in_network_configs/kiln/boot_enr.yaml
@@ -15,6 +16,16 @@ fn boot_enrs() -> Vec<Enr> {
         .iter()
         .map(|&str| Enr::from_str(str).expect("Failed to parse ENR"))
         .collect()
+}
+
+// ////////////////////////////////////////////////////////
+// Public events sent by Discovery module
+// ////////////////////////////////////////////////////////
+
+#[derive(Debug)]
+pub enum DiscoveryEvent {
+    // A query has completed. This event contains discovered peer IDs.
+    FoundPeers(Vec<PeerId>),
 }
 
 // SEE: https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L49

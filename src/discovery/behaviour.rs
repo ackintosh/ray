@@ -1,4 +1,4 @@
-use crate::discovery::boot_enrs;
+use crate::discovery::{boot_enrs, DiscoveryEvent};
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::{Discv5, Discv5ConfigBuilder, Enr, QueryError};
 use futures::stream::FuturesUnordered;
@@ -13,6 +13,19 @@ use libp2p::{Multiaddr, PeerId};
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
 use tracing::{error, info, warn};
+
+// ////////////////////////////////////////////////////////
+// Internal message of Discovery module
+// ////////////////////////////////////////////////////////
+
+// The result of a query.
+struct QueryResult {
+    result: Result<Vec<Enr>, discv5::QueryError>,
+}
+
+// ////////////////////////////////////////////////////////
+// Behaviour
+// ////////////////////////////////////////////////////////
 
 pub(crate) struct Behaviour {
     discv5: Discv5,
@@ -196,16 +209,4 @@ impl NetworkBehaviour for Behaviour {
         }
         Poll::Pending
     }
-}
-
-// The result of a query.
-struct QueryResult {
-    result: Result<Vec<Enr>, discv5::QueryError>,
-}
-
-// The events emitted by polling discovery.
-#[derive(Debug)]
-pub enum DiscoveryEvent {
-    // A query has completed. This event contains discovered peer IDs.
-    FoundPeers(Vec<PeerId>),
 }

@@ -9,14 +9,9 @@ pub(crate) mod behaviour;
 // requests. This defines the interval in seconds.
 const HEARTBEAT_INTERVAL: u64 = 30;
 
-pub(crate) struct PeerManager {
-    peers: HashMap<PeerId, Multiaddr>,
-    events: SmallVec<[PeerManagerEvent; 10]>,
-    // Target number of peers to connect to.
-    target_peers_count: usize,
-    // The heartbeat interval to perform routine maintenance.
-    heartbeat: tokio::time::Interval,
-}
+// ////////////////////////////////////////////////////////
+// Public events sent by PeerManager module
+// ////////////////////////////////////////////////////////
 
 /// The events that the `PeerManager` emits to `BehaviourComposer`.
 #[derive(Debug)]
@@ -27,6 +22,19 @@ pub(crate) enum PeerManagerEvent {
     PeerConnectedOutgoing(PeerId),
     /// Request the behaviour to discover more peers.
     NeedMorePeers,
+}
+
+// ////////////////////////////////////////////////////////
+// PeerManager
+// ////////////////////////////////////////////////////////
+
+pub(crate) struct PeerManager {
+    peers: HashMap<PeerId, Multiaddr>,
+    events: SmallVec<[PeerManagerEvent; 10]>,
+    // Target number of peers to connect to.
+    target_peers_count: usize,
+    // The heartbeat interval to perform routine maintenance.
+    heartbeat: tokio::time::Interval,
 }
 
 impl PeerManager {
