@@ -37,7 +37,8 @@ pub(crate) async fn build_network_behaviour(
     enr_key: CombinedKey,
     network_config: NetworkConfig,
 ) -> BehaviourComposer {
-    let mut discovery = crate::discovery::behaviour::Behaviour::new(enr, enr_key).await;
+    let mut discovery =
+        crate::discovery::behaviour::Behaviour::new(enr, enr_key, &network_config.boot_enr).await;
     // start searching for peers
     discovery.discover_peers();
 
