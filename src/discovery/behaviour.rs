@@ -1,4 +1,4 @@
-use crate::discovery::{boot_enrs, DiscoveryEvent};
+use crate::discovery::DiscoveryEvent;
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::{Discv5, Discv5ConfigBuilder, Enr, QueryError};
 use futures::stream::FuturesUnordered;
@@ -34,15 +34,19 @@ pub(crate) struct Behaviour {
 }
 
 impl Behaviour {
-    pub(crate) async fn new(local_enr: Enr, local_enr_key: CombinedKey) -> Self {
+    pub(crate) async fn new(
+        local_enr: Enr,
+        local_enr_key: CombinedKey,
+        boot_enr: &Vec<Enr>,
+    ) -> Self {
         // default configuration
         let config = Discv5ConfigBuilder::new().build();
         // construct the discv5 server
         let mut discv5 = Discv5::new(local_enr, local_enr_key, config).unwrap();
 
-        for boot_enr in boot_enrs() {
-            info!("Boot ENR: {}", boot_enr);
-            if let Err(e) = discv5.add_enr(boot_enr) {
+        for enr in boot_enr {
+            info!("Boot ENR: {}", enr);
+            if let Err(e) = discv5.add_enr(enr.clone()) {
                 warn!("Failed to add Boot ENR: {:?}", e);
             }
         }
@@ -52,49 +56,6 @@ impl Behaviour {
         // TODO: error handling
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L235-L238
         discv5.start(listen_addr).await.unwrap();
-
-        // establish a session by running a query
-        // info!("Executing bootstrap query.");
-        // let found = discv5
-        //     .find_node(NodeId::random())
-        //     .map(|result| {
-        //         QueryResult { result }
-        //     });
-        // info!("Found: {:?}", found);
-
-        // let mut event_stream = match runtime.block_on(discv5.event_stream()) {
-        //     Ok(event_stream) => event_stream,
-        //     Err(e) => {
-        //         error!("Failed to obtain event stream: {}", e);
-        //         exit(1);
-        //     }
-        // };
-
-        // let peers: Arc<RwLock<Vec<Enr<CombinedKey>>>> = Arc::new(RwLock::new(vec![]));
-        // runtime.spawn(async move {
-        //     loop {
-        //         tokio::select! {
-        //             Some(event) = event_stream.recv() => {
-        //                 match event {
-        //                     Discv5Event::Discovered(enr) => {
-        //                         info!("Discv5Event::Discovered: {}", enr);
-        //                         peers.write().unwrap().push(enr);
-        //                     }
-        //                     Discv5Event::EnrAdded { enr, replaced } => {
-        //                         info!("Discv5Event::EnrAdded: {}, {:?}", enr, replaced);
-        //                     }
-        //                     Discv5Event::TalkRequest(_)  => {}     // Ignore
-        //                     Discv5Event::NodeInserted { node_id, replaced } => {
-        //                         info!("Discv5Event::NodeInserted: {}, {:?}", node_id, replaced);
-        //                     }
-        //                     Discv5Event::SocketUpdated(socket_addr) => {
-        //                         info!("External socket address updated: {}", socket_addr);
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // });
 
         Behaviour {
             discv5,

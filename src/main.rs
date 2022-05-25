@@ -105,16 +105,6 @@ fn main() {
             }
         }
 
-        // for addr in boot_multiaddrs() {
-        //     info!("Dialing boot nodes: {}", addr);
-        //     match swarm.dial_addr(addr) {
-        //         Ok(()) => {}
-        //         Err(e) => {
-        //             warn!("Failed to dial to the peer: {}", e);
-        //         }
-        //     }
-        // }
-
         // SEE:
         // https://github.com/sigp/lighthouse/blob/9667dc2f0379272fe0f36a2ec015c5a560bca652/beacon_node/network/src/service.rs#L309
         // https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L305
