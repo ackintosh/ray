@@ -1,3 +1,4 @@
+use discv5::Enr;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
@@ -8,6 +9,7 @@ use types::{BeaconState, ChainSpec, Config, MainnetEthSpec};
 pub(crate) struct NetworkConfig {
     pub(crate) config: Config,
     pub(crate) genesis_state_bytes: Vec<u8>,
+    pub(crate) boot_enr: Vec<Enr>,
 }
 
 impl NetworkConfig {
@@ -20,6 +22,7 @@ impl NetworkConfig {
         Ok(NetworkConfig {
             config: load_config(&network_config_dir)?,
             genesis_state_bytes: load_genesis_state(&network_config_dir)?,
+            boot_enr: load_boot_enr(&network_config_dir)?,
         })
     }
 
@@ -61,4 +64,12 @@ fn load_genesis_state(network_config_dir: &Path) -> Result<Vec<u8>, String> {
         .read_to_end(&mut buf)
         .map_err(|e| format!("Failed to read genesis.ssz: {}", e))?;
     Ok(buf)
+}
+
+fn load_boot_enr(network_config_dir: &Path) -> Result<Vec<Enr>, String> {
+    File::open(network_config_dir.join("boot_enr.yaml"))
+        .map_err(|e| format!("Failed to open boot_enr.yaml: {}", e))
+        .and_then(|file| {
+            serde_yaml::from_reader(file).map_err(|e| format!("Unable to parse boot enr: {}", e))
+        })
 }
