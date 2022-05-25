@@ -1,10 +1,12 @@
 use crate::beacon_chain::BeaconChain;
-use crate::discovery::behaviour::DiscoveryEvent;
+use crate::discovery::DiscoveryEvent;
 use crate::peer_manager::PeerManagerEvent;
-use crate::rpc::behaviour::RpcEvent;
+use crate::rpc::RpcEvent;
+use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::handler::DummyConnectionHandler;
+use libp2p::swarm::NetworkBehaviour;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
-use libp2p::NetworkBehaviour;
+use libp2p::{NetworkBehaviour, PeerId};
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
@@ -20,8 +22,7 @@ pub(crate) struct BehaviourComposer {
 
     /* Auxiliary Fields */
     #[behaviour(ignore)]
-    #[allow(dead_code)]
-    internal_events: VecDeque<InternalComposerMessage>, // NOTE: unused for now
+    internal_events: VecDeque<InternalComposerEvent>,
     #[behaviour(ignore)]
     beacon_chain: BeaconChain,
 }
@@ -65,29 +66,55 @@ impl BehaviourComposer {
 
         // Handle internal events
         // see https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/behaviour/mod.rs#L1047
-        // if let Some(event) = self.internal_events.pop_front() {
-        //     return match event {
-        //     }
-        // }
+        if let Some(event) = self.internal_events.pop_front() {
+            return match event {
+                InternalComposerEvent::DialPeer(peer_id) => {
+                    let handler = self.new_handler();
+                    Poll::Ready(NetworkBehaviourAction::Dial {
+                        opts: DialOpts::peer_id(peer_id)
+                            .condition(PeerCondition::Disconnected)
+                            .build(),
+                        handler,
+                    })
+                }
+            };
+        }
 
         Poll::Pending
     }
 }
 
-// NOTE: unused for now
-/// Internal type to pass messages from sub-behaviours to the poll of the BehaviourComposer.
-enum InternalComposerMessage {}
+enum InternalComposerEvent {
+    DialPeer(PeerId),
+}
 
 impl NetworkBehaviourEventProcess<DiscoveryEvent> for BehaviourComposer {
-    fn inject_event(&mut self, _event: DiscoveryEvent) {
-        info!("NetworkBehaviourEventProcess<DiscoveryEvent>::inject_event");
+    fn inject_event(&mut self, event: DiscoveryEvent) {
+        info!(
+            "NetworkBehaviourEventProcess<DiscoveryEvent> event: {:?}",
+            event
+        );
+
+        match event {
+            DiscoveryEvent::FoundPeers(peer_ids) => {
+                if self.peer_manager.need_more_peers() {
+                    info!("Requesting more peers to be discovered.");
+                    self.discovery.discover_peers();
+                }
+
+                for peer in peer_ids {
+                    self.internal_events
+                        .push_back(InternalComposerEvent::DialPeer(peer));
+                }
+            }
+        };
     }
 }
 
 impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
     fn inject_event(&mut self, event: PeerManagerEvent) {
         info!(
-            "NetworkBehaviourEventProcess<PeerManagerEvent>::inject_event. event: {:?}",
+            "NetworkBehaviourEventProcess<PeerManagerEvent> event: {:?}",
             event
         );
 
@@ -96,7 +123,7 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 warn!("PeerManagerEvent::PeerConnectedIncoming, but no implementation for the event for now. peer_id: {}", peer_id);
             }
             PeerManagerEvent::PeerConnectedOutgoing(peer_id) => {
-                // The dialing client MUST send a Status request upon connection.
+                // Spec: The dialing client MUST send a Status request upon connection.
                 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
 
                 // Ref: Building a `StatusMessage`
@@ -115,14 +142,17 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 );
             }
             PeerManagerEvent::NeedMorePeers => {
-                self.discovery.discover_peers();
+                if !self.discovery.has_active_queries() {
+                    self.discovery.discover_peers();
+                }
             }
         }
     }
 }
 
 impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
-    fn inject_event(&mut self, _event: RpcEvent) {
-        info!("NetworkBehaviourEventProcess<RpcEvent>::inject_event");
+    fn inject_event(&mut self, event: RpcEvent) {
+        info!("NetworkBehaviourEventProcess<RpcEvent> event: {:?}", event);
+        // TODO: handle the event
     }
 }

@@ -1,5 +1,6 @@
 mod beacon_chain;
 mod behaviour;
+mod bootstrap;
 mod config;
 mod discovery;
 mod identity;
@@ -10,13 +11,12 @@ mod types;
 
 use crate::beacon_chain::BeaconChain;
 use crate::behaviour::BehaviourComposer;
+use crate::bootstrap::{build_network_behaviour, build_network_transport};
 use crate::config::NetworkConfig;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use futures::StreamExt;
 use libp2p::identity::Keypair;
-use libp2p::noise;
 use libp2p::swarm::SwarmBuilder;
-use libp2p::Transport;
 use std::future::Future;
 use std::pin::Pin;
 use std::process::exit;
@@ -51,10 +51,6 @@ fn main() {
     let enr = EnrBuilder::new("v4").build(&enr_key).unwrap();
     info!("Local ENR: {}", enr);
 
-    // local PeerId
-    let local_peer_id = crate::identity::enr_to_peer_id(&enr);
-    info!("Local PeerId: {}", local_peer_id);
-
     // Load network configs
     // Ref: https://github.com/sigp/lighthouse/blob/b6493d5e2400234ce7148e3a400d6663c3f0af89/common/clap_utils/src/lib.rs#L20
     let network_config = NetworkConfig::new().expect("should load network configs");
@@ -70,72 +66,35 @@ fn main() {
 
     // libp2p
     // Ref: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
-    let mut swarm = {
-        let transport = {
-            let tcp = libp2p::tcp::TokioTcpConfig::new().nodelay(true);
-            let transport = libp2p::dns::TokioDnsConfig::system(tcp).unwrap_or_else(|e| {
-                error!("Failed to configure DNS: {}", e);
-                exit(1);
-            });
+    let local_peer_id = crate::identity::enr_to_peer_id(&enr);
+    info!("Local PeerId: {}", local_peer_id);
+    let transport = runtime.block_on(build_network_transport(key_pair));
+    let behaviour = runtime.block_on(build_network_behaviour(enr, enr_key, network_config));
 
-            let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
-                .into_authentic(&key_pair)
-                .expect("Signing libp2p-noise static DH keypair failed.");
-
-            transport
-                .upgrade(libp2p::core::upgrade::Version::V1)
-                .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
-                .multiplex(libp2p::core::upgrade::SelectUpgrade::new(
-                    libp2p::yamux::YamuxConfig::default(),
-                    libp2p::mplex::MplexConfig::default(),
-                ))
-                .timeout(std::time::Duration::from_secs(20))
-                .boxed()
-        };
-
-        let mut discovery =
-            runtime.block_on(crate::discovery::behaviour::Behaviour::new(enr, enr_key));
-        // start searching for peers
-        discovery.discover_peers();
-
-        let behaviour = BehaviourComposer::new(
-            discovery,
-            crate::peer_manager::PeerManager::new(TARGET_PEERS_COUNT),
-            crate::rpc::behaviour::Behaviour::new(),
-            BeaconChain::new(
-                network_config.chain_spec().expect("chain spec"),
-                network_config
-                    .genesis_beacon_state()
-                    .expect("genesis beacon state"),
-            )
-            .expect("beacon chain"),
-        );
-
-        // use the executor for libp2p
-        struct Executor(Weak<Runtime>);
-        impl libp2p::core::Executor for Executor {
-            fn exec(&self, f: Pin<Box<dyn Future<Output = ()> + Send>>) {
-                if let Some(runtime) = self.0.upgrade() {
-                    info!("Executor: Spawning a task");
-                    runtime.spawn(f);
-                } else {
-                    warn!("Executor: Couldn't spawn task. Runtime shutting down");
-                }
+    // use the executor for libp2p
+    struct Executor(Weak<Runtime>);
+    impl libp2p::core::Executor for Executor {
+        fn exec(&self, f: Pin<Box<dyn Future<Output = ()> + Send>>) {
+            if let Some(runtime) = self.0.upgrade() {
+                info!("Executor: Spawning a task");
+                runtime.spawn(f);
+            } else {
+                warn!("Executor: Couldn't spawn task. Runtime shutting down");
             }
         }
-
-        SwarmBuilder::new(transport, behaviour, local_peer_id)
-            .executor(Box::new(Executor(Arc::downgrade(&runtime))))
-            .build()
-    };
-    let listen_multiaddr = {
-        let mut multiaddr =
-            libp2p::core::multiaddr::Multiaddr::from(std::net::Ipv4Addr::new(0, 0, 0, 0));
-        multiaddr.push(libp2p::core::multiaddr::Protocol::Tcp(9000));
-        multiaddr
-    };
+    }
+    let mut swarm = SwarmBuilder::new(transport, behaviour, local_peer_id)
+        .executor(Box::new(Executor(Arc::downgrade(&runtime))))
+        .build();
 
     runtime.spawn(async move {
+        let listen_multiaddr = {
+            let mut multiaddr =
+                libp2p::core::multiaddr::Multiaddr::from(std::net::Ipv4Addr::new(0, 0, 0, 0));
+            multiaddr.push(libp2p::core::multiaddr::Protocol::Tcp(9000));
+            multiaddr
+        };
+
         match swarm.listen_on(listen_multiaddr.clone()) {
             Ok(_) => {
                 info!("Listening established: {}", listen_multiaddr);
@@ -183,6 +142,4 @@ fn main() {
     let message = crate::signal::block_until_shutdown_requested(runtime);
 
     info!("Shutting down: {:?}", message.0);
-
-    // TODO: discv5.shutdown();
 }
