@@ -1,4 +1,4 @@
-use crate::discovery::{boot_enrs, DiscoveryEvent};
+use crate::discovery::DiscoveryEvent;
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::{Discv5, Discv5ConfigBuilder, Enr, QueryError};
 use futures::stream::FuturesUnordered;
