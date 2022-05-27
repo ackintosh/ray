@@ -36,6 +36,8 @@ We aim for a simpler implementation, by narrowing down the functions.
 
 ### Running `ray`
 
+You need a recent Rust toolchain to get started. If you don't have one already, check out [Install Rust](https://www.rust-lang.org/tools/install). Once you do that, you can just use `cargo` as specified below.
+
 ```shell
 $ git clone https://github.com/ackintosh/ray.git
 $ cd ray
