@@ -29,7 +29,7 @@ const TARGET_PEERS_COUNT: usize = 50;
 
 fn main() {
     tracing_subscriber::fmt::init();
-    info!("Ray v0.0.1");
+    info!("Ray v{}", env!("CARGO_PKG_VERSION"));
 
     // generate private key
     let enr_key = CombinedKey::generate_secp256k1();
