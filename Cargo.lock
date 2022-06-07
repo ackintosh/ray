@@ -432,7 +432,7 @@ dependencies = [
 [[package]]
 name = "bls"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "blst",
  "eth2_hashing",
@@ -519,7 +519,7 @@ checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 [[package]]
 name = "cached_tree_hash"
 version = "0.1.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "eth2_hashing",
  "eth2_ssz",
@@ -610,7 +610,7 @@ dependencies = [
 [[package]]
 name = "clap_utils"
 version = "0.1.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "clap",
  "dirs",
@@ -636,12 +636,12 @@ dependencies = [
 [[package]]
 name = "compare_fields"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 
 [[package]]
 name = "compare_fields_derive"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "quote",
  "syn",
@@ -933,7 +933,7 @@ dependencies = [
 [[package]]
 name = "directory"
 version = "0.1.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "clap",
  "clap_utils",
@@ -1132,7 +1132,7 @@ dependencies = [
 [[package]]
 name = "eth2_config"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "paste",
  "types",
@@ -1141,7 +1141,7 @@ dependencies = [
 [[package]]
 name = "eth2_hashing"
 version = "0.3.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "cpufeatures",
  "lazy_static",
@@ -1152,7 +1152,7 @@ dependencies = [
 [[package]]
 name = "eth2_interop_keypairs"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "bls",
  "eth2_hashing",
@@ -1167,7 +1167,7 @@ dependencies = [
 [[package]]
 name = "eth2_network_config"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "enr",
  "eth2_config",
@@ -1180,7 +1180,7 @@ dependencies = [
 [[package]]
 name = "eth2_serde_utils"
 version = "0.1.1"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "ethereum-types",
  "hex",
@@ -1192,7 +1192,7 @@ dependencies = [
 [[package]]
 name = "eth2_ssz"
 version = "0.4.1"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "ethereum-types",
  "smallvec",
@@ -1213,7 +1213,7 @@ dependencies = [
 [[package]]
 name = "eth2_ssz_derive"
 version = "0.3.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -1224,7 +1224,7 @@ dependencies = [
 [[package]]
 name = "eth2_ssz_types"
 version = "0.2.2"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "derivative",
  "eth2_serde_utils",
@@ -1621,7 +1621,7 @@ dependencies = [
 [[package]]
 name = "hashset_delay"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "futures",
  "tokio-util",
@@ -1844,7 +1844,7 @@ dependencies = [
 [[package]]
 name = "int_to_bytes"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "bytes",
 ]
@@ -2847,7 +2847,7 @@ dependencies = [
 [[package]]
 name = "lighthouse_metrics"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "lazy_static",
  "prometheus",
@@ -2856,7 +2856,7 @@ dependencies = [
 [[package]]
 name = "lighthouse_network"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "directory",
  "dirs",
@@ -2899,7 +2899,7 @@ dependencies = [
 [[package]]
 name = "lighthouse_version"
 version = "0.1.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "git-version",
  "target_info",
@@ -3949,7 +3949,7 @@ version = "0.1.0"
 dependencies = [
  "discv5",
  "eth2_ssz",
- "eth2_ssz_derive 0.3.0 (git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027)",
+ "eth2_ssz_derive 0.3.0 (git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786)",
  "futures",
  "libp2p 0.45.0",
  "lighthouse_network",
@@ -4196,7 +4196,7 @@ checksum = "73b4b750c782965c211b42f022f59af1fbceabdd026623714f104152f1ec149f"
 [[package]]
 name = "safe_arith"
 version = "0.1.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 
 [[package]]
 name = "salsa20"
@@ -4632,7 +4632,7 @@ dependencies = [
 [[package]]
 name = "swap_or_not_shuffle"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "eth2_hashing",
  "ethereum-types",
@@ -4703,7 +4703,7 @@ checksum = "c63f48baada5c52e65a29eef93ab4f8982681b67f9e8d29c7b05abcfec2b9ffe"
 [[package]]
 name = "task_executor"
 version = "0.1.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "exit-future",
  "futures",
@@ -4742,7 +4742,7 @@ dependencies = [
 [[package]]
 name = "test_random_derive"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "quote",
  "syn",
@@ -5009,7 +5009,7 @@ dependencies = [
 [[package]]
 name = "tree_hash"
 version = "0.4.1"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "eth2_hashing",
  "ethereum-types",
@@ -5081,7 +5081,7 @@ checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
 [[package]]
 name = "types"
 version = "0.2.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "bls",
  "cached_tree_hash",
@@ -5213,7 +5213,7 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 [[package]]
 name = "unused_port"
 version = "0.1.0"
-source = "git+https://github.com/ackintosh/lighthouse.git?rev=7048b1bdab41e3cde28bb44ac3bc25c106b9d027#7048b1bdab41e3cde28bb44ac3bc25c106b9d027"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 
 [[package]]
 name = "url"

@@ -1,6 +1,5 @@
 use crate::rpc::behaviour::MessageToHandler;
 use crate::rpc::error::RPCError;
-use crate::rpc::message::Status;
 use crate::rpc::protocol::{RpcProtocol, RpcRequestProtocol};
 use libp2p::swarm::handler::{InboundUpgradeSend, OutboundUpgradeSend};
 use libp2p::swarm::{
@@ -33,7 +32,7 @@ pub(crate) enum HandlerReceived {
 
 pub(crate) struct Handler {
     // Queue of outbound substreams to open.
-    dial_queue: SmallVec<[Status; 4]>, // TODO: Generalize the type of request
+    dial_queue: SmallVec<[lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>; 4]>,
     fork_context: Arc<ForkContext>,
     max_rpc_size: usize,
     // Queue of events to produce in `poll()`.
@@ -53,8 +52,11 @@ impl Handler {
     }
 
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
-    fn send_status(&mut self, status_request: Status) {
-        self.dial_queue.push(status_request);
+    fn send_status(&mut self, status_request: lighthouse_network::rpc::StatusMessage) {
+        self.dial_queue
+            .push(lighthouse_network::rpc::outbound::OutboundRequest::Status(
+                status_request,
+            ));
     }
 }
 
@@ -101,6 +103,7 @@ impl ConnectionHandler for Handler {
         _protocol: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
         _info: Self::OutboundOpenInfo,
     ) {
+        info!("inject_fully_negotiated_outbound");
         // NOTE: We should do something like this, though nothing to do for now.
         // https://github.com/sigp/lighthouse/blob/db0beb51788576565cef9534ad9490a4a498b544/beacon_node/lighthouse_network/src/rpc/handler.rs#L373
     }
@@ -145,7 +148,14 @@ impl ConnectionHandler for Handler {
                 request
             );
             return Poll::Ready(ConnectionHandlerEvent::OutboundSubstreamRequest {
-                protocol: SubstreamProtocol::new(RpcRequestProtocol { request }, ()),
+                protocol: SubstreamProtocol::new(
+                    RpcRequestProtocol {
+                        request,
+                        max_rpc_size: self.max_rpc_size,
+                        fork_context: self.fork_context.clone(),
+                    },
+                    (),
+                ),
             });
         }
 

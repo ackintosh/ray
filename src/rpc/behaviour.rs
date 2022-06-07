@@ -1,5 +1,4 @@
 use crate::rpc::handler::{Handler, HandlerReceived};
-use crate::rpc::message::Status;
 use crate::rpc::{ReceivedRequest, RpcEvent};
 use crate::types::{ForkDigest, Root};
 use libp2p::core::connection::ConnectionId;
@@ -20,7 +19,7 @@ use types::{Epoch, ForkContext, Slot};
 // RPC internal message sent from behaviour to handlers
 #[derive(Debug)]
 pub(crate) enum MessageToHandler {
-    SendStatus(Status),
+    SendStatus(lighthouse_network::rpc::StatusMessage),
 }
 
 // ////////////////////////////////////////////////////////
@@ -54,7 +53,7 @@ impl Behaviour {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,
-            event: MessageToHandler::SendStatus(Status {
+            event: MessageToHandler::SendStatus(lighthouse_network::rpc::StatusMessage {
                 fork_digest,
                 finalized_root,
                 finalized_epoch,
