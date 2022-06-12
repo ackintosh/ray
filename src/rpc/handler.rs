@@ -1,12 +1,15 @@
 use crate::rpc::behaviour::MessageToHandler;
 use crate::rpc::error::RPCError;
 use crate::rpc::protocol::{OutboundFramed, RpcProtocol, RpcRequestProtocol};
+use futures::StreamExt;
 use libp2p::swarm::handler::{InboundUpgradeSend, OutboundUpgradeSend};
 use libp2p::swarm::{
     ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive,
     SubstreamProtocol,
 };
+use lighthouse_network::rpc::methods::RPCCodedResponse;
 use smallvec::SmallVec;
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -153,7 +156,7 @@ impl ConnectionHandler for Handler {
 
     fn poll(
         &mut self,
-        _cx: &mut Context<'_>,
+        cx: &mut Context<'_>,
     ) -> Poll<
         ConnectionHandlerEvent<
             Self::OutboundProtocol,
@@ -186,6 +189,32 @@ impl ConnectionHandler for Handler {
         // Inform events to the behaviour. `inject_event` of the behaviour is called with the event.
         if !self.out_events.is_empty() {
             return Poll::Ready(ConnectionHandlerEvent::Custom(self.out_events.remove(0)));
+        }
+
+        // Drive outbound streams that need to be processed
+        for outbound_substream_id in self.outbound_substreams.keys().copied().collect::<Vec<_>>() {
+            let mut entry = match self.outbound_substreams.entry(outbound_substream_id) {
+                Entry::Occupied(entry) => entry,
+                Entry::Vacant(_) => unreachable!(),
+            };
+
+            match entry.get_mut().poll_next_unpin(cx) {
+                Poll::Ready(Some(Ok(rpc_coded_response))) => match rpc_coded_response {
+                    RPCCodedResponse::Success(response) => {
+                        info!("rpc response: {:?}", response)
+                    }
+                    RPCCodedResponse::Error(_, _) => {
+                        todo!()
+                    }
+                    RPCCodedResponse::StreamTermination(_) => {
+                        todo!()
+                    }
+                },
+                Poll::Pending => {}
+                _ => {
+                    todo!()
+                }
+            }
         }
 
         Poll::Pending
