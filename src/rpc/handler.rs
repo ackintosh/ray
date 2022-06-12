@@ -1,17 +1,22 @@
 use crate::rpc::behaviour::MessageToHandler;
 use crate::rpc::error::RPCError;
-use crate::rpc::protocol::{RpcProtocol, RpcRequestProtocol};
+use crate::rpc::protocol::{OutboundFramed, RpcProtocol, RpcRequestProtocol};
 use libp2p::swarm::handler::{InboundUpgradeSend, OutboundUpgradeSend};
 use libp2p::swarm::{
     ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive,
     SubstreamProtocol,
 };
 use smallvec::SmallVec;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use tracing::info;
+use tracing::{error, info};
 use types::fork_context::ForkContext;
 use types::MainnetEthSpec;
+
+// Identifier of inbound and outbound substreams from the handler's perspective.
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+pub struct SubstreamId(usize);
 
 // ////////////////////////////////////////////////////////
 // Internal events of RPC module sent by Handler
@@ -37,6 +42,10 @@ pub(crate) struct Handler {
     max_rpc_size: usize,
     // Queue of events to produce in `poll()`.
     out_events: SmallVec<[HandlerReceived; 4]>,
+    // Map of outbound substreams that need to be driven to completion.
+    outbound_substreams: HashMap<SubstreamId, OutboundFramed>,
+    // Sequential ID for outbound substreams.
+    current_outbound_substream_id: SubstreamId,
 }
 
 impl Handler {
@@ -48,6 +57,8 @@ impl Handler {
             fork_context,
             max_rpc_size,
             out_events: SmallVec::new(),
+            outbound_substreams: HashMap::new(),
+            current_outbound_substream_id: SubstreamId(0),
         }
     }
 
@@ -68,7 +79,7 @@ impl ConnectionHandler for Handler {
     type InboundProtocol = RpcProtocol;
     type OutboundProtocol = RpcRequestProtocol;
     type InboundOpenInfo = ();
-    type OutboundOpenInfo = ();
+    type OutboundOpenInfo = lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>;
 
     fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
         info!("Handler::listen_protocol");
@@ -100,12 +111,25 @@ impl ConnectionHandler for Handler {
     // The second argument is the information that was previously passed to ConnectionHandlerEvent::OutboundSubstreamRequest.
     fn inject_fully_negotiated_outbound(
         &mut self,
-        _protocol: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
-        _info: Self::OutboundOpenInfo,
+        stream: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
+        info: Self::OutboundOpenInfo,
     ) {
-        info!("inject_fully_negotiated_outbound");
-        // NOTE: We should do something like this, though nothing to do for now.
-        // https://github.com/sigp/lighthouse/blob/db0beb51788576565cef9534ad9490a4a498b544/beacon_node/lighthouse_network/src/rpc/handler.rs#L373
+        info!("inject_fully_negotiated_outbound. info: {:?}", info);
+        let request = info;
+        if request.expected_responses() > 0 {
+            if self
+                .outbound_substreams
+                .insert(self.current_outbound_substream_id, stream)
+                .is_some()
+            {
+                error!(
+                    "Duplicate outbound substream id: {:?}",
+                    self.current_outbound_substream_id
+                );
+            }
+
+            self.current_outbound_substream_id.0 += 1;
+        }
     }
 
     fn inject_event(&mut self, event: Self::InEvent) {
@@ -150,11 +174,11 @@ impl ConnectionHandler for Handler {
             return Poll::Ready(ConnectionHandlerEvent::OutboundSubstreamRequest {
                 protocol: SubstreamProtocol::new(
                     RpcRequestProtocol {
-                        request,
+                        request: request.clone(),
                         max_rpc_size: self.max_rpc_size,
                         fork_context: self.fork_context.clone(),
                     },
-                    (),
+                    request,
                 ),
             });
         }

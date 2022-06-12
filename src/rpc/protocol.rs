@@ -141,11 +141,13 @@ impl UpgradeInfo for RpcRequestProtocol {
     }
 }
 
+pub(crate) type OutboundFramed = Framed<
+    Compat<NegotiatedSubstream>,
+    lighthouse_network::rpc::codec::OutboundCodec<MainnetEthSpec>,
+>;
+
 impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
-    type Output = Framed<
-        Compat<NegotiatedSubstream>,
-        lighthouse_network::rpc::codec::OutboundCodec<MainnetEthSpec>,
-    >;
+    type Output = OutboundFramed;
     type Error = lighthouse_network::rpc::RPCError;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
