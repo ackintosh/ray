@@ -31,7 +31,7 @@ pub(crate) enum HandlerReceived {
     // A request received from the outside.
     Request(lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>),
     // A response received from the outside.
-    // TODO: Response
+    Response(lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>),
 }
 
 // ////////////////////////////////////////////////////////
@@ -201,7 +201,9 @@ impl ConnectionHandler for Handler {
             match entry.get_mut().poll_next_unpin(cx) {
                 Poll::Ready(Some(Ok(rpc_coded_response))) => match rpc_coded_response {
                     RPCCodedResponse::Success(response) => {
-                        info!("rpc response: {:?}", response)
+                        return Poll::Ready(ConnectionHandlerEvent::Custom(
+                            HandlerReceived::Response(response),
+                        ));
                     }
                     RPCCodedResponse::Error(_, _) => {
                         todo!()

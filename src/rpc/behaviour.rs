@@ -1,5 +1,5 @@
 use crate::rpc::handler::{Handler, HandlerReceived};
-use crate::rpc::{ReceivedRequest, RpcEvent};
+use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use crate::types::{ForkDigest, Root};
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
@@ -94,6 +94,11 @@ impl NetworkBehaviour for Behaviour {
                         peer_id,
                         request: inbound_request,
                     }),
+                ));
+            }
+            HandlerReceived::Response(response) => {
+                self.events.push(NetworkBehaviourAction::GenerateEvent(
+                    RpcEvent::ReceivedResponse(ReceivedResponse { response }),
                 ));
             }
         };
