@@ -48,7 +48,7 @@ $ RUST_LOG=info cargo run
 
 ![Architecture](https://raw.githubusercontent.com/ackintosh/ray/f285b1f1df4f28a9e6aca9ca1d35b00661210ad6/diagrams/architecture.png)
 
-## Resources for the Consensus Layer implementers
+## Resources for the Beacon Node implementers
 
 Here are the specifications / documentations that Consensus Layer Implementers should refer to.
 
@@ -60,6 +60,11 @@ Here are the specifications / documentations that Consensus Layer Implementers s
 ### Documents
 
 - https://github.com/timbeiko/eth-roadmap-faq
+
+### Videos
+
+[Whiteboard Series with NEAR | Ep: 44 Adrian Manning from Sigma Prime](https://www.youtube.com/watch?v=XvWf6QMBO6k)  
+> We'll explore how the nodes communicate and for what reason. This will include Discovery v5, libp2p, Gossipsub, and the Eth2 RPC.
 
 ## Author
 

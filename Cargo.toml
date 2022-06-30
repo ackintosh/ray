@@ -21,7 +21,7 @@ eth2_ssz_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
-tokio = { version = "1.19.1", features = ["full"] }
+tokio = { version = "1.19.2", features = ["full"] }
 tokio-io-timeout = "1.2.0"
 # NOTE: Build fails if we upadte tokio-util >= 0.7.0.
 # -> RpcProtocol::upgrade_inbound()
@@ -29,7 +29,7 @@ tokio-io-timeout = "1.2.0"
 tokio-util = { version = "=0.6.10", features = ["codec", "compat"] }
 void = "1.0.2"
 
-libp2p = { version = "0.45.0", features = ["dns-tokio", "tcp-tokio"] }
+libp2p = { version = "0.45.1", features = ["dns-tokio", "tcp-tokio"] }
 
 [build-dependencies]
 zip = "0.6.2"
