@@ -46,7 +46,7 @@ $ RUST_LOG=info cargo run
 
 ### Architecture
 
-![Architecture](https://raw.githubusercontent.com/ackintosh/ray/f285b1f1df4f28a9e6aca9ca1d35b00661210ad6/diagrams/architecture.png)
+![Architecture](https://raw.githubusercontent.com/ackintosh/ray/main/diagrams/architecture.png)
 
 ## Resources for the Beacon Node implementers
 
