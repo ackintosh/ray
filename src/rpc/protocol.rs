@@ -1,11 +1,9 @@
-use crate::rpc::message::Status;
 use ::types::fork_context::ForkContext;
 use futures::future::BoxFuture;
 use futures::prelude::*;
 use libp2p::core::{ProtocolName, UpgradeInfo};
 use libp2p::swarm::NegotiatedSubstream;
 use libp2p::{InboundUpgrade, OutboundUpgrade};
-use ssz::Encode;
 use std::fmt::{Display, Formatter};
 use std::io::Error;
 use std::sync::Arc;
@@ -13,7 +11,7 @@ use std::time::Duration;
 use tokio_io_timeout::TimeoutStream;
 use tokio_util::codec::Framed;
 use tokio_util::compat::{Compat, FuturesAsyncReadCompatExt};
-use tracing::{debug, info};
+use tracing::info;
 use types::MainnetEthSpec;
 use void::Void;
 
@@ -124,7 +122,9 @@ impl ProtocolName for ProtocolId {
 // * ref: https://github.com/libp2p/rust-libp2p/blob/master/protocols/request-response/src/handler/protocol.rs -> `RequestProtocol`
 // /////////////////////////////////////////////////////////////////////////////////////////////////
 pub(crate) struct RpcRequestProtocol {
-    pub(crate) request: Status, // TODO: Generalize the type of request
+    pub(super) request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+    pub(super) max_rpc_size: usize,
+    pub(super) fork_context: Arc<ForkContext>,
 }
 
 impl UpgradeInfo for RpcRequestProtocol {
@@ -141,27 +141,41 @@ impl UpgradeInfo for RpcRequestProtocol {
     }
 }
 
+pub(crate) type OutboundFramed = Framed<
+    Compat<NegotiatedSubstream>,
+    lighthouse_network::rpc::codec::OutboundCodec<MainnetEthSpec>,
+>;
+
 impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
-    type Output = NegotiatedSubstream;
-    type Error = RpcError;
+    type Output = OutboundFramed;
+    type Error = lighthouse_network::rpc::RPCError;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
     fn upgrade_outbound(
         self,
-        mut socket: NegotiatedSubstream,
+        socket: NegotiatedSubstream,
         protocol_id: Self::Info,
     ) -> Self::Future {
         info!("upgrade_outbound: request: {:?}", self.request);
-
-        let encoded_message: Vec<u8> = match protocol_id.encoding {
-            // https://github.com/sigp/lighthouse/blob/fff4dd6311695c1d772a9d6991463915edf223d5/beacon_node/lighthouse_network/src/rpc/codec/ssz_snappy.rs#L214
-            Encoding::SSZSnappy => self.request.as_ssz_bytes(),
+        // convert to a tokio compatible socket
+        let socket = socket.compat();
+        let codec = match protocol_id.encoding {
+            Encoding::SSZSnappy => {
+                let ssz_snappy_codec = lighthouse_network::rpc::codec::base::BaseOutboundCodec::new(
+                    lighthouse_network::rpc::codec::ssz_snappy::SSZSnappyOutboundCodec::new(
+                        protocol_id.lighthouse_protocol_id(),
+                        self.max_rpc_size,
+                        self.fork_context.clone(),
+                    ),
+                );
+                lighthouse_network::rpc::codec::OutboundCodec::SSZSnappy(ssz_snappy_codec)
+            }
         };
-        debug!("Encoded request message: {:?}", encoded_message);
+
+        let mut socket = Framed::new(socket, codec);
 
         async move {
-            let number_of_bytes_written = socket.write(&encoded_message).await?;
-            info!("Sent a request message. {}bytes", number_of_bytes_written);
+            socket.send(self.request).await?;
             socket.close().await?;
             Ok(socket)
         }
@@ -209,7 +223,6 @@ where
 {
     type Output = InboundOutput<TSocket>;
     type Error = Void;
-    // type Future = future::Ready<Result<Self::Output, Self::Error>>;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
     fn upgrade_inbound(self, socket: TSocket, protocol_id: Self::Info) -> Self::Future {

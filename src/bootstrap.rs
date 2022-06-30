@@ -17,6 +17,8 @@ pub(crate) async fn build_network_transport(
         exit(1);
     });
 
+    // Ref: Why are we using Noise?
+    // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#why-are-we-using-noise
     let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
         .into_authentic(&key_pair)
         .expect("Signing libp2p-noise static DH keypair failed.");

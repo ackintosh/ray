@@ -11,13 +11,13 @@ discv5 = "0.1.0-beta.13"
 futures = "0.3.7"
 # Switched to the forked version so use the codec implemented in lighthouse.
 # SEE: https://github.com/ackintosh/lighthouse/pull/4
-lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7048b1bdab41e3cde28bb44ac3bc25c106b9d027" }
+lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
 primitive-types = "0.11.1"
 serde_yaml = "0.8.24"
 smallvec = "1.8.0"
-types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7048b1bdab41e3cde28bb44ac3bc25c106b9d027" }
-eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7048b1bdab41e3cde28bb44ac3bc25c106b9d027" }
-eth2_ssz_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7048b1bdab41e3cde28bb44ac3bc25c106b9d027" }
+types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
+eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
+eth2_ssz_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
@@ -38,8 +38,8 @@ zip = "0.6.2"
 [patch.crates-io]
 # Download these crates from GitHub because latest version of these, depened by `types` crate, are not published on crates.io.
 # SEE: https://github.com/sigp/lighthouse/issues/3166
-eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7048b1bdab41e3cde28bb44ac3bc25c106b9d027" }
-eth2_ssz_types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7048b1bdab41e3cde28bb44ac3bc25c106b9d027" }
-eth2_hashing = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7048b1bdab41e3cde28bb44ac3bc25c106b9d027" }
-tree_hash = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7048b1bdab41e3cde28bb44ac3bc25c106b9d027" }
-eth2_serde_utils = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7048b1bdab41e3cde28bb44ac3bc25c106b9d027" }
+eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
+eth2_ssz_types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
+eth2_hashing = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
+tree_hash = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
+eth2_serde_utils = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
