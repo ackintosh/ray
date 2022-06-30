@@ -223,7 +223,6 @@ where
 {
     type Output = InboundOutput<TSocket>;
     type Error = Void;
-    // type Future = future::Ready<Result<Self::Output, Self::Error>>;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
     fn upgrade_inbound(self, socket: TSocket, protocol_id: Self::Info) -> Self::Future {
