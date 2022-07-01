@@ -10,7 +10,7 @@ use libp2p::{Multiaddr, PeerId};
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
-use types::{Epoch, ForkContext, Slot};
+use types::{Epoch, ForkContext, MainnetEthSpec, Slot};
 
 // ////////////////////////////////////////////////////////
 // Internal message of RPC module sent by Behaviour
@@ -20,6 +20,7 @@ use types::{Epoch, ForkContext, Slot};
 #[derive(Debug)]
 pub(crate) enum MessageToHandler {
     SendStatus(lighthouse_network::rpc::StatusMessage),
+    SendResponse(lighthouse_network::Response<MainnetEthSpec>),
 }
 
 // ////////////////////////////////////////////////////////
@@ -60,6 +61,14 @@ impl Behaviour {
                 head_root,
                 head_slot,
             }),
+        })
+    }
+
+    pub(crate) fn send_response(&mut self, peer_id: PeerId, response: lighthouse_network::Response<MainnetEthSpec>) {
+        self.events.push(NetworkBehaviourAction::NotifyHandler {
+            peer_id,
+            handler: NotifyHandler::Any,
+            event: MessageToHandler::SendResponse(response),
         })
     }
 }

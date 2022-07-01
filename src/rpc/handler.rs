@@ -1,12 +1,9 @@
 use crate::rpc::behaviour::MessageToHandler;
 use crate::rpc::error::RPCError;
-use crate::rpc::protocol::{OutboundFramed, RpcProtocol, RpcRequestProtocol};
+use crate::rpc::protocol::{InboundFramed, OutboundFramed, RpcProtocol, RpcRequestProtocol};
 use futures::StreamExt;
 use libp2p::swarm::handler::{InboundUpgradeSend, OutboundUpgradeSend};
-use libp2p::swarm::{
-    ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive,
-    SubstreamProtocol,
-};
+use libp2p::swarm::{ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive, NegotiatedSubstream, SubstreamProtocol};
 use lighthouse_network::rpc::methods::RPCCodedResponse;
 use smallvec::SmallVec;
 use std::collections::hash_map::Entry;
@@ -45,6 +42,10 @@ pub(crate) struct Handler {
     max_rpc_size: usize,
     // Queue of events to produce in `poll()`.
     out_events: SmallVec<[HandlerReceived; 4]>,
+    // Current inbound substreams awaiting processing.
+    inbound_substreams: HashMap<SubstreamId, InboundFramed<NegotiatedSubstream>>,
+    // Sequential ID for inbound substreams.
+    current_inbound_substream_id: SubstreamId,
     // Map of outbound substreams that need to be driven to completion.
     outbound_substreams: HashMap<SubstreamId, OutboundFramed>,
     // Sequential ID for outbound substreams.
@@ -60,6 +61,8 @@ impl Handler {
             fork_context,
             max_rpc_size,
             out_events: SmallVec::new(),
+            inbound_substreams: HashMap::new(),
+            current_inbound_substream_id: SubstreamId(0),
             outbound_substreams: HashMap::new(),
             current_outbound_substream_id: SubstreamId(0),
         }
@@ -101,13 +104,20 @@ impl ConnectionHandler for Handler {
         inbound: <Self::InboundProtocol as InboundUpgradeSend>::Output,
         _info: Self::InboundOpenInfo,
     ) {
-        info!("inject_fully_negotiated_inbound. request: {:?}", inbound.0);
+        let (request, substream) = inbound;
+        info!("inject_fully_negotiated_inbound. request: {:?}", request);
+
+        // Store the inbound substream
+        if let Some(_old_substream) = self.inbound_substreams.insert(self.current_inbound_substream_id, substream) {
+            error!("inbound_substream_id is duplicated. substream_id: {}", self.current_inbound_substream_id.0);
+        }
 
         // TODO: Handle `Goodbye` message
         // spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
 
         // Inform the received request to the behaviour
-        self.out_events.push(HandlerReceived::Request(inbound.0));
+        self.out_events.push(HandlerReceived::Request(request));
+        self.current_inbound_substream_id.0 += 1;
     }
 
     // Injects the output of a successful upgrade on a new outbound substream
@@ -139,6 +149,7 @@ impl ConnectionHandler for Handler {
         info!("inject_event. event: {:?}", event);
         match event {
             MessageToHandler::SendStatus(status_request) => self.send_status(status_request),
+            MessageToHandler::SendResponse(_response) => todo!(),
         }
     }
 

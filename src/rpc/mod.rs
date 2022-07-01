@@ -22,9 +22,9 @@ pub(crate) enum RpcEvent {
 #[derive(Debug)]
 pub(crate) struct ReceivedRequest {
     #[allow(dead_code)]
-    peer_id: PeerId,
+    pub(crate) peer_id: PeerId,
     #[allow(dead_code)]
-    request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
+    pub(crate) request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
 }
 
 #[derive(Debug)]
