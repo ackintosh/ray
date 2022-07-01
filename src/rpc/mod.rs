@@ -34,5 +34,5 @@ pub(crate) struct ReceivedRequest {
 #[derive(Debug)]
 pub(crate) struct ReceivedResponse {
     #[allow(dead_code)]
-    response: lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>,
+    pub(crate) response: lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>,
 }

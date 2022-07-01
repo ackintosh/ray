@@ -1,7 +1,7 @@
 use crate::rpc::behaviour::MessageToHandler;
 use crate::rpc::error::RPCError;
 use crate::rpc::protocol::{InboundFramed, OutboundFramed, RpcProtocol, RpcRequestProtocol};
-use futures::StreamExt;
+use futures::{FutureExt, SinkExt, StreamExt};
 use libp2p::swarm::handler::{InboundUpgradeSend, OutboundUpgradeSend};
 use libp2p::swarm::{
     ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive,
@@ -10,7 +10,9 @@ use libp2p::swarm::{
 use lighthouse_network::rpc::methods::RPCCodedResponse;
 use smallvec::SmallVec;
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use tracing::{error, info};
@@ -38,11 +40,20 @@ impl SubstreamIdGenerator {
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct SubstreamId(usize);
 
-// A request received from the outside.
-#[derive(Debug)]
-pub struct InboundRequest {
-    pub(crate) substream_id: SubstreamId,
-    pub(crate) request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
+enum InboundSubstreamState {
+    // The underlying substream is not being used.
+    Idle(InboundFramed<NegotiatedSubstream>),
+    // The underlying substream is processing responses.
+    Busy(Pin<Box<dyn Future<Output = Result<InboundFramed<NegotiatedSubstream>, String>> + Send>>),
+    // Temporary state during processing
+    Poisoned,
+}
+
+struct InboundSubstreamInfo {
+    // State of the substream.
+    state: InboundSubstreamState,
+    // Responses queued for sending.
+    responses_to_send: VecDeque<lighthouse_network::Response<MainnetEthSpec>>,
 }
 
 // ////////////////////////////////////////////////////////
@@ -58,6 +69,13 @@ pub(crate) enum HandlerReceived {
     Response(lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>),
 }
 
+// A request received from the outside.
+#[derive(Debug)]
+pub struct InboundRequest {
+    pub(crate) substream_id: SubstreamId,
+    pub(crate) request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
+}
+
 // ////////////////////////////////////////////////////////
 // Handler
 // ////////////////////////////////////////////////////////
@@ -70,7 +88,7 @@ pub(crate) struct Handler {
     // Queue of events to produce in `poll()`.
     out_events: SmallVec<[HandlerReceived; 4]>,
     // Current inbound substreams awaiting processing.
-    inbound_substreams: HashMap<SubstreamId, InboundFramed<NegotiatedSubstream>>,
+    inbound_substreams: HashMap<SubstreamId, InboundSubstreamInfo>,
     // Sequential ID generator for inbound substreams.
     inbound_substream_id: SubstreamIdGenerator,
     // Map of outbound substreams that need to be driven to completion.
@@ -101,6 +119,24 @@ impl Handler {
             .push(lighthouse_network::rpc::outbound::OutboundRequest::Status(
                 status_request,
             ));
+    }
+
+    fn send_response(
+        &mut self,
+        substream_id: SubstreamId,
+        response: lighthouse_network::Response<MainnetEthSpec>,
+    ) {
+        match self.inbound_substreams.get_mut(&substream_id) {
+            None => {
+                error!(
+                    "InboundSubstream not found. substream_id: {}",
+                    substream_id.0
+                )
+            }
+            Some(inbound_substream_info) => {
+                inbound_substream_info.responses_to_send.push_back(response);
+            }
+        }
     }
 }
 
@@ -137,10 +173,13 @@ impl ConnectionHandler for Handler {
         let inbound_substream_id = self.inbound_substream_id.next();
 
         // Store the inbound substream
-        if let Some(_old_substream) = self
-            .inbound_substreams
-            .insert(inbound_substream_id, substream)
-        {
+        if let Some(_old_substream) = self.inbound_substreams.insert(
+            inbound_substream_id,
+            InboundSubstreamInfo {
+                state: InboundSubstreamState::Idle(substream),
+                responses_to_send: VecDeque::new(),
+            },
+        ) {
             error!(
                 "inbound_substream_id is duplicated. substream_id: {}",
                 inbound_substream_id.0
@@ -187,7 +226,9 @@ impl ConnectionHandler for Handler {
         info!("inject_event. event: {:?}", event);
         match event {
             MessageToHandler::SendStatus(status_request) => self.send_status(status_request),
-            MessageToHandler::SendResponse(_response) => todo!(),
+            MessageToHandler::SendResponse(substream_id, response) => {
+                self.send_response(substream_id, response)
+            }
         }
     }
 
@@ -216,7 +257,9 @@ impl ConnectionHandler for Handler {
     > {
         info!("poll");
 
+        // /////////////////////////////////////////////////////////////////////////////////////////////////
         // Establish outbound substreams
+        // /////////////////////////////////////////////////////////////////////////////////////////////////
         if !self.dial_queue.is_empty() {
             let request = self.dial_queue.remove(0);
             info!(
@@ -235,12 +278,100 @@ impl ConnectionHandler for Handler {
             });
         }
 
-        // Inform events to the behaviour. `inject_event` of the behaviour is called with the event.
+        // /////////////////////////////////////////////////////////////////////////////////////////////////
+        // Inform events to the behaviour.
+        // `crate::rpc::Behaviour::inject_event()` is called with the event returned here.
+        // /////////////////////////////////////////////////////////////////////////////////////////////////
         if !self.out_events.is_empty() {
             return Poll::Ready(ConnectionHandlerEvent::Custom(self.out_events.remove(0)));
         }
 
+        // /////////////////////////////////////////////////////////////////////////////////////////////////
+        // Drive inbound streams that need to be processed
+        // /////////////////////////////////////////////////////////////////////////////////////////////////
+        let mut inbound_substreams_to_remove = vec![];
+        for (substream_id, inbound_substream_info) in self.inbound_substreams.iter_mut() {
+            loop {
+                match std::mem::replace(
+                    &mut inbound_substream_info.state,
+                    InboundSubstreamState::Poisoned,
+                ) {
+                    InboundSubstreamState::Idle(mut substream) => {
+                        if let Some(response_to_send) =
+                            inbound_substream_info.responses_to_send.pop_front()
+                        {
+                            let boxed_future = async move {
+                                let rpc_coded_response: RPCCodedResponse<MainnetEthSpec> =
+                                    response_to_send.into();
+
+                                return match substream.send(rpc_coded_response).await {
+                                    Ok(_) => match substream.close().await {
+                                        Ok(_) => Ok(substream),
+                                        Err(rpc_error) => Err(format!(
+                                            "Failed to close substream. error: {}",
+                                            rpc_error
+                                        )),
+                                    },
+                                    Err(rpc_error) => {
+                                        let mut error_message = format!(
+                                            "Failed to send response. rpc_error: {}",
+                                            rpc_error
+                                        );
+                                        if let Err(e) = substream.close().await {
+                                            error_message = format!(
+                                                "Failed to close substream. error: {}, {}",
+                                                e, error_message
+                                            );
+                                        }
+
+                                        Err(error_message)
+                                    }
+                                };
+                            }
+                            .boxed();
+
+                            inbound_substream_info.state =
+                                InboundSubstreamState::Busy(Box::pin(boxed_future));
+                        }
+                    }
+                    InboundSubstreamState::Busy(mut future) => {
+                        match future.poll_unpin(cx) {
+                            // The pending messages have been sent successfully and the stream has
+                            // terminated
+                            Poll::Ready(Ok(_stream)) => {
+                                info!("Sent a response successfully.");
+                                inbound_substreams_to_remove.push(*substream_id);
+                                // There is nothing more to process on this substream as it has
+                                // been closed. Move on to the next one.
+                                break;
+                            }
+                            // An error occurred when trying to send a response.
+                            Poll::Ready(Err(error_message)) => {
+                                // TODO: Report the error that occurred during the send process
+                                error!("Failed to send a response: {}", error_message);
+                                inbound_substreams_to_remove.push(*substream_id);
+                                break;
+                            }
+                            // The sending future has not completed. Leave the state as busy and
+                            // try to progress later.
+                            Poll::Pending => {
+                                inbound_substream_info.state = InboundSubstreamState::Busy(future);
+                                break;
+                            }
+                        }
+                    }
+                    InboundSubstreamState::Poisoned => unreachable!(),
+                }
+            }
+        }
+        // Remove closed substreams
+        for id in inbound_substreams_to_remove {
+            self.inbound_substreams.remove(&id);
+        }
+
+        // /////////////////////////////////////////////////////////////////////////////////////////////////
         // Drive outbound streams that need to be processed
+        // /////////////////////////////////////////////////////////////////////////////////////////////////
         for outbound_substream_id in self.outbound_substreams.keys().copied().collect::<Vec<_>>() {
             let mut entry = match self.outbound_substreams.entry(outbound_substream_id) {
                 Entry::Occupied(entry) => entry,

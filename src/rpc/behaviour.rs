@@ -1,4 +1,4 @@
-use crate::rpc::handler::{Handler, HandlerReceived};
+use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use crate::types::{ForkDigest, Root};
 use libp2p::core::connection::ConnectionId;
@@ -20,7 +20,7 @@ use types::{Epoch, ForkContext, MainnetEthSpec, Slot};
 #[derive(Debug)]
 pub(crate) enum MessageToHandler {
     SendStatus(lighthouse_network::rpc::StatusMessage),
-    SendResponse(lighthouse_network::Response<MainnetEthSpec>),
+    SendResponse(SubstreamId, lighthouse_network::Response<MainnetEthSpec>),
 }
 
 // ////////////////////////////////////////////////////////
@@ -67,12 +67,14 @@ impl Behaviour {
     pub(crate) fn send_response(
         &mut self,
         peer_id: PeerId,
+        connection_id: ConnectionId,
+        substream_id: SubstreamId,
         response: lighthouse_network::Response<MainnetEthSpec>,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
-            handler: NotifyHandler::Any,
-            event: MessageToHandler::SendResponse(response),
+            handler: NotifyHandler::One(connection_id),
+            event: MessageToHandler::SendResponse(substream_id, response),
         })
     }
 }
