@@ -7,9 +7,9 @@ use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::NetworkBehaviour;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::{NetworkBehaviour, PeerId};
+use lighthouse_network::rpc::protocol::InboundRequest;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
-use lighthouse_network::rpc::protocol::InboundRequest;
 use tracing::{info, warn};
 
 // The core behaviour that combines the sub-behaviours.
@@ -170,20 +170,33 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
         info!("NetworkBehaviourEventProcess<RpcEvent> event: {:?}", event);
 
         match event {
-            RpcEvent::ReceivedRequest(request) => {
-                match request.request {
-                    InboundRequest::Status(_message) => {
-                        let status_response = self.create_status_message();
-                        self.rpc.send_response(request.peer_id, lighthouse_network::Response::Status(status_response));
-                    }
-                    InboundRequest::Goodbye(_) => { todo!() }
-                    InboundRequest::BlocksByRange(_) => { todo!() }
-                    InboundRequest::BlocksByRoot(_) => { todo!() }
-                    InboundRequest::Ping(_) => { todo!() }
-                    InboundRequest::MetaData(_) => { todo!() }
+            RpcEvent::ReceivedRequest(request) => match request.request {
+                InboundRequest::Status(_message) => {
+                    let status_response = self.create_status_message();
+                    self.rpc.send_response(
+                        request.peer_id,
+                        lighthouse_network::Response::Status(status_response),
+                    );
                 }
+                InboundRequest::Goodbye(_) => {
+                    todo!()
+                }
+                InboundRequest::BlocksByRange(_) => {
+                    todo!()
+                }
+                InboundRequest::BlocksByRoot(_) => {
+                    todo!()
+                }
+                InboundRequest::Ping(_) => {
+                    todo!()
+                }
+                InboundRequest::MetaData(_) => {
+                    todo!()
+                }
+            },
+            RpcEvent::ReceivedResponse(_) => {
+                todo!()
             }
-            RpcEvent::ReceivedResponse(_) => { todo!() }
         }
     }
 }

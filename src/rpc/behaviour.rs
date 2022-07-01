@@ -64,7 +64,11 @@ impl Behaviour {
         })
     }
 
-    pub(crate) fn send_response(&mut self, peer_id: PeerId, response: lighthouse_network::Response<MainnetEthSpec>) {
+    pub(crate) fn send_response(
+        &mut self,
+        peer_id: PeerId,
+        response: lighthouse_network::Response<MainnetEthSpec>,
+    ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,

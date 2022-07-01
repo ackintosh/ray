@@ -3,7 +3,10 @@ use crate::rpc::error::RPCError;
 use crate::rpc::protocol::{InboundFramed, OutboundFramed, RpcProtocol, RpcRequestProtocol};
 use futures::StreamExt;
 use libp2p::swarm::handler::{InboundUpgradeSend, OutboundUpgradeSend};
-use libp2p::swarm::{ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive, NegotiatedSubstream, SubstreamProtocol};
+use libp2p::swarm::{
+    ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive,
+    NegotiatedSubstream, SubstreamProtocol,
+};
 use lighthouse_network::rpc::methods::RPCCodedResponse;
 use smallvec::SmallVec;
 use std::collections::hash_map::Entry;
@@ -13,6 +16,23 @@ use std::task::{Context, Poll};
 use tracing::{error, info};
 use types::fork_context::ForkContext;
 use types::MainnetEthSpec;
+
+struct SubstreamIdGenerator {
+    current_id: usize,
+}
+
+impl SubstreamIdGenerator {
+    fn new() -> Self {
+        SubstreamIdGenerator { current_id: 0 }
+    }
+
+    // Returns a sequential ID for substreams.
+    fn next(&mut self) -> SubstreamId {
+        let id = SubstreamId(self.current_id);
+        self.current_id += 1;
+        id
+    }
+}
 
 // Identifier of inbound and outbound substreams from the handler's perspective.
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
@@ -44,12 +64,12 @@ pub(crate) struct Handler {
     out_events: SmallVec<[HandlerReceived; 4]>,
     // Current inbound substreams awaiting processing.
     inbound_substreams: HashMap<SubstreamId, InboundFramed<NegotiatedSubstream>>,
-    // Sequential ID for inbound substreams.
-    current_inbound_substream_id: SubstreamId,
+    // Sequential ID generator for inbound substreams.
+    inbound_substream_id: SubstreamIdGenerator,
     // Map of outbound substreams that need to be driven to completion.
     outbound_substreams: HashMap<SubstreamId, OutboundFramed>,
-    // Sequential ID for outbound substreams.
-    current_outbound_substream_id: SubstreamId,
+    // Sequential ID generator for outbound substreams.
+    outbound_substream_id: SubstreamIdGenerator,
 }
 
 impl Handler {
@@ -62,9 +82,9 @@ impl Handler {
             max_rpc_size,
             out_events: SmallVec::new(),
             inbound_substreams: HashMap::new(),
-            current_inbound_substream_id: SubstreamId(0),
+            inbound_substream_id: SubstreamIdGenerator::new(),
             outbound_substreams: HashMap::new(),
-            current_outbound_substream_id: SubstreamId(0),
+            outbound_substream_id: SubstreamIdGenerator::new(),
         }
     }
 
@@ -107,9 +127,17 @@ impl ConnectionHandler for Handler {
         let (request, substream) = inbound;
         info!("inject_fully_negotiated_inbound. request: {:?}", request);
 
+        let inbound_substream_id = self.inbound_substream_id.next();
+
         // Store the inbound substream
-        if let Some(_old_substream) = self.inbound_substreams.insert(self.current_inbound_substream_id, substream) {
-            error!("inbound_substream_id is duplicated. substream_id: {}", self.current_inbound_substream_id.0);
+        if let Some(_old_substream) = self
+            .inbound_substreams
+            .insert(inbound_substream_id, substream)
+        {
+            error!(
+                "inbound_substream_id is duplicated. substream_id: {}",
+                inbound_substream_id.0
+            );
         }
 
         // TODO: Handle `Goodbye` message
@@ -117,7 +145,6 @@ impl ConnectionHandler for Handler {
 
         // Inform the received request to the behaviour
         self.out_events.push(HandlerReceived::Request(request));
-        self.current_inbound_substream_id.0 += 1;
     }
 
     // Injects the output of a successful upgrade on a new outbound substream
@@ -129,19 +156,19 @@ impl ConnectionHandler for Handler {
     ) {
         info!("inject_fully_negotiated_outbound. info: {:?}", info);
         let request = info;
+        let outbound_substream_id = self.outbound_substream_id.next();
+
         if request.expected_responses() > 0 {
             if self
                 .outbound_substreams
-                .insert(self.current_outbound_substream_id, stream)
+                .insert(outbound_substream_id, stream)
                 .is_some()
             {
                 error!(
                     "Duplicate outbound substream id: {:?}",
-                    self.current_outbound_substream_id
+                    outbound_substream_id
                 );
             }
-
-            self.current_outbound_substream_id.0 += 1;
         }
     }
 
