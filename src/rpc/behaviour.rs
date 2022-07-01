@@ -96,7 +96,7 @@ impl NetworkBehaviour for Behaviour {
     fn inject_event(
         &mut self,
         peer_id: PeerId,
-        _connection: ConnectionId,
+        connection_id: ConnectionId,
         event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as ConnectionHandler>::OutEvent,
     ) {
         info!("inject_event. peer_id: {}, event: {:?}", peer_id, event);
@@ -105,7 +105,9 @@ impl NetworkBehaviour for Behaviour {
                 self.events.push(NetworkBehaviourAction::GenerateEvent(
                     RpcEvent::ReceivedRequest(ReceivedRequest {
                         peer_id,
-                        request: inbound_request,
+                        connection_id,
+                        substream_id: inbound_request.substream_id,
+                        request: inbound_request.request,
                     }),
                 ));
             }

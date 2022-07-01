@@ -38,6 +38,13 @@ impl SubstreamIdGenerator {
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct SubstreamId(usize);
 
+// A request received from the outside.
+#[derive(Debug)]
+pub struct InboundRequest {
+    pub(crate) substream_id: SubstreamId,
+    pub(crate) request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
+}
+
 // ////////////////////////////////////////////////////////
 // Internal events of RPC module sent by Handler
 // ////////////////////////////////////////////////////////
@@ -46,7 +53,7 @@ pub struct SubstreamId(usize);
 #[derive(Debug)]
 pub(crate) enum HandlerReceived {
     // A request received from the outside.
-    Request(lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>),
+    Request(InboundRequest),
     // A response received from the outside.
     Response(lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>),
 }
@@ -144,7 +151,11 @@ impl ConnectionHandler for Handler {
         // spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
 
         // Inform the received request to the behaviour
-        self.out_events.push(HandlerReceived::Request(request));
+        self.out_events
+            .push(HandlerReceived::Request(InboundRequest {
+                substream_id: inbound_substream_id,
+                request,
+            }));
     }
 
     // Injects the output of a successful upgrade on a new outbound substream
