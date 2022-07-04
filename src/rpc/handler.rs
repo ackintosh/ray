@@ -208,17 +208,16 @@ impl ConnectionHandler for Handler {
         let request = info;
         let outbound_substream_id = self.outbound_substream_id.next();
 
-        if request.expected_responses() > 0 {
-            if self
+        if request.expected_responses() > 0
+            && self
                 .outbound_substreams
                 .insert(outbound_substream_id, stream)
                 .is_some()
-            {
-                error!(
-                    "Duplicate outbound substream id: {:?}",
-                    outbound_substream_id
-                );
-            }
+        {
+            error!(
+                "Duplicate outbound substream id: {:?}",
+                outbound_substream_id
+            );
         }
     }
 
