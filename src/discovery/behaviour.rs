@@ -1,6 +1,6 @@
 use crate::discovery::DiscoveryEvent;
 use discv5::enr::{CombinedKey, NodeId};
-use discv5::{Discv5, Discv5ConfigBuilder, Enr, QueryError};
+use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::connection::ConnectionId;
@@ -12,6 +12,7 @@ use libp2p::swarm::{
 use libp2p::{Multiaddr, PeerId};
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
+use tokio::sync::mpsc::Receiver;
 use tracing::{error, info, warn};
 
 // ////////////////////////////////////////////////////////
@@ -29,6 +30,7 @@ struct QueryResult {
 
 pub(crate) struct Behaviour {
     discv5: Discv5,
+    event_stream: Receiver<Discv5Event>,
     /// Active discovery queries.
     active_queries: FuturesUnordered<std::pin::Pin<Box<dyn Future<Output = QueryResult> + Send>>>,
 }
@@ -57,8 +59,12 @@ impl Behaviour {
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L235-L238
         discv5.start(listen_addr).await.unwrap();
 
+        // TODO: error handling
+        let event_stream = discv5.event_stream().await.unwrap();
+
         Behaviour {
             discv5,
+            event_stream,
             active_queries: FuturesUnordered::new(),
         }
     }
@@ -168,6 +174,18 @@ impl NetworkBehaviour for Behaviour {
                 }
             };
         }
+
+        while let Poll::Ready(Some(event)) = self.event_stream.poll_recv(cx) {
+            match event {
+                Discv5Event::Discovered(_) => {}
+                _ => info!("Discv5Event. {:?}", event),
+                // Discv5Event::EnrAdded { .. } => {}
+                // Discv5Event::NodeInserted { .. } => {}
+                // Discv5Event::SocketUpdated(_) => {}
+                // Discv5Event::TalkRequest(_) => {}
+            }
+        }
+
         Poll::Pending
     }
 }
