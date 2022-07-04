@@ -1,3 +1,5 @@
+use crate::rpc::handler::SubstreamId;
+use libp2p::core::connection::ConnectionId;
 use libp2p::PeerId;
 use types::MainnetEthSpec;
 
@@ -22,13 +24,15 @@ pub(crate) enum RpcEvent {
 #[derive(Debug)]
 pub(crate) struct ReceivedRequest {
     #[allow(dead_code)]
-    peer_id: PeerId,
+    pub(crate) peer_id: PeerId,
+    pub(crate) connection_id: ConnectionId,
+    pub(crate) substream_id: SubstreamId,
     #[allow(dead_code)]
-    request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
+    pub(crate) request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
 }
 
 #[derive(Debug)]
 pub(crate) struct ReceivedResponse {
     #[allow(dead_code)]
-    response: lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>,
+    pub(crate) response: lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>,
 }

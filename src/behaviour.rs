@@ -7,6 +7,7 @@ use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::NetworkBehaviour;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::{NetworkBehaviour, PeerId};
+use lighthouse_network::rpc::protocol::InboundRequest;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
@@ -82,6 +83,20 @@ impl BehaviourComposer {
 
         Poll::Pending
     }
+
+    fn create_status_message(&self) -> lighthouse_network::rpc::StatusMessage {
+        let enr_fork_id = self.beacon_chain.enr_fork_id();
+        let head = self.beacon_chain.head();
+        let finalized_checkpoint = head.beacon_state.finalized_checkpoint();
+
+        lighthouse_network::rpc::StatusMessage {
+            fork_digest: enr_fork_id.fork_digest,
+            finalized_root: finalized_checkpoint.root,
+            finalized_epoch: finalized_checkpoint.epoch,
+            head_root: head.beacon_block.canonical_root(),
+            head_slot: head.beacon_block.slot(),
+        }
+    }
 }
 
 enum InternalComposerEvent {
@@ -153,6 +168,44 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
 impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
     fn inject_event(&mut self, event: RpcEvent) {
         info!("NetworkBehaviourEventProcess<RpcEvent> event: {:?}", event);
-        // TODO: handle the event
+
+        match event {
+            RpcEvent::ReceivedRequest(request) => {
+                match request.request {
+                    InboundRequest::Status(message) => {
+                        info!("RpcEvent::ReceivedRequest InboundRequest::Status. request_message: {:?}", message);
+                        let status_response = self.create_status_message();
+                        self.rpc.send_response(
+                            request.peer_id,
+                            request.connection_id,
+                            request.substream_id,
+                            lighthouse_network::Response::Status(status_response),
+                        );
+                    }
+                    InboundRequest::Goodbye(_) => {
+                        todo!()
+                    }
+                    InboundRequest::BlocksByRange(_) => {
+                        todo!()
+                    }
+                    InboundRequest::BlocksByRoot(_) => {
+                        todo!()
+                    }
+                    InboundRequest::Ping(_) => {
+                        todo!()
+                    }
+                    InboundRequest::MetaData(_) => {
+                        todo!()
+                    }
+                }
+            }
+            RpcEvent::ReceivedResponse(response) => {
+                // TODO
+                info!(
+                    "RpcEvent::ReceivedResponse. response: {:?}",
+                    response.response
+                );
+            }
+        }
     }
 }

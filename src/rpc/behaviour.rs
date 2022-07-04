@@ -1,4 +1,4 @@
-use crate::rpc::handler::{Handler, HandlerReceived};
+use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use crate::types::{ForkDigest, Root};
 use libp2p::core::connection::ConnectionId;
@@ -10,7 +10,7 @@ use libp2p::{Multiaddr, PeerId};
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use tracing::{info, warn};
-use types::{Epoch, ForkContext, Slot};
+use types::{Epoch, ForkContext, MainnetEthSpec, Slot};
 
 // ////////////////////////////////////////////////////////
 // Internal message of RPC module sent by Behaviour
@@ -20,6 +20,7 @@ use types::{Epoch, ForkContext, Slot};
 #[derive(Debug)]
 pub(crate) enum MessageToHandler {
     SendStatus(lighthouse_network::rpc::StatusMessage),
+    SendResponse(SubstreamId, lighthouse_network::Response<MainnetEthSpec>),
 }
 
 // ////////////////////////////////////////////////////////
@@ -62,6 +63,20 @@ impl Behaviour {
             }),
         })
     }
+
+    pub(crate) fn send_response(
+        &mut self,
+        peer_id: PeerId,
+        connection_id: ConnectionId,
+        substream_id: SubstreamId,
+        response: lighthouse_network::Response<MainnetEthSpec>,
+    ) {
+        self.events.push(NetworkBehaviourAction::NotifyHandler {
+            peer_id,
+            handler: NotifyHandler::One(connection_id),
+            event: MessageToHandler::SendResponse(substream_id, response),
+        })
+    }
 }
 
 // NetworkBehaviour defines "what" bytes to send on the network.
@@ -83,7 +98,7 @@ impl NetworkBehaviour for Behaviour {
     fn inject_event(
         &mut self,
         peer_id: PeerId,
-        _connection: ConnectionId,
+        connection_id: ConnectionId,
         event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as ConnectionHandler>::OutEvent,
     ) {
         info!("inject_event. peer_id: {}, event: {:?}", peer_id, event);
@@ -92,7 +107,9 @@ impl NetworkBehaviour for Behaviour {
                 self.events.push(NetworkBehaviourAction::GenerateEvent(
                     RpcEvent::ReceivedRequest(ReceivedRequest {
                         peer_id,
-                        request: inbound_request,
+                        connection_id,
+                        substream_id: inbound_request.substream_id,
+                        request: inbound_request.request,
                     }),
                 ));
             }
