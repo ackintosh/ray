@@ -15,6 +15,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
+use tracing::log::trace;
 use tracing::{error, info};
 use types::fork_context::ForkContext;
 use types::MainnetEthSpec;
@@ -254,7 +255,7 @@ impl ConnectionHandler for Handler {
             Self::Error,
         >,
     > {
-        info!("poll");
+        trace!("poll");
 
         // /////////////////////////////////////////////////////////////////////////////////////////////////
         // Establish outbound substreams

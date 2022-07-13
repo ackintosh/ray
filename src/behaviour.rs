@@ -10,7 +10,7 @@ use libp2p::{NetworkBehaviour, PeerId};
 use lighthouse_network::rpc::protocol::InboundRequest;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
-use tracing::{info, warn};
+use tracing::{info, trace, warn};
 
 // The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]
@@ -63,7 +63,7 @@ impl BehaviourComposer {
             >,
         >,
     > {
-        info!("poll");
+        trace!("poll");
 
         // Handle internal events
         // see https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/behaviour/mod.rs#L1047
