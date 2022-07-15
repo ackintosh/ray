@@ -9,6 +9,7 @@ use libp2p::swarm::{
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use tracing::info;
+use tracing::log::trace;
 
 // SEE https://github.com/sigp/lighthouse/blob/eee0260a68696db58e92385ebd11a9a08e4c4665/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L21
 impl NetworkBehaviour for PeerManager {
@@ -72,7 +73,7 @@ impl NetworkBehaviour for PeerManager {
         cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
-        info!("poll");
+        trace!("poll");
 
         while self.heartbeat.poll_tick(cx).is_ready() {
             if self.need_more_peers() {

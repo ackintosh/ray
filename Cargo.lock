@@ -881,6 +881,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ee2393c4a91429dffb4bedf19f4d6abf27d8a732c8ce4980305d782e5426d57"
 
 [[package]]
+name = "delay_map"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6716ce9729be9628979ae1ff63e8bc8b7ad53b5472a2633bf079607a55328d36"
+dependencies = [
+ "futures",
+ "tokio-util",
+]
+
+[[package]]
 name = "der"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -982,7 +992,7 @@ dependencies = [
  "aes-gcm",
  "arrayvec",
  "digest 0.10.3",
- "enr",
+ "enr 0.5.1",
  "fnv",
  "futures",
  "hashlink",
@@ -996,6 +1006,40 @@ dependencies = [
  "rlp",
  "sha2 0.9.9",
  "smallvec",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "uint",
+ "zeroize",
+]
+
+[[package]]
+name = "discv5"
+version = "0.1.0-beta.14"
+source = "git+https://github.com/sigp/discv5.git?rev=878ef13378017bd8e5bf6426f23c3bf02f9e427d#878ef13378017bd8e5bf6426f23c3bf02f9e427d"
+dependencies = [
+ "aes",
+ "aes-gcm",
+ "arrayvec",
+ "delay_map",
+ "digest 0.10.3",
+ "enr 0.6.0",
+ "fnv",
+ "futures",
+ "hashlink",
+ "hex",
+ "hkdf",
+ "lazy_static",
+ "lru",
+ "more-asserts",
+ "parking_lot 0.11.2",
+ "rand 0.8.5",
+ "rlp",
+ "sha2 0.9.9",
+ "smallvec",
+ "socket2",
  "tokio",
  "tokio-stream",
  "tokio-util",
@@ -1099,6 +1143,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "enr"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78d404e58d809811e491badc0bbd49c7441b84c3e9b3dac3baf50ac21f168a1e"
+dependencies = [
+ "base64",
+ "bs58",
+ "bytes",
+ "ed25519-dalek",
+ "hex",
+ "k256",
+ "log",
+ "rand 0.8.5",
+ "rlp",
+ "serde",
+ "sha3",
+ "zeroize",
+]
+
+[[package]]
 name = "enum-as-inner"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1160,7 +1224,7 @@ name = "eth2_network_config"
 version = "0.2.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
- "enr",
+ "enr 0.5.1",
  "eth2_config",
  "eth2_ssz",
  "serde_yaml",
@@ -2856,7 +2920,7 @@ source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576
 dependencies = [
  "directory",
  "dirs",
- "discv5",
+ "discv5 0.1.0-beta.13",
  "error-chain",
  "eth2_ssz",
  "eth2_ssz_derive 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3001,6 +3065,12 @@ dependencies = [
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys",
 ]
+
+[[package]]
+name = "more-asserts"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7843ec2de400bcbc6a6328c958dc38e5359da6e93e72e37bc5246bf1ae776389"
 
 [[package]]
 name = "multiaddr"
@@ -3942,7 +4012,7 @@ dependencies = [
 name = "ray"
 version = "0.1.0"
 dependencies = [
- "discv5",
+ "discv5 0.1.0-beta.14",
  "eth2_ssz",
  "eth2_ssz_derive 0.3.0 (git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786)",
  "futures",

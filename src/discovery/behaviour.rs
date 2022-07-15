@@ -1,6 +1,6 @@
 use crate::discovery::DiscoveryEvent;
 use discv5::enr::{CombinedKey, NodeId};
-use discv5::{Discv5, Discv5ConfigBuilder, Enr, QueryError};
+use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::connection::ConnectionId;
@@ -12,7 +12,9 @@ use libp2p::swarm::{
 use libp2p::{Multiaddr, PeerId};
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
-use tracing::{error, info, warn};
+use std::time::Duration;
+use tokio::sync::mpsc::Receiver;
+use tracing::{error, info, trace, warn};
 
 // ////////////////////////////////////////////////////////
 // Internal message of Discovery module
@@ -29,6 +31,7 @@ struct QueryResult {
 
 pub(crate) struct Behaviour {
     discv5: Discv5,
+    event_stream: Receiver<Discv5Event>,
     /// Active discovery queries.
     active_queries: FuturesUnordered<std::pin::Pin<Box<dyn Future<Output = QueryResult> + Send>>>,
 }
@@ -39,8 +42,10 @@ impl Behaviour {
         local_enr_key: CombinedKey,
         boot_enr: &Vec<Enr>,
     ) -> Self {
-        // default configuration
-        let config = Discv5ConfigBuilder::new().build();
+        let config = Discv5ConfigBuilder::new()
+            // For ease to observe the `Discv5Event::SocketUpdated` event, set a short duration here.
+            .ping_interval(Duration::from_secs(10))
+            .build();
         // construct the discv5 server
         let mut discv5 = Discv5::new(local_enr, local_enr_key, config).unwrap();
 
@@ -52,13 +57,21 @@ impl Behaviour {
         }
 
         // start the discv5 server
-        let listen_addr = "0.0.0.0:19000".parse::<SocketAddr>().unwrap();
+        let listen_addr = "0.0.0.0:9000".parse::<SocketAddr>().unwrap();
         // TODO: error handling
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L235-L238
         discv5.start(listen_addr).await.unwrap();
+        info!(
+            "Started Discovery v5 server. local_enr: {}",
+            discv5.local_enr()
+        );
+
+        // TODO: error handling
+        let event_stream = discv5.event_stream().await.unwrap();
 
         Behaviour {
             discv5,
+            event_stream,
             active_queries: FuturesUnordered::new(),
         }
     }
@@ -135,16 +148,17 @@ impl NetworkBehaviour for Behaviour {
         _connection: ConnectionId,
         _event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as ConnectionHandler>::OutEvent,
     ) {
-        info!("inject_event -> nothing to do");
+        trace!("inject_event -> nothing to do");
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L948-L954
     }
 
+    #[allow(clippy::single_match)]
     fn poll(
         &mut self,
         cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
-        info!("poll");
+        trace!("poll");
 
         if let Poll::Ready(Some(query_result)) = self.active_queries.poll_next_unpin(cx) {
             info!("poll -> self.active_queries");
@@ -168,6 +182,19 @@ impl NetworkBehaviour for Behaviour {
                 }
             };
         }
+
+        while let Poll::Ready(Some(event)) = self.event_stream.poll_recv(cx) {
+            match event {
+                Discv5Event::SocketUpdated(socket_addr) => {
+                    info!("Discv5Event::SocketUpdated. {:?}", socket_addr);
+                }
+                _ => {} // Discv5Event::Discovered(_) => {}
+                        // Discv5Event::NodeInserted { .. } => {}
+                        // Discv5Event::EnrAdded { .. } => {}
+                        // Discv5Event::TalkRequest(_) => {}
+            }
+        }
+
         Poll::Pending
     }
 }
