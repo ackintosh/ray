@@ -152,6 +152,7 @@ impl NetworkBehaviour for Behaviour {
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L948-L954
     }
 
+    #[allow(clippy::single_match)]
     fn poll(
         &mut self,
         cx: &mut Context<'_>,
