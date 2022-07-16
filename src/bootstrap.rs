@@ -2,10 +2,10 @@ use crate::{BeaconChain, BehaviourComposer, CombinedKey, NetworkConfig, TARGET_P
 use discv5::Enr;
 use libp2p::core::muxing::StreamMuxerBox;
 use libp2p::identity::Keypair;
+use libp2p::tcp::GenTcpConfig;
 use libp2p::{noise, PeerId, Transport};
 use std::process::exit;
 use std::sync::Arc;
-use libp2p::tcp::GenTcpConfig;
 use tracing::error;
 use types::{ForkContext, MainnetEthSpec};
 
