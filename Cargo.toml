@@ -7,13 +7,14 @@ rust-version = "1.61"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-discv5 = "0.1.0-beta.13"
+# NOTE: Specifying the latest revision. This should be updated once the next version is released.
+discv5 = { git = "https://github.com/sigp/discv5.git", rev = "878ef13378017bd8e5bf6426f23c3bf02f9e427d" }
 futures = "0.3.7"
 # Switched to the forked version so use the codec implemented in lighthouse.
 # SEE: https://github.com/ackintosh/lighthouse/pull/4
 lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
 primitive-types = "0.11.1"
-serde_yaml = "0.8.24"
+serde_yaml = "0.8.25"
 smallvec = "1.9.0"
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
 eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }

@@ -9,7 +9,7 @@ use libp2p::swarm::{
 use libp2p::{Multiaddr, PeerId};
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use tracing::{info, warn};
+use tracing::{info, trace, warn};
 use types::{Epoch, ForkContext, MainnetEthSpec, Slot};
 
 // ////////////////////////////////////////////////////////
@@ -90,7 +90,7 @@ impl NetworkBehaviour for Behaviour {
     }
 
     fn addresses_of_peer(&mut self, _peer_id: &PeerId) -> Vec<Multiaddr> {
-        info!("addresses_of_peer -> nothing to do because this event is handled by discovery.");
+        trace!("addresses_of_peer -> nothing to do because this event is handled by discovery.");
         vec![]
     }
 
@@ -138,7 +138,7 @@ impl NetworkBehaviour for Behaviour {
         _cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
-        info!("poll");
+        trace!("poll");
 
         if !self.events.is_empty() {
             return Poll::Ready(self.events.remove(0));

@@ -41,7 +41,7 @@ You need a recent Rust toolchain to get started. If you don't have one already, 
 ```shell
 $ git clone https://github.com/ackintosh/ray.git
 $ cd ray
-$ RUST_LOG=info cargo run
+$ RUST_LOG=ray=info cargo run
 ```
 
 ### Architecture
