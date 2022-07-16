@@ -2,6 +2,7 @@ use crate::{BeaconChain, BehaviourComposer, CombinedKey, NetworkConfig, TARGET_P
 use discv5::Enr;
 use libp2p::core::muxing::StreamMuxerBox;
 use libp2p::identity::Keypair;
+use libp2p::tcp::GenTcpConfig;
 use libp2p::{noise, PeerId, Transport};
 use std::process::exit;
 use std::sync::Arc;
@@ -11,7 +12,7 @@ use types::{ForkContext, MainnetEthSpec};
 pub(crate) async fn build_network_transport(
     key_pair: Keypair,
 ) -> libp2p::core::transport::Boxed<(PeerId, StreamMuxerBox)> {
-    let tcp = libp2p::tcp::TokioTcpConfig::new().nodelay(true);
+    let tcp = libp2p::tcp::TokioTcpTransport::new(GenTcpConfig::default().nodelay(true));
     let transport = libp2p::dns::TokioDnsConfig::system(tcp).unwrap_or_else(|e| {
         error!("Failed to configure DNS: {}", e);
         exit(1);
