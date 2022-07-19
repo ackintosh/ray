@@ -1,6 +1,5 @@
 use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
-use crate::types::{ForkDigest, Root};
 use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::{
     ConnectionHandler, DialError, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
@@ -10,7 +9,7 @@ use libp2p::{Multiaddr, PeerId};
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use tracing::{info, trace, warn};
-use types::{Epoch, ForkContext, MainnetEthSpec, Slot};
+use types::{ForkContext, MainnetEthSpec};
 
 // ////////////////////////////////////////////////////////
 // Internal message of RPC module sent by Behaviour
@@ -44,23 +43,13 @@ impl Behaviour {
     pub(crate) fn send_status(
         &mut self,
         peer_id: PeerId,
-        fork_digest: ForkDigest,
-        finalized_root: Root,
-        finalized_epoch: Epoch,
-        head_root: Root,
-        head_slot: Slot,
+        message: lighthouse_network::rpc::StatusMessage,
     ) {
         // Notify ConnectionHandler, then the handler's `inject_event` is invoked with the event.
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,
-            event: MessageToHandler::SendStatus(lighthouse_network::rpc::StatusMessage {
-                fork_digest,
-                finalized_root,
-                finalized_epoch,
-                head_root,
-                head_slot,
-            }),
+            event: MessageToHandler::SendStatus(message),
         })
     }
 
@@ -115,7 +104,7 @@ impl NetworkBehaviour for Behaviour {
             }
             HandlerReceived::Response(response) => {
                 self.events.push(NetworkBehaviourAction::GenerateEvent(
-                    RpcEvent::ReceivedResponse(ReceivedResponse { response }),
+                    RpcEvent::ReceivedResponse(ReceivedResponse { peer_id, response }),
                 ));
             }
         };

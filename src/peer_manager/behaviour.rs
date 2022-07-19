@@ -1,4 +1,5 @@
 use crate::peer_manager::{PeerManager, PeerManagerEvent};
+use futures::StreamExt;
 use libp2p::core::connection::ConnectionId;
 use libp2p::core::ConnectedPoint;
 use libp2p::swarm::handler::DummyConnectionHandler;
@@ -9,7 +10,7 @@ use libp2p::swarm::{
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use tracing::info;
-use tracing::log::trace;
+use tracing::log::{error, trace};
 
 // SEE https://github.com/sigp/lighthouse/blob/eee0260a68696db58e92385ebd11a9a08e4c4665/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L21
 impl NetworkBehaviour for PeerManager {
@@ -59,6 +60,21 @@ impl NetworkBehaviour for PeerManager {
         );
     }
 
+    fn inject_connection_closed(
+        &mut self,
+        peer_id: &PeerId,
+        _: &ConnectionId,
+        _: &ConnectedPoint,
+        _: <Self::ConnectionHandler as IntoConnectionHandler>::Handler,
+        remaining_established: usize,
+    ) {
+        if remaining_established > 0 {
+            return;
+        }
+
+        self.status_peers.remove(peer_id);
+    }
+
     fn inject_event(
         &mut self,
         _peer_id: PeerId,
@@ -86,6 +102,23 @@ impl NetworkBehaviour for PeerManager {
         if !self.events.is_empty() {
             // Emit peer manager event
             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(self.events.remove(0)));
+        }
+
+        // Clients need to send Status request again to learn if the peer has a higher head.
+        // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
+        loop {
+            match self.status_peers.poll_next_unpin(cx) {
+                Poll::Ready(Some(Ok(peer_id))) => {
+                    self.status_peers.insert(peer_id);
+                    self.events.push(PeerManagerEvent::SendStatus(peer_id));
+                }
+                Poll::Ready(Some(Err(e))) => {
+                    error!("Failed to check for peers to status. error: {}", e);
+                }
+                Poll::Ready(None) | Poll::Pending => {
+                    break;
+                }
+            }
         }
 
         Poll::Pending

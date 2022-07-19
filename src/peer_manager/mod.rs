@@ -1,6 +1,8 @@
+use hashset_delay::HashSetDelay;
 use libp2p::{Multiaddr, PeerId};
 use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
+use std::time::Duration;
 use tracing::info;
 
 pub(crate) mod behaviour;
@@ -22,6 +24,8 @@ pub(crate) enum PeerManagerEvent {
     PeerConnectedOutgoing(PeerId),
     /// Request the behaviour to discover more peers.
     NeedMorePeers,
+    /// Request to send a STATUS to a peer.
+    SendStatus(PeerId),
 }
 
 // ////////////////////////////////////////////////////////
@@ -35,6 +39,8 @@ pub(crate) struct PeerManager {
     target_peers_count: usize,
     // The heartbeat interval to perform routine maintenance.
     heartbeat: tokio::time::Interval,
+    // A collection of peers awaiting to be Status'd.
+    status_peers: HashSetDelay<PeerId>,
 }
 
 impl PeerManager {
@@ -42,16 +48,25 @@ impl PeerManager {
         // Set up the peer manager heartbeat interval
         let heartbeat = tokio::time::interval(tokio::time::Duration::from_secs(HEARTBEAT_INTERVAL));
 
+        // NOTE: The time in seconds between re-status's peers. Hardcoding this for now.
+        let status_interval = Duration::from_secs(300);
+
         Self {
             peers: HashMap::new(),
             events: smallvec![],
             target_peers_count,
             heartbeat,
+            status_peers: HashSetDelay::new(status_interval),
         }
     }
 
     pub(crate) fn need_more_peers(&self) -> bool {
         info!("Current peers count: {}", self.peers.len());
         self.peers.len() < self.target_peers_count
+    }
+
+    // A STATUS message has been received from a peer. This resets the status timer.
+    pub(crate) fn statusd_peer(&mut self, peer_id: PeerId) {
+        self.status_peers.insert(peer_id);
     }
 }

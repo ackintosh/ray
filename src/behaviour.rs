@@ -7,6 +7,7 @@ use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::NetworkBehaviour;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::{NetworkBehaviour, PeerId};
+use lighthouse_network::rpc::methods::RPCResponse;
 use lighthouse_network::rpc::protocol::InboundRequest;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
@@ -144,22 +145,15 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 // Ref: Building a `StatusMessage`
                 // https://github.com/sigp/lighthouse/blob/4bf1af4e8520f235de8fe5f94afedf953df5e6a4/beacon_node/network/src/router/processor.rs#L374
 
-                let enr_fork_id = self.beacon_chain.enr_fork_id();
-                let head = self.beacon_chain.head();
-                let finalized_checkpoint = head.beacon_state.finalized_checkpoint();
-                self.rpc.send_status(
-                    peer_id,
-                    enr_fork_id.fork_digest,
-                    finalized_checkpoint.root,
-                    finalized_checkpoint.epoch,
-                    head.beacon_block.canonical_root(),
-                    head.beacon_block.slot(),
-                );
+                self.rpc.send_status(peer_id, self.create_status_message());
             }
             PeerManagerEvent::NeedMorePeers => {
                 if !self.discovery.has_active_queries() {
                     self.discovery.discover_peers();
                 }
+            }
+            PeerManagerEvent::SendStatus(peer_id) => {
+                self.rpc.send_status(peer_id, self.create_status_message());
             }
         }
     }
@@ -174,12 +168,17 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
                 match request.request {
                     InboundRequest::Status(message) => {
                         info!("RpcEvent::ReceivedRequest InboundRequest::Status. request_message: {:?}", message);
-                        let status_response = self.create_status_message();
+
+                        // Inform the peer manager that we have received a `Status` from a peer.
+                        self.peer_manager.statusd_peer(request.peer_id);
+
+                        // TODO: Handle the status message.
+
                         self.rpc.send_response(
                             request.peer_id,
                             request.connection_id,
                             request.substream_id,
-                            lighthouse_network::Response::Status(status_response),
+                            lighthouse_network::Response::Status(self.create_status_message()),
                         );
                     }
                     InboundRequest::Goodbye(_) => {
@@ -200,11 +199,31 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
                 }
             }
             RpcEvent::ReceivedResponse(response) => {
-                // TODO
-                info!(
-                    "RpcEvent::ReceivedResponse. response: {:?}",
-                    response.response
-                );
+                match response.response {
+                    RPCResponse::Status(message) => {
+                        info!(
+                            "RpcEvent::ReceivedResponse RPCResponse::Status message: {:?}",
+                            message
+                        );
+
+                        // Inform the peer manager that we have received a `Status` from a peer.
+                        self.peer_manager.statusd_peer(response.peer_id);
+
+                        // TODO: Handle the message
+                    }
+                    RPCResponse::BlocksByRange(_) => {
+                        todo!()
+                    }
+                    RPCResponse::BlocksByRoot(_) => {
+                        todo!()
+                    }
+                    RPCResponse::Pong(_) => {
+                        todo!()
+                    }
+                    RPCResponse::MetaData(_) => {
+                        todo!()
+                    }
+                }
             }
         }
     }

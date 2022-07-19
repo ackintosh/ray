@@ -23,7 +23,6 @@ pub(crate) enum RpcEvent {
 
 #[derive(Debug)]
 pub(crate) struct ReceivedRequest {
-    #[allow(dead_code)]
     pub(crate) peer_id: PeerId,
     pub(crate) connection_id: ConnectionId,
     pub(crate) substream_id: SubstreamId,
@@ -33,6 +32,6 @@ pub(crate) struct ReceivedRequest {
 
 #[derive(Debug)]
 pub(crate) struct ReceivedResponse {
-    #[allow(dead_code)]
+    pub(crate) peer_id: PeerId,
     pub(crate) response: lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>,
 }
