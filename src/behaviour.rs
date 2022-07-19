@@ -145,17 +145,7 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 // Ref: Building a `StatusMessage`
                 // https://github.com/sigp/lighthouse/blob/4bf1af4e8520f235de8fe5f94afedf953df5e6a4/beacon_node/network/src/router/processor.rs#L374
 
-                let enr_fork_id = self.beacon_chain.enr_fork_id();
-                let head = self.beacon_chain.head();
-                let finalized_checkpoint = head.beacon_state.finalized_checkpoint();
-                self.rpc.send_status(
-                    peer_id,
-                    enr_fork_id.fork_digest,
-                    finalized_checkpoint.root,
-                    finalized_checkpoint.epoch,
-                    head.beacon_block.canonical_root(),
-                    head.beacon_block.slot(),
-                );
+                self.rpc.send_status(peer_id, self.create_status_message());
             }
             PeerManagerEvent::NeedMorePeers => {
                 if !self.discovery.has_active_queries() {
@@ -163,7 +153,7 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 }
             }
             PeerManagerEvent::SendStatus(peer_id) => {
-                todo!()
+                self.rpc.send_status(peer_id, self.create_status_message());
             }
         }
     }
@@ -184,12 +174,11 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
 
                         // TODO: Handle the status message.
 
-                        let status_response = self.create_status_message();
                         self.rpc.send_response(
                             request.peer_id,
                             request.connection_id,
                             request.substream_id,
-                            lighthouse_network::Response::Status(status_response),
+                            lighthouse_network::Response::Status(self.create_status_message()),
                         );
                     }
                     InboundRequest::Goodbye(_) => {
