@@ -162,6 +162,9 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                     self.discovery.discover_peers();
                 }
             }
+            PeerManagerEvent::SendStatus(peer_id) => {
+                todo!()
+            }
         }
     }
 }

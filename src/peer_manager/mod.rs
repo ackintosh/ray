@@ -24,6 +24,8 @@ pub(crate) enum PeerManagerEvent {
     PeerConnectedOutgoing(PeerId),
     /// Request the behaviour to discover more peers.
     NeedMorePeers,
+    /// Request to send a STATUS to a peer.
+    SendStatus(PeerId),
 }
 
 // ////////////////////////////////////////////////////////
