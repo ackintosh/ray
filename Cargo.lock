@@ -3275,6 +3275,7 @@ dependencies = [
  "eth2_ssz",
  "eth2_ssz_derive 0.3.0 (git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786)",
  "futures",
+ "hashset_delay",
  "libp2p 0.46.1",
  "lighthouse_network",
  "primitive-types 0.11.1",

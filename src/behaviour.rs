@@ -7,6 +7,7 @@ use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::NetworkBehaviour;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::{NetworkBehaviour, PeerId};
+use lighthouse_network::rpc::methods::RPCResponse;
 use lighthouse_network::rpc::protocol::InboundRequest;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
@@ -174,6 +175,12 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
                 match request.request {
                     InboundRequest::Status(message) => {
                         info!("RpcEvent::ReceivedRequest InboundRequest::Status. request_message: {:?}", message);
+
+                        // Inform the peer manager that we have received a `Status` from a peer.
+                        self.peer_manager.statusd_peer(request.peer_id);
+
+                        // TODO: Handle the status message.
+
                         let status_response = self.create_status_message();
                         self.rpc.send_response(
                             request.peer_id,
@@ -200,11 +207,31 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
                 }
             }
             RpcEvent::ReceivedResponse(response) => {
-                // TODO
-                info!(
-                    "RpcEvent::ReceivedResponse. response: {:?}",
-                    response.response
-                );
+                match response.response {
+                    RPCResponse::Status(message) => {
+                        info!(
+                            "RpcEvent::ReceivedResponse RPCResponse::Status message: {:?}",
+                            message
+                        );
+
+                        // Inform the peer manager that we have received a `Status` from a peer.
+                        self.peer_manager.statusd_peer(response.peer_id);
+
+                        // TODO: Handle the message
+                    }
+                    RPCResponse::BlocksByRange(_) => {
+                        todo!()
+                    }
+                    RPCResponse::BlocksByRoot(_) => {
+                        todo!()
+                    }
+                    RPCResponse::Pong(_) => {
+                        todo!()
+                    }
+                    RPCResponse::MetaData(_) => {
+                        todo!()
+                    }
+                }
             }
         }
     }

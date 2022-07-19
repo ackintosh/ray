@@ -115,7 +115,7 @@ impl NetworkBehaviour for Behaviour {
             }
             HandlerReceived::Response(response) => {
                 self.events.push(NetworkBehaviourAction::GenerateEvent(
-                    RpcEvent::ReceivedResponse(ReceivedResponse { response }),
+                    RpcEvent::ReceivedResponse(ReceivedResponse { peer_id, response }),
                 ));
             }
         };
