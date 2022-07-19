@@ -60,6 +60,21 @@ impl NetworkBehaviour for PeerManager {
         );
     }
 
+    fn inject_connection_closed(
+        &mut self,
+        peer_id: &PeerId,
+        _: &ConnectionId,
+        _: &ConnectedPoint,
+        _: <Self::ConnectionHandler as IntoConnectionHandler>::Handler,
+        remaining_established: usize,
+    ) {
+        if remaining_established > 0 {
+            return;
+        }
+
+        self.status_peers.remove(peer_id);
+    }
+
     fn inject_event(
         &mut self,
         _peer_id: PeerId,
