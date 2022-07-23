@@ -49,6 +49,50 @@ impl BeaconChain {
         // NOTE: Fixing to the genesis for now as we don't implement beacon chain yet.
         self.chain_spec.genesis_slot
     }
+
+    /// Build a `StatusMessage`
+    // ref: https://github.com/sigp/lighthouse/blob/4bf1af4e8520f235de8fe5f94afedf953df5e6a4/beacon_node/network/src/router/processor.rs#L374
+    pub(crate) fn create_status_message(&self) -> lighthouse_network::rpc::StatusMessage {
+        let enr_fork_id = self.enr_fork_id();
+        let head = self.head();
+        let finalized_checkpoint = head.beacon_state.finalized_checkpoint();
+
+        lighthouse_network::rpc::StatusMessage {
+            fork_digest: enr_fork_id.fork_digest,
+            finalized_root: finalized_checkpoint.root,
+            finalized_epoch: finalized_checkpoint.epoch,
+            head_root: head.beacon_block.canonical_root(),
+            head_slot: head.beacon_block.slot(),
+        }
+    }
+
+    pub(crate) fn process_status(
+        &self,
+        remote_status: lighthouse_network::rpc::StatusMessage,
+    ) -> Result<(), String> {
+        // ////////////////////////////////////////////////////////////////////
+        // Determine if the node is relevant to us.
+        // ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L61
+        // ////////////////////////////////////////////////////////////////////
+        let local_status = self.create_status_message();
+
+        if local_status.fork_digest != remote_status.fork_digest {
+            // The node is on a different network/fork.
+            return Err(format!(
+                "Incompatible forks. Ours:{} Theirs:{}",
+                hex::encode(local_status.fork_digest),
+                hex::encode(remote_status.fork_digest)
+            ));
+        }
+
+        if remote_status.head_slot > self.slot() {
+            return Err("Different system clocks or genesis time".to_string());
+        }
+
+        todo!();
+
+        Ok(())
+    }
 }
 
 // Ref: https://github.com/sigp/lighthouse/blob/99d2c33387477398fc11b55319a064f03ab1a646/beacon_node/beacon_chain/src/builder.rs#L877

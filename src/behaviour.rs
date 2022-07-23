@@ -11,6 +11,7 @@ use lighthouse_network::rpc::methods::RPCResponse;
 use lighthouse_network::rpc::protocol::InboundRequest;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
+use tracing::log::error;
 use tracing::{info, trace, warn};
 
 // The core behaviour that combines the sub-behaviours.
@@ -84,20 +85,6 @@ impl BehaviourComposer {
 
         Poll::Pending
     }
-
-    fn create_status_message(&self) -> lighthouse_network::rpc::StatusMessage {
-        let enr_fork_id = self.beacon_chain.enr_fork_id();
-        let head = self.beacon_chain.head();
-        let finalized_checkpoint = head.beacon_state.finalized_checkpoint();
-
-        lighthouse_network::rpc::StatusMessage {
-            fork_digest: enr_fork_id.fork_digest,
-            finalized_root: finalized_checkpoint.root,
-            finalized_epoch: finalized_checkpoint.epoch,
-            head_root: head.beacon_block.canonical_root(),
-            head_slot: head.beacon_block.slot(),
-        }
-    }
 }
 
 enum InternalComposerEvent {
@@ -141,11 +128,8 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
             PeerManagerEvent::PeerConnectedOutgoing(peer_id) => {
                 // Spec: The dialing client MUST send a Status request upon connection.
                 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
-
-                // Ref: Building a `StatusMessage`
-                // https://github.com/sigp/lighthouse/blob/4bf1af4e8520f235de8fe5f94afedf953df5e6a4/beacon_node/network/src/router/processor.rs#L374
-
-                self.rpc.send_status(peer_id, self.create_status_message());
+                self.rpc
+                    .send_status(peer_id, self.beacon_chain.create_status_message());
             }
             PeerManagerEvent::NeedMorePeers => {
                 if !self.discovery.has_active_queries() {
@@ -153,7 +137,8 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 }
             }
             PeerManagerEvent::SendStatus(peer_id) => {
-                self.rpc.send_status(peer_id, self.create_status_message());
+                self.rpc
+                    .send_status(peer_id, self.beacon_chain.create_status_message());
             }
         }
     }
@@ -172,13 +157,18 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
                         // Inform the peer manager that we have received a `Status` from a peer.
                         self.peer_manager.statusd_peer(request.peer_id);
 
-                        // TODO: Handle the status message.
+                        // Handle the status message.
+                        if let Err(e) = self.beacon_chain.process_status(message) {
+                            error!("Failed to process status message: {}", e);
+                        }
 
                         self.rpc.send_response(
                             request.peer_id,
                             request.connection_id,
                             request.substream_id,
-                            lighthouse_network::Response::Status(self.create_status_message()),
+                            lighthouse_network::Response::Status(
+                                self.beacon_chain.create_status_message(),
+                            ),
                         );
                     }
                     InboundRequest::Goodbye(_) => {
