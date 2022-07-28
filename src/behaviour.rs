@@ -3,7 +3,6 @@ use crate::discovery::DiscoveryEvent;
 use crate::peer_manager::PeerManagerEvent;
 use crate::rpc::RpcEvent;
 use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
-use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::NetworkBehaviour;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
 use libp2p::{NetworkBehaviour, PeerId};
@@ -46,25 +45,12 @@ impl BehaviourComposer {
         }
     }
 
-    // TODO: Consider factoring parts into `type` definitions
-    // https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity
-    #[allow(clippy::type_complexity)]
     fn poll(
         &mut self,
         _cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<
-        NetworkBehaviourAction<
-            (),
-            libp2p::swarm::IntoConnectionHandlerSelect<
-                libp2p::swarm::IntoConnectionHandlerSelect<
-                    DummyConnectionHandler,
-                    DummyConnectionHandler,
-                >,
-                crate::rpc::handler::Handler,
-            >,
-        >,
-    > {
+    ) -> Poll<NetworkBehaviourAction<(), <BehaviourComposer as NetworkBehaviour>::ConnectionHandler>>
+    {
         trace!("poll");
 
         // Handle internal events
