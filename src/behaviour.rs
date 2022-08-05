@@ -2,6 +2,7 @@ use crate::beacon_chain::BeaconChain;
 use crate::discovery::DiscoveryEvent;
 use crate::peer_manager::PeerManagerEvent;
 use crate::rpc::RpcEvent;
+use crate::sync::SyncOperation;
 use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::NetworkBehaviour;
 use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
@@ -10,6 +11,7 @@ use lighthouse_network::rpc::methods::RPCResponse;
 use lighthouse_network::rpc::protocol::InboundRequest;
 use std::collections::VecDeque;
 use std::task::{Context, Poll};
+use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::error;
 use tracing::{info, trace, warn};
 
@@ -27,6 +29,8 @@ pub(crate) struct BehaviourComposer {
     internal_events: VecDeque<InternalComposerEvent>,
     #[behaviour(ignore)]
     beacon_chain: BeaconChain,
+    #[behaviour(ignore)]
+    sync_sender: UnboundedSender<SyncOperation>,
 }
 
 impl BehaviourComposer {
@@ -35,6 +39,7 @@ impl BehaviourComposer {
         peer_manager: crate::peer_manager::PeerManager,
         rpc: crate::rpc::behaviour::Behaviour,
         beacon_chain: BeaconChain,
+        sync_sender: UnboundedSender<SyncOperation>,
     ) -> Self {
         Self {
             discovery,
@@ -42,6 +47,19 @@ impl BehaviourComposer {
             rpc,
             internal_events: VecDeque::new(),
             beacon_chain,
+            sync_sender,
+        }
+    }
+
+    fn handle_status(&mut self, message: lighthouse_network::rpc::StatusMessage) {
+        if self.beacon_chain.is_relevant(message) {
+            self.sync_sender
+                .send(SyncOperation::AddPeer)
+                .unwrap_or_else(|e| {
+                    error!("Failed to send message to the sync manager: {}", e);
+                });
+        } else {
+            todo!("say goodbye");
         }
     }
 
@@ -143,10 +161,7 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
                         // Inform the peer manager that we have received a `Status` from a peer.
                         self.peer_manager.statusd_peer(request.peer_id);
 
-                        // Handle the status message.
-                        if let Err(e) = self.beacon_chain.process_status(message) {
-                            error!("Failed to process status message: {}", e);
-                        }
+                        self.handle_status(message);
 
                         self.rpc.send_response(
                             request.peer_id,
@@ -185,7 +200,7 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
                         // Inform the peer manager that we have received a `Status` from a peer.
                         self.peer_manager.statusd_peer(response.peer_id);
 
-                        // TODO: Handle the message
+                        self.handle_status(message);
                     }
                     RPCResponse::BlocksByRange(_) => {
                         todo!()

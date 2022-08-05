@@ -1,3 +1,4 @@
+use crate::sync::SyncOperation;
 use crate::{BeaconChain, BehaviourComposer, CombinedKey, NetworkConfig, TARGET_PEERS_COUNT};
 use discv5::Enr;
 use libp2p::core::muxing::StreamMuxerBox;
@@ -6,6 +7,7 @@ use libp2p::tcp::GenTcpConfig;
 use libp2p::{noise, PeerId, Transport};
 use std::process::exit;
 use std::sync::Arc;
+use tokio::sync::mpsc::UnboundedSender;
 use tracing::error;
 use types::{ForkContext, MainnetEthSpec};
 
@@ -39,6 +41,7 @@ pub(crate) async fn build_network_behaviour(
     enr: Enr,
     enr_key: CombinedKey,
     network_config: NetworkConfig,
+    sync_sender: UnboundedSender<SyncOperation>,
 ) -> BehaviourComposer {
     let mut discovery =
         crate::discovery::behaviour::Behaviour::new(enr, enr_key, &network_config.boot_enr).await;
@@ -64,5 +67,6 @@ pub(crate) async fn build_network_behaviour(
         crate::peer_manager::PeerManager::new(TARGET_PEERS_COUNT),
         crate::rpc::behaviour::Behaviour::new(fork_context),
         beacon_chain,
+        sync_sender,
     )
 }

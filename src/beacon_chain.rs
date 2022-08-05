@@ -1,3 +1,4 @@
+use tracing::info;
 use types::{
     BeaconBlock, BeaconState, ChainSpec, EnrForkId, Hash256, MainnetEthSpec, Signature,
     SignedBeaconBlock, Slot,
@@ -66,32 +67,32 @@ impl BeaconChain {
         }
     }
 
-    pub(crate) fn process_status(
+    // Determine if the node is relevant to us.
+    // ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L61
+    pub(crate) fn is_relevant(
         &self,
         remote_status: lighthouse_network::rpc::StatusMessage,
-    ) -> Result<(), String> {
-        // ////////////////////////////////////////////////////////////////////
-        // Determine if the node is relevant to us.
-        // ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L61
-        // ////////////////////////////////////////////////////////////////////
+    ) -> bool {
         let local_status = self.create_status_message();
 
         if local_status.fork_digest != remote_status.fork_digest {
-            // The node is on a different network/fork.
-            return Err(format!(
-                "Incompatible forks. Ours:{} Theirs:{}",
+            info!(
+                "The node is not relevant to us: Incompatible forks. Ours:{} Theirs:{}",
                 hex::encode(local_status.fork_digest),
                 hex::encode(remote_status.fork_digest)
-            ));
+            );
+            return false;
         }
 
         if remote_status.head_slot > self.slot() {
-            return Err("Different system clocks or genesis time".to_string());
+            info!("The node is not relevant to us: Different system clocks or genesis time");
+            return false;
         }
 
-        todo!();
+        // NOTE: We can implement more checks to be production-ready.
+        // https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L86-L97
 
-        Ok(())
+        true
     }
 }
 

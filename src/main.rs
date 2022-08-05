@@ -7,6 +7,7 @@ mod identity;
 mod peer_manager;
 mod rpc;
 mod signal;
+mod sync;
 mod types;
 
 use crate::beacon_chain::BeaconChain;
@@ -64,12 +65,20 @@ fn main() {
             .unwrap(),
     );
 
+    // Sync
+    let sync_sender = sync::spawn(runtime.clone());
+
     // libp2p
     // Ref: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
     let local_peer_id = crate::identity::enr_to_peer_id(&enr);
     info!("Local PeerId: {}", local_peer_id);
     let transport = runtime.block_on(build_network_transport(key_pair));
-    let behaviour = runtime.block_on(build_network_behaviour(enr, enr_key, network_config));
+    let behaviour = runtime.block_on(build_network_behaviour(
+        enr,
+        enr_key,
+        network_config,
+        sync_sender,
+    ));
 
     // use the executor for libp2p
     struct Executor(Weak<Runtime>);
