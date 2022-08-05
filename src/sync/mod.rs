@@ -1,3 +1,4 @@
+use crate::peer_db::SyncStatus;
 use crate::PeerDB;
 use libp2p::PeerId;
 use parking_lot::RwLock;
@@ -13,14 +14,34 @@ pub(crate) enum SyncOperation {
 
 #[derive(Debug)]
 pub(crate) struct SyncInfo {
-    /// Latest finalized root.
+    // Latest finalized root.
     pub finalized_root: Hash256,
-    /// Latest finalized epoch.
+    // Latest finalized epoch.
     pub finalized_epoch: Epoch,
-    /// The latest block root.
+    // The latest block root.
     pub head_root: Hash256,
-    /// The slot associated with the latest block root.
+    // The slot associated with the latest block root.
     pub head_slot: Slot,
+}
+
+// The type of peer relative to our current state.
+enum SyncRelevance {
+    // The peer is on our chain and is fully synced with respect to our chain.
+    FullySynced,
+    // The peer has a greater knowledge of the chain than us that warrants a full sync.
+    Advanced,
+    // A peer is behind in the sync and not useful to us for downloading blocks.
+    Behind,
+}
+
+impl From<SyncRelevance> for SyncStatus {
+    fn from(relevance: SyncRelevance) -> Self {
+        match relevance {
+            SyncRelevance::FullySynced => SyncStatus::Synced,
+            SyncRelevance::Advanced => SyncStatus::Advanced,
+            SyncRelevance::Behind => SyncStatus::Behind,
+        }
+    }
 }
 
 impl From<lighthouse_network::rpc::StatusMessage> for SyncInfo {
@@ -45,16 +66,24 @@ impl SyncManager {
             // Process inbound messages
             if let Some(operation) = self.receiver.recv().await {
                 match operation {
-                    SyncOperation::AddPeer(peer_id, _sync_info) => {
-                        self.add_peer(peer_id);
+                    SyncOperation::AddPeer(peer_id, sync_info) => {
+                        self.add_peer(peer_id, sync_info);
                     }
                 }
             }
         }
     }
 
-    fn add_peer(&mut self, _peer_id: PeerId) {
-        todo!();
+    fn add_peer(&mut self, peer_id: PeerId, sync_info: SyncInfo) {
+        let sync_relevance = self.determine_sync_relevance(sync_info);
+        self.peer_db
+            .write()
+            .update_sync_status(&peer_id, sync_relevance.into());
+    }
+
+    fn determine_sync_relevance(&self, _sync_info: SyncInfo) -> SyncRelevance {
+        // TODO
+        SyncRelevance::FullySynced
     }
 }
 
