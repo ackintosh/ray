@@ -52,7 +52,7 @@ impl BehaviourComposer {
     }
 
     fn handle_status(&mut self, peer_id: PeerId, message: lighthouse_network::rpc::StatusMessage) {
-        if self.beacon_chain.is_relevant(message) {
+        if self.beacon_chain.is_relevant(&message) {
             self.sync_sender
                 .send(SyncOperation::AddPeer(peer_id, message.into()))
                 .unwrap_or_else(|e| {

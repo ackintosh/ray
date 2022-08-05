@@ -71,7 +71,7 @@ impl BeaconChain {
     // ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L61
     pub(crate) fn is_relevant(
         &self,
-        remote_status: lighthouse_network::rpc::StatusMessage,
+        remote_status: &lighthouse_network::rpc::StatusMessage,
     ) -> bool {
         let local_status = self.create_status_message();
 

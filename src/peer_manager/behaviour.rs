@@ -38,7 +38,7 @@ impl NetworkBehaviour for PeerManager {
                 address,
                 role_override: _,
             } => {
-                self.peers.insert(*peer_id, address.clone());
+                self.peer_db.write().add_peer(*peer_id, address.clone());
                 self.events
                     .push(PeerManagerEvent::PeerConnectedOutgoing(*peer_id));
                 address
@@ -48,7 +48,9 @@ impl NetworkBehaviour for PeerManager {
                 local_addr: _,
                 send_back_addr,
             } => {
-                self.peers.insert(*peer_id, send_back_addr.clone());
+                self.peer_db
+                    .write()
+                    .add_peer(*peer_id, send_back_addr.clone());
                 self.events
                     .push(PeerManagerEvent::PeerConnectedIncoming(*peer_id));
                 send_back_addr

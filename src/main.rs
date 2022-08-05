@@ -4,6 +4,7 @@ mod bootstrap;
 mod config;
 mod discovery;
 mod identity;
+mod peer_db;
 mod peer_manager;
 mod rpc;
 mod signal;
@@ -14,10 +15,12 @@ use crate::beacon_chain::BeaconChain;
 use crate::behaviour::BehaviourComposer;
 use crate::bootstrap::{build_network_behaviour, build_network_transport};
 use crate::config::NetworkConfig;
+use crate::peer_db::PeerDB;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use futures::StreamExt;
 use libp2p::identity::Keypair;
 use libp2p::swarm::SwarmBuilder;
+use parking_lot::RwLock;
 use std::future::Future;
 use std::pin::Pin;
 use std::process::exit;
@@ -65,8 +68,11 @@ fn main() {
             .unwrap(),
     );
 
+    // PeerDB
+    let peer_db = Arc::new(RwLock::new(PeerDB::new()));
+
     // Sync
-    let sync_sender = sync::spawn(runtime.clone());
+    let sync_sender = sync::spawn(runtime.clone(), peer_db.clone());
 
     // libp2p
     // Ref: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
@@ -78,6 +84,7 @@ fn main() {
         enr_key,
         network_config,
         sync_sender,
+        peer_db,
     ));
 
     // use the executor for libp2p
