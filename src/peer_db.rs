@@ -7,6 +7,7 @@ pub(crate) struct PeerDB {
 }
 
 struct PeerInfo {
+    #[allow(dead_code)]
     listening_address: Multiaddr,
     sync_status: SyncStatus,
 }

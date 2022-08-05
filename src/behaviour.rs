@@ -9,7 +9,9 @@ use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollPa
 use libp2p::{NetworkBehaviour, PeerId};
 use lighthouse_network::rpc::methods::RPCResponse;
 use lighthouse_network::rpc::protocol::InboundRequest;
+use parking_lot::RwLock;
 use std::collections::VecDeque;
+use std::sync::Arc;
 use std::task::{Context, Poll};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::error;
@@ -28,7 +30,7 @@ pub(crate) struct BehaviourComposer {
     #[behaviour(ignore)]
     internal_events: VecDeque<InternalComposerEvent>,
     #[behaviour(ignore)]
-    beacon_chain: BeaconChain,
+    beacon_chain: Arc<RwLock<BeaconChain>>,
     #[behaviour(ignore)]
     sync_sender: UnboundedSender<SyncOperation>,
 }
@@ -38,7 +40,7 @@ impl BehaviourComposer {
         discovery: crate::discovery::behaviour::Behaviour,
         peer_manager: crate::peer_manager::PeerManager,
         rpc: crate::rpc::behaviour::Behaviour,
-        beacon_chain: BeaconChain,
+        beacon_chain: Arc<RwLock<BeaconChain>>,
         sync_sender: UnboundedSender<SyncOperation>,
     ) -> Self {
         Self {
@@ -52,7 +54,7 @@ impl BehaviourComposer {
     }
 
     fn handle_status(&mut self, peer_id: PeerId, message: lighthouse_network::rpc::StatusMessage) {
-        if self.beacon_chain.is_relevant(&message) {
+        if self.beacon_chain.read().is_relevant(&message) {
             self.sync_sender
                 .send(SyncOperation::AddPeer(peer_id, message.into()))
                 .unwrap_or_else(|e| {
@@ -134,7 +136,7 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 // Spec: The dialing client MUST send a Status request upon connection.
                 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
                 self.rpc
-                    .send_status(peer_id, self.beacon_chain.create_status_message());
+                    .send_status(peer_id, self.beacon_chain.read().create_status_message());
             }
             PeerManagerEvent::NeedMorePeers => {
                 if !self.discovery.has_active_queries() {
@@ -143,7 +145,7 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
             }
             PeerManagerEvent::SendStatus(peer_id) => {
                 self.rpc
-                    .send_status(peer_id, self.beacon_chain.create_status_message());
+                    .send_status(peer_id, self.beacon_chain.read().create_status_message());
             }
         }
     }
@@ -169,7 +171,7 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
                             request.connection_id,
                             request.substream_id,
                             lighthouse_network::Response::Status(
-                                self.beacon_chain.create_status_message(),
+                                self.beacon_chain.read().create_status_message(),
                             ),
                         );
                     }

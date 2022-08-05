@@ -71,8 +71,19 @@ fn main() {
     // PeerDB
     let peer_db = Arc::new(RwLock::new(PeerDB::new()));
 
-    // Sync
-    let sync_sender = sync::spawn(runtime.clone(), peer_db.clone());
+    // BeaconChain
+    let beacon_chain = Arc::new(RwLock::new(
+        BeaconChain::new(
+            network_config.chain_spec().expect("chain spec"),
+            network_config
+                .genesis_beacon_state()
+                .expect("genesis beacon state"),
+        )
+        .expect("beacon chain"),
+    ));
+
+    // SyncManager
+    let sync_sender = sync::spawn(runtime.clone(), peer_db.clone(), beacon_chain.clone());
 
     // libp2p
     // Ref: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
@@ -85,6 +96,7 @@ fn main() {
         network_config,
         sync_sender,
         peer_db,
+        beacon_chain,
     ));
 
     // use the executor for libp2p
