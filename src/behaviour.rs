@@ -51,15 +51,16 @@ impl BehaviourComposer {
         }
     }
 
-    fn handle_status(&mut self, message: lighthouse_network::rpc::StatusMessage) {
+    fn handle_status(&mut self, peer_id: PeerId, message: lighthouse_network::rpc::StatusMessage) {
         if self.beacon_chain.is_relevant(message) {
             self.sync_sender
-                .send(SyncOperation::AddPeer)
+                .send(SyncOperation::AddPeer(peer_id, message.into()))
                 .unwrap_or_else(|e| {
                     error!("Failed to send message to the sync manager: {}", e);
                 });
         } else {
-            todo!("say goodbye");
+            // TODO: say goodbye
+            // https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L109
         }
     }
 
@@ -161,7 +162,7 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
                         // Inform the peer manager that we have received a `Status` from a peer.
                         self.peer_manager.statusd_peer(request.peer_id);
 
-                        self.handle_status(message);
+                        self.handle_status(request.peer_id, message);
 
                         self.rpc.send_response(
                             request.peer_id,
@@ -200,7 +201,7 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
                         // Inform the peer manager that we have received a `Status` from a peer.
                         self.peer_manager.statusd_peer(response.peer_id);
 
-                        self.handle_status(message);
+                        self.handle_status(response.peer_id, message);
                     }
                     RPCResponse::BlocksByRange(_) => {
                         todo!()
