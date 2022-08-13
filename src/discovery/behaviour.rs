@@ -10,6 +10,7 @@ use libp2p::swarm::{
     PollParameters,
 };
 use libp2p::{Multiaddr, PeerId};
+use lru::LruCache;
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
 use std::time::Duration;
@@ -32,8 +33,10 @@ struct QueryResult {
 pub(crate) struct Behaviour {
     discv5: Discv5,
     event_stream: Receiver<Discv5Event>,
-    /// Active discovery queries.
+    // Active discovery queries.
     active_queries: FuturesUnordered<std::pin::Pin<Box<dyn Future<Output = QueryResult> + Send>>>,
+    // A collection of seen live ENRs for quick lookup and to map peer-id's to ENRs.
+    cached_enrs: LruCache<PeerId, Enr>,
 }
 
 impl Behaviour {
@@ -73,6 +76,7 @@ impl Behaviour {
             discv5,
             event_stream,
             active_queries: FuturesUnordered::new(),
+            cached_enrs: LruCache::new(50),
         }
     }
 
@@ -110,13 +114,26 @@ impl NetworkBehaviour for Behaviour {
     }
 
     fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
-        info!("addresses_of_peer: peer_id: {}", peer_id);
+        trace!("addresses_of_peer: peer_id: {}", peer_id);
+
+        // First search the local cache.
+        if let Some(enr) = self.cached_enrs.get(peer_id) {
+            let multiaddr = crate::identity::enr_to_multiaddrs(enr);
+            trace!(
+                "addresses_of_peer: Found from the cached_enrs. peer_id: {}, multiaddr: {:?}",
+                peer_id,
+                multiaddr,
+            );
+            return multiaddr;
+        }
+
+        // Not in the local cache, look in the routing table.
         match crate::identity::peer_id_to_node_id(peer_id) {
             Ok(node_id) => match self.discv5.find_enr(&node_id) {
                 Some(enr) => {
                     let multiaddr = crate::identity::enr_to_multiaddrs(&enr);
-                    info!(
-                        "addresses_of_peer -> Found from the DHT. peer_id: {}, node_id: {}, multiaddr: {:?}",
+                    trace!(
+                        "addresses_of_peer: Found from the DHT. peer_id: {}, node_id: {}, multiaddr: {:?}",
                         peer_id,
                         node_id,
                         multiaddr,
@@ -125,17 +142,17 @@ impl NetworkBehaviour for Behaviour {
                 }
                 None => {
                     warn!(
-                        "addresses_of_peer -> No addresses found from the DHT. peer_id: {}, node_id: {}",
-                        peer_id,
-                        node_id,
+                        "addresses_of_peer: No addresses found. peer_id: {}, node_id: {}",
+                        peer_id, node_id,
                     );
                     vec![]
                 }
             },
             Err(e) => {
                 warn!(
-                    "addresses_of_peer -> Failed to derive node_id from peer_id. error: {:?}",
-                    e
+                    "addresses_of_peer: Failed to derive node_id from peer_id. error: {:?}, peer_id: {}",
+                    e,
+                    peer_id,
                 );
                 vec![]
             }
@@ -161,7 +178,7 @@ impl NetworkBehaviour for Behaviour {
         trace!("poll");
 
         if let Poll::Ready(Some(query_result)) = self.active_queries.poll_next_unpin(cx) {
-            info!("poll -> self.active_queries");
+            trace!("poll -> self.active_queries");
             return match query_result.result {
                 Ok(enrs) if enrs.is_empty() => {
                     info!("Discovery query yielded no results.");
@@ -170,8 +187,17 @@ impl NetworkBehaviour for Behaviour {
                 Ok(enrs) => {
                     info!("Discovery query completed. found peers: {:?}", enrs);
                     // NOTE: Ideally we need to filter out peers from the result.
-                    //       https://github.com/sigp/lighthouse/blob/9c5a8ab7f2098d1ffc567af27f385c55f471cb9c/beacon_node/eth2_libp2p/src/peer_manager/mod.rs#L256
-                    let peers = enrs.iter().map(crate::identity::enr_to_peer_id).collect();
+                    // https://github.com/sigp/lighthouse/blob/9c5a8ab7f2098d1ffc567af27f385c55f471cb9c/beacon_node/eth2_libp2p/src/peer_manager/mod.rs#L256
+                    let peers = enrs
+                        .iter()
+                        .map(crate::identity::enr_to_peer_id)
+                        .collect::<Vec<_>>();
+
+                    // Cache the found ENRs
+                    for (p, e) in peers.iter().zip(enrs.iter()) {
+                        self.cached_enrs.put(*p, e.clone());
+                    }
+
                     Poll::Ready(NetworkBehaviourAction::GenerateEvent(
                         DiscoveryEvent::FoundPeers(peers),
                     ))
