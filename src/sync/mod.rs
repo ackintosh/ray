@@ -6,6 +6,7 @@ use std::cmp::Ordering;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tracing::warn;
 use types::{Epoch, Hash256, Slot};
 
 #[derive(Debug)]
@@ -30,6 +31,7 @@ pub(crate) struct SyncInfo {
 }
 
 // The type of peer relative to our current state.
+#[derive(Clone)]
 enum SyncRelevance {
     // The peer is on our chain and is fully synced with respect to our chain.
     FullySynced,
@@ -87,7 +89,11 @@ impl SyncManager {
 
         self.peer_db
             .write()
-            .update_sync_status(&peer_id, sync_relevance.into());
+            .update_sync_status(&peer_id, sync_relevance.clone().into());
+
+        if matches!(sync_relevance, SyncRelevance::Advanced) {
+            warn!("TODO: Range sync");
+        }
     }
 
     fn determine_sync_relevance(&self, remote_sync_info: SyncInfo) -> SyncRelevance {

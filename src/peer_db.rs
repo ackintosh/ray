@@ -1,6 +1,6 @@
 use libp2p::{Multiaddr, PeerId};
 use std::collections::HashMap;
-use tracing::error;
+use tracing::{error, info};
 
 pub(crate) struct PeerDB {
     peers: HashMap<PeerId, PeerInfo>,
@@ -12,6 +12,7 @@ struct PeerInfo {
     sync_status: SyncStatus,
 }
 
+#[derive(Debug)]
 pub(crate) enum SyncStatus {
     // At the current state as our node or ahead of us.
     Synced,
@@ -49,6 +50,10 @@ impl PeerDB {
                 error!("Peer not found: {}", peer_id);
             }
             Some(peer_info) => {
+                info!(
+                    "Updated sync_status: before: {:?}, after: {:?}, peer: {}",
+                    peer_info.sync_status, sync_status, peer_id
+                );
                 peer_info.sync_status = sync_status;
             }
         }
