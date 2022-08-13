@@ -24,7 +24,7 @@ We aim for a simpler implementation, by narrowing down the functions.
 
 - [x] [Node discovery](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#the-discovery-domain-discv5)
 - RPC
-  - [ ] [Status](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status)
+  - [x] [Status](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status)
   - [ ] Goodbye
   - [ ] BeaconBlocksByRange
   - [ ] BeaconBlocksByRoot
