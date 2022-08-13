@@ -36,10 +36,8 @@ enum SyncRelevance {
     // The peer is on our chain and is fully synced with respect to our chain.
     FullySynced,
     // The peer has a greater knowledge of the chain than us that warrants a full sync.
-    #[allow(dead_code)]
     Advanced,
     // A peer is behind in the sync and not useful to us for downloading blocks.
-    #[allow(dead_code)]
     Behind,
 }
 
