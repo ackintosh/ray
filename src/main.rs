@@ -4,19 +4,23 @@ mod bootstrap;
 mod config;
 mod discovery;
 mod identity;
+mod peer_db;
 mod peer_manager;
 mod rpc;
 mod signal;
+mod sync;
 mod types;
 
 use crate::beacon_chain::BeaconChain;
 use crate::behaviour::BehaviourComposer;
 use crate::bootstrap::{build_network_behaviour, build_network_transport};
 use crate::config::NetworkConfig;
+use crate::peer_db::PeerDB;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use futures::StreamExt;
 use libp2p::identity::Keypair;
 use libp2p::swarm::SwarmBuilder;
+use parking_lot::RwLock;
 use std::future::Future;
 use std::pin::Pin;
 use std::process::exit;
@@ -64,12 +68,36 @@ fn main() {
             .unwrap(),
     );
 
+    // PeerDB
+    let peer_db = Arc::new(RwLock::new(PeerDB::new()));
+
+    // BeaconChain
+    let beacon_chain = Arc::new(RwLock::new(
+        BeaconChain::new(
+            network_config.chain_spec().expect("chain spec"),
+            network_config
+                .genesis_beacon_state()
+                .expect("genesis beacon state"),
+        )
+        .expect("beacon chain"),
+    ));
+
+    // SyncManager
+    let sync_sender = sync::spawn(runtime.clone(), peer_db.clone(), beacon_chain.clone());
+
     // libp2p
     // Ref: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
     let local_peer_id = crate::identity::enr_to_peer_id(&enr);
     info!("Local PeerId: {}", local_peer_id);
     let transport = runtime.block_on(build_network_transport(key_pair));
-    let behaviour = runtime.block_on(build_network_behaviour(enr, enr_key, network_config));
+    let behaviour = runtime.block_on(build_network_behaviour(
+        enr,
+        enr_key,
+        network_config,
+        sync_sender,
+        peer_db,
+        beacon_chain,
+    ));
 
     // use the executor for libp2p
     struct Executor(Weak<Runtime>);

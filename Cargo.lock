@@ -1412,6 +1412,9 @@ name = "hashbrown"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db0d4cf898abf0081f964436dc980e96670a0f36863e4b83aaacdb65c9d7ccc3"
+dependencies = [
+ "ahash",
+]
 
 [[package]]
 name = "hashlink"
@@ -2379,11 +2382,11 @@ dependencies = [
 
 [[package]]
 name = "lru"
-version = "0.7.7"
+version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c84e6fe5655adc6ce00787cf7dcaf8dc4f998a0565d23eafc207a8b08ca3349a"
+checksum = "e999beba7b6e8345721bd280141ed958096a2e4abdf74f67ff4ce49b4b54e47a"
 dependencies = [
- "hashbrown 0.11.2",
+ "hashbrown 0.12.1",
 ]
 
 [[package]]
@@ -3276,8 +3279,11 @@ dependencies = [
  "eth2_ssz_derive 0.3.0 (git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786)",
  "futures",
  "hashset_delay",
+ "hex",
  "libp2p 0.46.1",
  "lighthouse_network",
+ "lru",
+ "parking_lot 0.12.1",
  "primitive-types 0.11.1",
  "serde_yaml",
  "smallvec",

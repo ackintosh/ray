@@ -1,3 +1,4 @@
+use tracing::info;
 use types::{
     BeaconBlock, BeaconState, ChainSpec, EnrForkId, Hash256, MainnetEthSpec, Signature,
     SignedBeaconBlock, Slot,
@@ -48,6 +49,50 @@ impl BeaconChain {
     pub(crate) fn slot(&self) -> Slot {
         // NOTE: Fixing to the genesis for now as we don't implement beacon chain yet.
         self.chain_spec.genesis_slot
+    }
+
+    /// Build a `StatusMessage`
+    // ref: https://github.com/sigp/lighthouse/blob/4bf1af4e8520f235de8fe5f94afedf953df5e6a4/beacon_node/network/src/router/processor.rs#L374
+    pub(crate) fn create_status_message(&self) -> lighthouse_network::rpc::StatusMessage {
+        let enr_fork_id = self.enr_fork_id();
+        let head = self.head();
+        let finalized_checkpoint = head.beacon_state.finalized_checkpoint();
+
+        lighthouse_network::rpc::StatusMessage {
+            fork_digest: enr_fork_id.fork_digest,
+            finalized_root: finalized_checkpoint.root,
+            finalized_epoch: finalized_checkpoint.epoch,
+            head_root: head.beacon_block.canonical_root(),
+            head_slot: head.beacon_block.slot(),
+        }
+    }
+
+    // Determine if the node is relevant to us.
+    // ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L61
+    pub(crate) fn is_relevant(
+        &self,
+        remote_status: &lighthouse_network::rpc::StatusMessage,
+    ) -> bool {
+        let local_status = self.create_status_message();
+
+        if local_status.fork_digest != remote_status.fork_digest {
+            info!(
+                "The node is not relevant to us: Incompatible forks. Ours:{} Theirs:{}",
+                hex::encode(local_status.fork_digest),
+                hex::encode(remote_status.fork_digest)
+            );
+            return false;
+        }
+
+        if remote_status.head_slot > self.slot() {
+            info!("The node is not relevant to us: Different system clocks or genesis time");
+            return false;
+        }
+
+        // NOTE: We can implement more checks to be production-ready.
+        // https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L86-L97
+
+        true
     }
 }
 

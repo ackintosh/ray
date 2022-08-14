@@ -1,7 +1,9 @@
+use crate::PeerDB;
 use hashset_delay::HashSetDelay;
-use libp2p::{Multiaddr, PeerId};
+use libp2p::PeerId;
+use parking_lot::RwLock;
 use smallvec::{smallvec, SmallVec};
-use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
 use tracing::info;
 
@@ -33,7 +35,7 @@ pub(crate) enum PeerManagerEvent {
 // ////////////////////////////////////////////////////////
 
 pub(crate) struct PeerManager {
-    peers: HashMap<PeerId, Multiaddr>,
+    peer_db: Arc<RwLock<PeerDB>>,
     events: SmallVec<[PeerManagerEvent; 10]>,
     // Target number of peers to connect to.
     target_peers_count: usize,
@@ -44,7 +46,7 @@ pub(crate) struct PeerManager {
 }
 
 impl PeerManager {
-    pub(crate) fn new(target_peers_count: usize) -> Self {
+    pub(crate) fn new(target_peers_count: usize, peer_db: Arc<RwLock<PeerDB>>) -> Self {
         // Set up the peer manager heartbeat interval
         let heartbeat = tokio::time::interval(tokio::time::Duration::from_secs(HEARTBEAT_INTERVAL));
 
@@ -52,7 +54,7 @@ impl PeerManager {
         let status_interval = Duration::from_secs(300);
 
         Self {
-            peers: HashMap::new(),
+            peer_db,
             events: smallvec![],
             target_peers_count,
             heartbeat,
@@ -61,8 +63,9 @@ impl PeerManager {
     }
 
     pub(crate) fn need_more_peers(&self) -> bool {
-        info!("Current peers count: {}", self.peers.len());
-        self.peers.len() < self.target_peers_count
+        let count = self.peer_db.read().peer_count();
+        info!("Current peers count: {}", count);
+        count < self.target_peers_count
     }
 
     // A STATUS message has been received from a peer. This resets the status timer.

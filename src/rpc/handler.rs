@@ -304,7 +304,7 @@ impl ConnectionHandler for Handler {
                                 let rpc_coded_response: RPCCodedResponse<MainnetEthSpec> =
                                     response_to_send.into();
 
-                                return match substream.send(rpc_coded_response).await {
+                                match substream.send(rpc_coded_response).await {
                                     Ok(_) => match substream.close().await {
                                         Ok(_) => Ok(substream),
                                         Err(rpc_error) => Err(format!(
@@ -326,7 +326,7 @@ impl ConnectionHandler for Handler {
 
                                         Err(error_message)
                                     }
-                                };
+                                }
                             }
                             .boxed();
 

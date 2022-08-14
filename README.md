@@ -20,11 +20,11 @@ We aim for a simpler implementation, by narrowing down the functions.
 - Runs for Kiln testnet
 - Simplicity over multifunctionality
 
-### What does the Beacon Node do
+### What does Beacon Node do
 
 - [x] [Node discovery](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#the-discovery-domain-discv5)
 - RPC
-  - [ ] [Status](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status)
+  - [x] [Status](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status)
   - [ ] Goodbye
   - [ ] BeaconBlocksByRange
   - [ ] BeaconBlocksByRoot
@@ -48,7 +48,7 @@ $ RUST_LOG=ray=info cargo run
 
 ![Architecture](https://raw.githubusercontent.com/ackintosh/ray/main/diagrams/architecture.png)
 
-## Resources for the Beacon Node implementers
+## Resources for Beacon Node implementers
 
 Here are the specifications / documentations that Consensus Layer Implementers should refer to.
 
