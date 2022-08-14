@@ -1,4 +1,4 @@
-use crate::peer_db::SyncStatus;
+use crate::peer_db::{ConnectionStatus, SyncStatus};
 use crate::PeerDB;
 use hashset_delay::HashSetDelay;
 use libp2p::PeerId;
@@ -29,6 +29,8 @@ pub(crate) enum PeerManagerEvent {
     NeedMorePeers,
     /// Request to send a STATUS to a peer.
     SendStatus(PeerId),
+    /// The peer should be disconnected.
+    DisconnectPeer(PeerId),
 }
 
 // ////////////////////////////////////////////////////////
@@ -75,8 +77,10 @@ impl PeerManager {
     }
 
     pub(crate) fn goodbye(&mut self, peer_id: &PeerId) {
-        self.peer_db
-            .write()
-            .update_sync_status(peer_id, SyncStatus::IrrelevantPeer);
+        let mut guard = self.peer_db.write();
+        guard.update_sync_status(peer_id, SyncStatus::IrrelevantPeer);
+        guard.update_connection_status(peer_id, ConnectionStatus::Disconnecting);
+
+        self.events.push(PeerManagerEvent::DisconnectPeer(*peer_id));
     }
 }

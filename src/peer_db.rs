@@ -10,6 +10,7 @@ struct PeerInfo {
     #[allow(dead_code)]
     listening_address: Multiaddr,
     sync_status: SyncStatus,
+    connection_status: ConnectionStatus,
 }
 
 #[derive(Debug)]
@@ -26,11 +27,20 @@ pub(crate) enum SyncStatus {
     Unknown,
 }
 
+#[derive(Debug)]
+pub enum ConnectionStatus {
+    // The peer is connected.
+    Connected,
+    // The peer is being disconnected.
+    Disconnecting,
+}
+
 impl PeerInfo {
     fn new(listening_address: Multiaddr) -> Self {
         PeerInfo {
             listening_address,
             sync_status: SyncStatus::Unknown,
+            connection_status: ConnectionStatus::Connected,
         }
     }
 }
@@ -49,7 +59,7 @@ impl PeerDB {
     pub(crate) fn update_sync_status(&mut self, peer_id: &PeerId, sync_status: SyncStatus) {
         match self.peers.get_mut(peer_id) {
             None => {
-                error!("Peer not found: {}", peer_id);
+                error!("update_sync_status: Peer not found. peer_id: {}", peer_id);
             }
             Some(peer_info) => {
                 info!(
@@ -57,6 +67,26 @@ impl PeerDB {
                     peer_info.sync_status, sync_status, peer_id
                 );
                 peer_info.sync_status = sync_status;
+            }
+        }
+    }
+
+    pub(crate) fn update_connection_status(
+        &mut self,
+        peer_id: &PeerId,
+        connection_status: ConnectionStatus,
+    ) {
+        match self.peers.get_mut(peer_id) {
+            None => error!(
+                "update_connection_status: Peer not found. peer_id: {}",
+                peer_id
+            ),
+            Some(peer_info) => {
+                info!(
+                    "Updated connection_status: before: {:?}, after: {:?}, peer: {}",
+                    peer_info.connection_status, connection_status, peer_id
+                );
+                peer_info.connection_status = connection_status;
             }
         }
     }

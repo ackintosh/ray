@@ -148,6 +148,9 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 self.rpc
                     .send_status(peer_id, self.beacon_chain.read().create_status_message());
             }
+            PeerManagerEvent::DisconnectPeer(peer_id) => {
+                todo!()
+            }
         }
     }
 }
