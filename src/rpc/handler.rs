@@ -152,7 +152,8 @@ impl ConnectionHandler for Handler {
     type OutboundOpenInfo = lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>;
 
     fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
-        info!("Handler::listen_protocol");
+        trace!("ConnectionHandler::listen_protocol");
+
         SubstreamProtocol::new(
             RpcProtocol {
                 fork_context: self.fork_context.clone(),
