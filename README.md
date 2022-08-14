@@ -17,7 +17,9 @@ This project provides developers with an opportunity to learn how to implement B
 We aim for a simpler implementation, by narrowing down the functions.
 
 - Implemented for macOS
-- Runs for Kiln testnet
+- Runs for _Prater_ testnet
+  - Görli testnet has been merged with the Prater proof-of-stake beacon chain.
+  - https://github.com/eth-clients/goerli
 - Simplicity over multifunctionality
 
 ### What does Beacon Node do
