@@ -61,8 +61,9 @@ impl BehaviourComposer {
                     error!("Failed to send message to the sync manager: {}", e);
                 });
         } else {
-            // TODO: say goodbye
-            // https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L109
+            // Say goodbye
+            // Ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L109
+            self.peer_manager.goodbye(&peer_id);
         }
     }
 

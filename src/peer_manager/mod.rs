@@ -1,3 +1,4 @@
+use crate::peer_db::SyncStatus;
 use crate::PeerDB;
 use hashset_delay::HashSetDelay;
 use libp2p::PeerId;
@@ -71,5 +72,11 @@ impl PeerManager {
     // A STATUS message has been received from a peer. This resets the status timer.
     pub(crate) fn statusd_peer(&mut self, peer_id: PeerId) {
         self.status_peers.insert(peer_id);
+    }
+
+    pub(crate) fn goodbye(&mut self, peer_id: &PeerId) {
+        self.peer_db
+            .write()
+            .update_sync_status(peer_id, SyncStatus::IrrelevantPeer);
     }
 }

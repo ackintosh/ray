@@ -1,6 +1,6 @@
 use libp2p::{Multiaddr, PeerId};
 use std::collections::HashMap;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 pub(crate) struct PeerDB {
     peers: HashMap<PeerId, PeerInfo>,
@@ -20,6 +20,8 @@ pub(crate) enum SyncStatus {
     Advanced,
     // Is behind our current head and not useful for block downloads.
     Behind,
+    // This peer is in an incompatible network.
+    IrrelevantPeer,
     // Not currently known as a STATUS handshake has not occurred.
     Unknown,
 }
