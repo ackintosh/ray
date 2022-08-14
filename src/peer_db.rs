@@ -1,6 +1,6 @@
 use libp2p::{Multiaddr, PeerId};
 use std::collections::HashMap;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 pub(crate) struct PeerDB {
     peers: HashMap<PeerId, PeerInfo>,

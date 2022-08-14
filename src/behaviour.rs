@@ -63,7 +63,10 @@ impl BehaviourComposer {
         } else {
             // Say goodbye
             // Ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L109
-            self.peer_manager.goodbye(&peer_id);
+            self.peer_manager.goodbye(
+                &peer_id,
+                lighthouse_network::rpc::GoodbyeReason::IrrelevantNetwork,
+            );
         }
     }
 
@@ -148,8 +151,8 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
                 self.rpc
                     .send_status(peer_id, self.beacon_chain.read().create_status_message());
             }
-            PeerManagerEvent::DisconnectPeer(peer_id) => {
-                todo!()
+            PeerManagerEvent::DisconnectPeer(peer_id, goodbye_reason) => {
+                self.rpc.send_goodbye(peer_id, goodbye_reason);
             }
         }
     }

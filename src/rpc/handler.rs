@@ -114,12 +114,21 @@ impl Handler {
         }
     }
 
+    // Status
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     fn send_status(&mut self, status_request: lighthouse_network::rpc::StatusMessage) {
         self.dial_queue
             .push(lighthouse_network::rpc::outbound::OutboundRequest::Status(
                 status_request,
             ));
+    }
+
+    // Goodbye
+    // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
+    fn send_goodbye_and_shutdown(&mut self, reason: lighthouse_network::rpc::GoodbyeReason) {
+        // Ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L239
+        todo!("reason: {:?}", reason);
+        // TODO: shutdown this handler
     }
 
     fn send_response(
@@ -227,6 +236,7 @@ impl ConnectionHandler for Handler {
         info!("inject_event. event: {:?}", event);
         match event {
             MessageToHandler::SendStatus(status_request) => self.send_status(status_request),
+            MessageToHandler::SendGoodbye(reason) => self.send_goodbye_and_shutdown(reason),
             MessageToHandler::SendResponse(substream_id, response) => {
                 self.send_response(substream_id, response)
             }
@@ -393,10 +403,16 @@ impl ConnectionHandler for Handler {
                         todo!()
                     }
                 },
-                Poll::Pending => {}
-                _ => {
+                Poll::Ready(Some(Err(e))) => {
+                    error!(
+                        "An error occurred while processing outbound stream. error: {:?}",
+                        e
+                    );
+                }
+                Poll::Ready(None) => {
                     todo!()
                 }
+                Poll::Pending => {}
             }
         }
 

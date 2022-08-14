@@ -19,6 +19,7 @@ use types::{ForkContext, MainnetEthSpec};
 #[derive(Debug)]
 pub(crate) enum MessageToHandler {
     SendStatus(lighthouse_network::rpc::StatusMessage),
+    SendGoodbye(lighthouse_network::rpc::GoodbyeReason),
     SendResponse(SubstreamId, lighthouse_network::Response<MainnetEthSpec>),
 }
 
@@ -39,6 +40,7 @@ impl Behaviour {
         }
     }
 
+    // Status
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     pub(crate) fn send_status(
         &mut self,
@@ -50,6 +52,20 @@ impl Behaviour {
             peer_id,
             handler: NotifyHandler::Any,
             event: MessageToHandler::SendStatus(message),
+        })
+    }
+
+    // Goodbye
+    // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
+    pub(crate) fn send_goodbye(
+        &mut self,
+        peer_id: PeerId,
+        reason: lighthouse_network::rpc::GoodbyeReason,
+    ) {
+        self.events.push(NetworkBehaviourAction::NotifyHandler {
+            peer_id,
+            handler: NotifyHandler::Any,
+            event: MessageToHandler::SendGoodbye(reason),
         })
     }
 

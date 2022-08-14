@@ -30,7 +30,7 @@ pub(crate) enum PeerManagerEvent {
     /// Request to send a STATUS to a peer.
     SendStatus(PeerId),
     /// The peer should be disconnected.
-    DisconnectPeer(PeerId),
+    DisconnectPeer(PeerId, lighthouse_network::rpc::GoodbyeReason),
 }
 
 // ////////////////////////////////////////////////////////
@@ -76,11 +76,23 @@ impl PeerManager {
         self.status_peers.insert(peer_id);
     }
 
-    pub(crate) fn goodbye(&mut self, peer_id: &PeerId) {
+    pub(crate) fn goodbye(
+        &mut self,
+        peer_id: &PeerId,
+        reason: lighthouse_network::rpc::GoodbyeReason,
+    ) {
         let mut guard = self.peer_db.write();
-        guard.update_sync_status(peer_id, SyncStatus::IrrelevantPeer);
+
+        if matches!(
+            reason,
+            lighthouse_network::rpc::GoodbyeReason::IrrelevantNetwork
+        ) {
+            guard.update_sync_status(peer_id, SyncStatus::IrrelevantPeer);
+        }
+
         guard.update_connection_status(peer_id, ConnectionStatus::Disconnecting);
 
-        self.events.push(PeerManagerEvent::DisconnectPeer(*peer_id));
+        self.events
+            .push(PeerManagerEvent::DisconnectPeer(*peer_id, reason));
     }
 }
