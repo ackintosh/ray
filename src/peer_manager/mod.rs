@@ -66,7 +66,7 @@ impl PeerManager {
     }
 
     pub(crate) fn need_more_peers(&self) -> bool {
-        let count = self.peer_db.read().peer_count();
+        let count = self.peer_db.read().active_peer_count();
         info!("Current peers count: {}", count);
         count < self.target_peers_count
     }

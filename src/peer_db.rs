@@ -97,7 +97,10 @@ impl PeerDB {
         }
     }
 
-    pub(crate) fn peer_count(&self) -> usize {
-        self.peers.len()
+    pub(crate) fn active_peer_count(&self) -> usize {
+        self.peers
+            .iter()
+            .filter(|(_id, info)| matches!(info.connection_status, ConnectionStatus::Connected))
+            .count()
     }
 }
