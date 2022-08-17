@@ -15,6 +15,8 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
+use std::time::Duration;
+use tokio::time::{Instant, Sleep, sleep_until};
 use tracing::log::trace;
 use tracing::{error, info};
 use types::fork_context::ForkContext;
@@ -80,8 +82,25 @@ pub struct InboundRequest {
 // ////////////////////////////////////////////////////////
 // Handler
 // ////////////////////////////////////////////////////////
+/// Maximum time given to the handler to perform shutdown operations.
+const SHUTDOWN_TIMEOUT_SECS: u64 = 15;
+
+enum HandlerState {
+    /// The handler is active. All messages are sent and received.
+    Active,
+    /// The handler is shutting_down.
+    ///
+    /// While in this state the handler rejects new requests but tries to finish existing ones.
+    /// Once the timer expires, all messages are killed.
+    ShuttingDown(Pin<Box<Sleep>>),
+    /// The handler is deactivated. A goodbye has been sent and no more messages are sent or
+    /// received.
+    Deactivated,
+}
 
 pub(crate) struct Handler {
+    /// State of the handler.
+    state: HandlerState,
     // Queue of outbound substreams to open.
     dial_queue: SmallVec<[lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>; 4]>,
     fork_context: Arc<ForkContext>,
@@ -103,6 +122,7 @@ impl Handler {
         // SEE: https://github.com/sigp/lighthouse/blob/fff4dd6311695c1d772a9d6991463915edf223d5/beacon_node/lighthouse_network/src/rpc/protocol.rs#L114
         let max_rpc_size = 10 * 1_048_576; // 10M
         Handler {
+            state: HandlerState::Active,
             dial_queue: SmallVec::new(),
             fork_context,
             max_rpc_size,
@@ -126,9 +146,13 @@ impl Handler {
     // Goodbye
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
     fn send_goodbye_and_shutdown(&mut self, reason: lighthouse_network::rpc::GoodbyeReason) {
+        // Queue our goodbye message.
         // Ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L239
-        todo!("reason: {:?}", reason);
-        // TODO: shutdown this handler
+        self.dial_queue.push(lighthouse_network::rpc::outbound::OutboundRequest::Goodbye(reason));
+
+        // Update the state to start shutdown process.
+        info!("send_goodbye_and_shutdown: Updated the handler state to ShuttingDown");
+        self.state = HandlerState::ShuttingDown(Box::pin(sleep_until(Instant::now() + Duration::from_secs(SHUTDOWN_TIMEOUT_SECS))));
     }
 
     fn send_response(
@@ -267,6 +291,21 @@ impl ConnectionHandler for Handler {
         >,
     > {
         trace!("poll");
+
+
+        // /////////////////////////////////////////////////////////////////////////////////////////////////
+        // Check if we are shutting down, and if the timer ran out
+        // /////////////////////////////////////////////////////////////////////////////////////////////////
+        if let HandlerState::ShuttingDown(delay) = &mut self.state {
+            match delay.as_mut().poll(cx) {
+                Poll::Ready(_) => {
+                    self.state = HandlerState::Deactivated;
+                    info!("poll: Updated the handler state to Deactivated");
+                    return Poll::Ready(ConnectionHandlerEvent::Close(RPCError::Disconnected));
+                }
+                Poll::Pending => {}
+            }
+        }
 
         // /////////////////////////////////////////////////////////////////////////////////////////////////
         // Establish outbound substreams
@@ -410,7 +449,16 @@ impl ConnectionHandler for Handler {
                     );
                 }
                 Poll::Ready(None) => {
-                    todo!()
+                    // ////////////////
+                    // stream closed
+                    // ////////////////
+                    info!("Stream closed by remote. outbound_substream_id: {:?}", outbound_substream_id);
+                    // drop the stream
+                    entry.remove_entry();
+
+                    // TODO: Return an error
+                    // ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L884-L898
+                    return Poll::Ready(ConnectionHandlerEvent::Close(RPCError::Disconnected));
                 }
                 Poll::Pending => {}
             }
