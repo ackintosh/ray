@@ -1,5 +1,6 @@
 use libp2p::{Multiaddr, PeerId};
 use std::collections::HashMap;
+use std::time::Instant;
 use tracing::{error, info};
 
 pub(crate) struct PeerDB {
@@ -29,10 +30,15 @@ pub(crate) enum SyncStatus {
 
 #[derive(Debug)]
 pub enum ConnectionStatus {
-    // The peer is connected.
+    /// The peer is connected.
     Connected,
-    // The peer is being disconnected.
+    /// The peer is being disconnected.
     Disconnecting,
+    /// The peer has disconnected.
+    Disconnected {
+        /// last time the peer was connected or discovered.
+        since: Instant,
+    },
 }
 
 impl PeerInfo {

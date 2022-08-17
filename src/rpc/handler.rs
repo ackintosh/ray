@@ -16,7 +16,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::Duration;
-use tokio::time::{Instant, Sleep, sleep_until};
+use tokio::time::{sleep_until, Instant, Sleep};
 use tracing::log::trace;
 use tracing::{error, info};
 use types::fork_context::ForkContext;
@@ -148,11 +148,16 @@ impl Handler {
     fn send_goodbye_and_shutdown(&mut self, reason: lighthouse_network::rpc::GoodbyeReason) {
         // Queue our goodbye message.
         // Ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L239
-        self.dial_queue.push(lighthouse_network::rpc::outbound::OutboundRequest::Goodbye(reason));
+        self.dial_queue
+            .push(lighthouse_network::rpc::outbound::OutboundRequest::Goodbye(
+                reason,
+            ));
 
         // Update the state to start shutdown process.
         info!("send_goodbye_and_shutdown: Updated the handler state to ShuttingDown");
-        self.state = HandlerState::ShuttingDown(Box::pin(sleep_until(Instant::now() + Duration::from_secs(SHUTDOWN_TIMEOUT_SECS))));
+        self.state = HandlerState::ShuttingDown(Box::pin(sleep_until(
+            Instant::now() + Duration::from_secs(SHUTDOWN_TIMEOUT_SECS),
+        )));
     }
 
     fn send_response(
@@ -291,7 +296,6 @@ impl ConnectionHandler for Handler {
         >,
     > {
         trace!("poll");
-
 
         // /////////////////////////////////////////////////////////////////////////////////////////////////
         // Check if we are shutting down, and if the timer ran out
@@ -452,7 +456,10 @@ impl ConnectionHandler for Handler {
                     // ////////////////
                     // stream closed
                     // ////////////////
-                    info!("Stream closed by remote. outbound_substream_id: {:?}", outbound_substream_id);
+                    info!(
+                        "Stream closed by remote. outbound_substream_id: {:?}",
+                        outbound_substream_id
+                    );
                     // drop the stream
                     entry.remove_entry();
 
