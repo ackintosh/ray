@@ -9,7 +9,7 @@ rust-version = "1.61"
 [dependencies]
 # NOTE: Specifying the latest revision. This should be updated once the next version is released.
 discv5 = { git = "https://github.com/sigp/discv5.git", rev = "878ef13378017bd8e5bf6426f23c3bf02f9e427d" }
-futures = "0.3.23"
+futures = "0.3.24"
 hashset_delay = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
 hex = "0.4.3"
 # Switched to the forked version so use the codec implemented in lighthouse.
