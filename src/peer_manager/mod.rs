@@ -1,3 +1,4 @@
+use crate::peer_db::{ConnectionStatus, SyncStatus};
 use crate::PeerDB;
 use hashset_delay::HashSetDelay;
 use libp2p::PeerId;
@@ -28,6 +29,8 @@ pub(crate) enum PeerManagerEvent {
     NeedMorePeers,
     /// Request to send a STATUS to a peer.
     SendStatus(PeerId),
+    /// The peer should be disconnected.
+    DisconnectPeer(PeerId, lighthouse_network::rpc::GoodbyeReason),
 }
 
 // ////////////////////////////////////////////////////////
@@ -63,7 +66,7 @@ impl PeerManager {
     }
 
     pub(crate) fn need_more_peers(&self) -> bool {
-        let count = self.peer_db.read().peer_count();
+        let count = self.peer_db.read().active_peer_count();
         info!("Current peers count: {}", count);
         count < self.target_peers_count
     }
@@ -71,5 +74,25 @@ impl PeerManager {
     // A STATUS message has been received from a peer. This resets the status timer.
     pub(crate) fn statusd_peer(&mut self, peer_id: PeerId) {
         self.status_peers.insert(peer_id);
+    }
+
+    pub(crate) fn goodbye(
+        &mut self,
+        peer_id: &PeerId,
+        reason: lighthouse_network::rpc::GoodbyeReason,
+    ) {
+        let mut guard = self.peer_db.write();
+
+        if matches!(
+            reason,
+            lighthouse_network::rpc::GoodbyeReason::IrrelevantNetwork
+        ) {
+            guard.update_sync_status(peer_id, SyncStatus::IrrelevantPeer);
+        }
+
+        guard.update_connection_status(peer_id, ConnectionStatus::Disconnecting);
+
+        self.events
+            .push(PeerManagerEvent::DisconnectPeer(*peer_id, reason));
     }
 }

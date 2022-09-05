@@ -1,3 +1,4 @@
+use crate::peer_db::ConnectionStatus;
 use crate::peer_manager::{PeerManager, PeerManagerEvent};
 use futures::StreamExt;
 use libp2p::core::connection::ConnectionId;
@@ -9,6 +10,7 @@ use libp2p::swarm::{
 };
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
+use std::time::Instant;
 use tracing::info;
 use tracing::log::{error, trace};
 
@@ -75,6 +77,12 @@ impl NetworkBehaviour for PeerManager {
         }
 
         self.status_peers.remove(peer_id);
+        self.peer_db.write().update_connection_status(
+            peer_id,
+            ConnectionStatus::Disconnected {
+                since: Instant::now(),
+            },
+        );
     }
 
     fn inject_event(

@@ -17,9 +17,10 @@ use types::{ForkContext, MainnetEthSpec};
 
 // RPC internal message sent from behaviour to handlers
 #[derive(Debug)]
-pub(crate) enum MessageToHandler {
-    SendStatus(lighthouse_network::rpc::StatusMessage),
-    SendResponse(SubstreamId, lighthouse_network::Response<MainnetEthSpec>),
+pub(crate) enum InstructionToHandler {
+    Status(lighthouse_network::rpc::StatusMessage),
+    Goodbye(lighthouse_network::rpc::GoodbyeReason),
+    Response(SubstreamId, lighthouse_network::Response<MainnetEthSpec>),
 }
 
 // ////////////////////////////////////////////////////////
@@ -39,6 +40,7 @@ impl Behaviour {
         }
     }
 
+    // Status
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     pub(crate) fn send_status(
         &mut self,
@@ -49,7 +51,21 @@ impl Behaviour {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,
-            event: MessageToHandler::SendStatus(message),
+            event: InstructionToHandler::Status(message),
+        })
+    }
+
+    // Goodbye
+    // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
+    pub(crate) fn send_goodbye(
+        &mut self,
+        peer_id: PeerId,
+        reason: lighthouse_network::rpc::GoodbyeReason,
+    ) {
+        self.events.push(NetworkBehaviourAction::NotifyHandler {
+            peer_id,
+            handler: NotifyHandler::Any,
+            event: InstructionToHandler::Goodbye(reason),
         })
     }
 
@@ -63,7 +79,7 @@ impl Behaviour {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
             handler: NotifyHandler::One(connection_id),
-            event: MessageToHandler::SendResponse(substream_id, response),
+            event: InstructionToHandler::Response(substream_id, response),
         })
     }
 }

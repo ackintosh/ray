@@ -1,5 +1,6 @@
 use libp2p::{Multiaddr, PeerId};
 use std::collections::HashMap;
+use std::time::Instant;
 use tracing::{error, info};
 
 pub(crate) struct PeerDB {
@@ -10,6 +11,7 @@ struct PeerInfo {
     #[allow(dead_code)]
     listening_address: Multiaddr,
     sync_status: SyncStatus,
+    connection_status: ConnectionStatus,
 }
 
 #[derive(Debug)]
@@ -20,8 +22,23 @@ pub(crate) enum SyncStatus {
     Advanced,
     // Is behind our current head and not useful for block downloads.
     Behind,
+    // This peer is in an incompatible network.
+    IrrelevantPeer,
     // Not currently known as a STATUS handshake has not occurred.
     Unknown,
+}
+
+#[derive(Debug)]
+pub enum ConnectionStatus {
+    /// The peer is connected.
+    Connected,
+    /// The peer is being disconnected.
+    Disconnecting,
+    /// The peer has disconnected.
+    Disconnected {
+        /// last time the peer was connected or discovered.
+        since: Instant,
+    },
 }
 
 impl PeerInfo {
@@ -29,6 +46,7 @@ impl PeerInfo {
         PeerInfo {
             listening_address,
             sync_status: SyncStatus::Unknown,
+            connection_status: ConnectionStatus::Connected,
         }
     }
 }
@@ -47,7 +65,7 @@ impl PeerDB {
     pub(crate) fn update_sync_status(&mut self, peer_id: &PeerId, sync_status: SyncStatus) {
         match self.peers.get_mut(peer_id) {
             None => {
-                error!("Peer not found: {}", peer_id);
+                error!("update_sync_status: Peer not found. peer_id: {}", peer_id);
             }
             Some(peer_info) => {
                 info!(
@@ -59,7 +77,30 @@ impl PeerDB {
         }
     }
 
-    pub(crate) fn peer_count(&self) -> usize {
-        self.peers.len()
+    pub(crate) fn update_connection_status(
+        &mut self,
+        peer_id: &PeerId,
+        connection_status: ConnectionStatus,
+    ) {
+        match self.peers.get_mut(peer_id) {
+            None => error!(
+                "update_connection_status: Peer not found. peer_id: {}",
+                peer_id
+            ),
+            Some(peer_info) => {
+                info!(
+                    "Updated connection_status: before: {:?}, after: {:?}, peer: {}",
+                    peer_info.connection_status, connection_status, peer_id
+                );
+                peer_info.connection_status = connection_status;
+            }
+        }
+    }
+
+    pub(crate) fn active_peer_count(&self) -> usize {
+        self.peers
+            .iter()
+            .filter(|(_id, info)| matches!(info.connection_status, ConnectionStatus::Connected))
+            .count()
     }
 }
