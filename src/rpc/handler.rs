@@ -281,7 +281,12 @@ impl ConnectionHandler for Handler {
     }
 
     fn connection_keep_alive(&self) -> KeepAlive {
-        KeepAlive::Yes
+        if matches!(self.state, HandlerState::Deactivated) {
+            // The timeout has expired. Force the disconnect.
+            KeepAlive::No
+        } else {
+            KeepAlive::Yes
+        }
     }
 
     fn poll(
