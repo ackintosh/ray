@@ -1,4 +1,4 @@
-use crate::rpc::behaviour::MessageToHandler;
+use crate::rpc::behaviour::InstructionToHandler;
 use crate::rpc::error::RPCError;
 use crate::rpc::protocol::{InboundFramed, OutboundFramed, RpcProtocol, RpcRequestProtocol};
 use futures::{FutureExt, SinkExt, StreamExt};
@@ -18,7 +18,7 @@ use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::time::{sleep_until, Instant, Sleep};
 use tracing::log::trace;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use types::fork_context::ForkContext;
 use types::MainnetEthSpec;
 
@@ -181,7 +181,7 @@ impl Handler {
 
 // SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
 impl ConnectionHandler for Handler {
-    type InEvent = MessageToHandler;
+    type InEvent = InstructionToHandler;
     type OutEvent = HandlerReceived;
     type Error = RPCError;
     type InboundProtocol = RpcProtocol;
@@ -264,9 +264,9 @@ impl ConnectionHandler for Handler {
     fn inject_event(&mut self, event: Self::InEvent) {
         info!("inject_event. event: {:?}", event);
         match event {
-            MessageToHandler::SendStatus(status_request) => self.send_status(status_request),
-            MessageToHandler::SendGoodbye(reason) => self.send_goodbye_and_shutdown(reason),
-            MessageToHandler::SendResponse(substream_id, response) => {
+            InstructionToHandler::Status(status_request) => self.send_status(status_request),
+            InstructionToHandler::Goodbye(reason) => self.send_goodbye_and_shutdown(reason),
+            InstructionToHandler::Response(substream_id, response) => {
                 self.send_response(substream_id, response)
             }
         }
@@ -274,10 +274,16 @@ impl ConnectionHandler for Handler {
 
     fn inject_dial_upgrade_error(
         &mut self,
-        _info: Self::OutboundOpenInfo,
-        _error: ConnectionHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgradeSend>::Error>,
+        info: Self::OutboundOpenInfo,
+        error: ConnectionHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgradeSend>::Error>,
     ) {
-        todo!()
+        warn!(
+            "inject_dial_upgrade_error. info: {}, error: {}",
+            info, error
+        );
+
+        // TODO
+        // ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L453
     }
 
     fn connection_keep_alive(&self) -> KeepAlive {
