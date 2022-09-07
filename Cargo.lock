@@ -675,7 +675,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6716ce9729be9628979ae1ff63e8bc8b7ad53b5472a2633bf079607a55328d36"
 dependencies = [
  "futures",
- "tokio-util",
+ "tokio-util 0.6.10",
 ]
 
 [[package]]
@@ -796,7 +796,7 @@ dependencies = [
  "smallvec",
  "tokio",
  "tokio-stream",
- "tokio-util",
+ "tokio-util 0.6.10",
  "tracing",
  "tracing-subscriber",
  "uint",
@@ -830,7 +830,7 @@ dependencies = [
  "socket2",
  "tokio",
  "tokio-stream",
- "tokio-util",
+ "tokio-util 0.6.10",
  "tracing",
  "tracing-subscriber",
  "uint",
@@ -1431,7 +1431,7 @@ version = "0.2.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=2b05246383ab5b7576db34a05ed5965593d4b786#2b05246383ab5b7576db34a05ed5965593d4b786"
 dependencies = [
  "futures",
- "tokio-util",
+ "tokio-util 0.6.10",
 ]
 
 [[package]]
@@ -2340,7 +2340,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tokio-io-timeout",
- "tokio-util",
+ "tokio-util 0.6.10",
  "types",
  "unsigned-varint 0.6.0",
  "unused_port",
@@ -3290,7 +3290,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tokio-io-timeout",
- "tokio-util",
+ "tokio-util 0.7.3",
  "tracing",
  "tracing-subscriber",
  "types",
@@ -4207,6 +4207,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-util"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc463cd8deddc3770d20f9852143d50bf6094e640b485cb2e189a2099085ff45"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "futures-io",
+ "futures-sink",
+ "pin-project-lite 0.2.9",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "toml"
 version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4492,7 +4507,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35581ff83d4101e58b582e607120c7f5ffb17e632a980b1f38334d76b36908b2"
 dependencies = [
  "bytes",
- "tokio-util",
+ "tokio-util 0.6.10",
 ]
 
 [[package]]
