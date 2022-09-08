@@ -5,7 +5,7 @@ use crate::rpc::RpcEvent;
 use crate::sync::SyncOperation;
 use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::NetworkBehaviour;
-use libp2p::swarm::{NetworkBehaviourAction, NetworkBehaviourEventProcess, PollParameters};
+use libp2p::swarm::{NetworkBehaviourAction, PollParameters};
 use libp2p::{NetworkBehaviour, PeerId};
 use lighthouse_network::rpc::methods::RPCResponse;
 use lighthouse_network::rpc::protocol::InboundRequest;
@@ -17,9 +17,17 @@ use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::error;
 use tracing::{info, trace, warn};
 
-// The core behaviour that combines the sub-behaviours.
+/// Events `BehaviourComposer` emits.
+#[derive(Debug)]
+pub(crate) enum BehaviourComposerEvent {
+    Discovery(DiscoveryEvent),
+    PeerManager(PeerManagerEvent),
+    Rpc(RpcEvent),
+}
+
+/// The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]
-#[behaviour(event_process = true, poll_method = "poll")] // By default `event_process` is false since libp2p-swarm-derive v0.25.0 SEE https://github.com/libp2p/rust-libp2p/blob/v0.40.0/swarm-derive/CHANGELOG.md#0250-2021-11-01
+#[behaviour(out_event = "BehaviourComposerEvent", poll_method = "poll")] // By default `event_process` is false since libp2p-swarm-derive v0.25.0 SEE https://github.com/libp2p/rust-libp2p/blob/v0.40.0/swarm-derive/CHANGELOG.md#0250-2021-11-01
 pub(crate) struct BehaviourComposer {
     /* Sub-Behaviours */
     discovery: crate::discovery::behaviour::Behaviour,
@@ -70,44 +78,8 @@ impl BehaviourComposer {
         }
     }
 
-    fn poll(
-        &mut self,
-        _cx: &mut Context<'_>,
-        _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<(), <BehaviourComposer as NetworkBehaviour>::ConnectionHandler>>
-    {
-        trace!("poll");
-
-        // Handle internal events
-        // see https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/behaviour/mod.rs#L1047
-        if let Some(event) = self.internal_events.pop_front() {
-            return match event {
-                InternalComposerEvent::DialPeer(peer_id) => {
-                    let handler = self.new_handler();
-                    Poll::Ready(NetworkBehaviourAction::Dial {
-                        opts: DialOpts::peer_id(peer_id)
-                            .condition(PeerCondition::Disconnected)
-                            .build(),
-                        handler,
-                    })
-                }
-            };
-        }
-
-        Poll::Pending
-    }
-}
-
-enum InternalComposerEvent {
-    DialPeer(PeerId),
-}
-
-impl NetworkBehaviourEventProcess<DiscoveryEvent> for BehaviourComposer {
-    fn inject_event(&mut self, event: DiscoveryEvent) {
-        info!(
-            "NetworkBehaviourEventProcess<DiscoveryEvent> event: {:?}",
-            event
-        );
+    pub(crate) fn handle_discovery_event(&mut self, event: DiscoveryEvent) {
+        info!("handle_discovery_event: {:?}", event);
 
         match event {
             DiscoveryEvent::FoundPeers(peer_ids) => {
@@ -123,14 +95,9 @@ impl NetworkBehaviourEventProcess<DiscoveryEvent> for BehaviourComposer {
             }
         };
     }
-}
 
-impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
-    fn inject_event(&mut self, event: PeerManagerEvent) {
-        info!(
-            "NetworkBehaviourEventProcess<PeerManagerEvent> event: {:?}",
-            event
-        );
+    pub(crate) fn handle_peer_manager_event(&mut self, event: PeerManagerEvent) {
+        info!("handle_peer_manager_event: {:?}", event);
 
         match event {
             PeerManagerEvent::PeerConnectedIncoming(peer_id) => {
@@ -156,11 +123,9 @@ impl NetworkBehaviourEventProcess<PeerManagerEvent> for BehaviourComposer {
             }
         }
     }
-}
 
-impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
-    fn inject_event(&mut self, event: RpcEvent) {
-        info!("NetworkBehaviourEventProcess<RpcEvent> event: {:?}", event);
+    pub(crate) fn handle_rpc_event(&mut self, event: RpcEvent) {
+        info!("handle_rpc_event: {:?}", event);
 
         match event {
             RpcEvent::ReceivedRequest(request) => {
@@ -228,4 +193,57 @@ impl NetworkBehaviourEventProcess<RpcEvent> for BehaviourComposer {
             }
         }
     }
+
+    fn poll(
+        &mut self,
+        _cx: &mut Context<'_>,
+        _params: &mut impl PollParameters,
+    ) -> Poll<
+        NetworkBehaviourAction<
+            BehaviourComposerEvent,
+            <BehaviourComposer as NetworkBehaviour>::ConnectionHandler,
+        >,
+    > {
+        trace!("poll");
+
+        // Handle internal events
+        // see https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/behaviour/mod.rs#L1047
+        if let Some(event) = self.internal_events.pop_front() {
+            return match event {
+                InternalComposerEvent::DialPeer(peer_id) => {
+                    let handler = self.new_handler();
+                    Poll::Ready(NetworkBehaviourAction::Dial {
+                        opts: DialOpts::peer_id(peer_id)
+                            .condition(PeerCondition::Disconnected)
+                            .build(),
+                        handler,
+                    })
+                }
+            };
+        }
+
+        Poll::Pending
+    }
+}
+
+impl From<DiscoveryEvent> for BehaviourComposerEvent {
+    fn from(event: DiscoveryEvent) -> Self {
+        BehaviourComposerEvent::Discovery(event)
+    }
+}
+
+impl From<PeerManagerEvent> for BehaviourComposerEvent {
+    fn from(event: PeerManagerEvent) -> Self {
+        BehaviourComposerEvent::PeerManager(event)
+    }
+}
+
+impl From<RpcEvent> for BehaviourComposerEvent {
+    fn from(event: RpcEvent) -> Self {
+        BehaviourComposerEvent::Rpc(event)
+    }
+}
+
+enum InternalComposerEvent {
+    DialPeer(PeerId),
 }

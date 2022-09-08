@@ -7,7 +7,7 @@ use libp2p::PeerId;
 // ////////////////////////////////////////////////////////
 
 #[derive(Debug)]
-pub enum DiscoveryEvent {
+pub(crate) enum DiscoveryEvent {
     // A query has completed. This event contains discovered peer IDs.
     FoundPeers(Vec<PeerId>),
 }
