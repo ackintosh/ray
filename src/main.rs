@@ -12,7 +12,7 @@ mod sync;
 mod types;
 
 use crate::beacon_chain::BeaconChain;
-use crate::behaviour::BehaviourComposer;
+use crate::behaviour::{BehaviourComposer, BehaviourComposerEvent};
 use crate::bootstrap::{build_network_behaviour, build_network_transport};
 use crate::config::NetworkConfig;
 use crate::peer_db::PeerDB;
@@ -138,9 +138,17 @@ fn main() {
         // https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L305
         loop {
             match swarm.select_next_some().await {
-                libp2p::swarm::SwarmEvent::Behaviour(_behaviour_out_event) => {
-                    info!("SwarmEvent::Behaviour");
-                }
+                libp2p::swarm::SwarmEvent::Behaviour(event) => match event {
+                    BehaviourComposerEvent::Discovery(event) => {
+                        swarm.behaviour_mut().handle_discovery_event(event)
+                    }
+                    BehaviourComposerEvent::PeerManager(event) => {
+                        swarm.behaviour_mut().handle_peer_manager_event(event)
+                    }
+                    BehaviourComposerEvent::Rpc(event) => {
+                        swarm.behaviour_mut().handle_rpc_event(event)
+                    }
+                },
                 libp2p::swarm::SwarmEvent::ConnectionEstablished {
                     peer_id,
                     endpoint: _,
