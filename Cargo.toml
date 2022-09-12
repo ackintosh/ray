@@ -15,7 +15,7 @@ hex = "0.4.3"
 # Switched to the forked version so use the codec implemented in lighthouse.
 # SEE: https://github.com/ackintosh/lighthouse/pull/4
 lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
-lru = "0.7.8"
+lru = "0.8.0"
 primitive-types = "0.11.1"
 parking_lot = "0.12.1"
 serde_yaml = "0.9.11"
