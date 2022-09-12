@@ -12,6 +12,7 @@ use libp2p::swarm::{
 use libp2p::{Multiaddr, PeerId};
 use lru::LruCache;
 use std::net::SocketAddr;
+use std::num::NonZeroUsize;
 use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
@@ -76,7 +77,7 @@ impl Behaviour {
             discv5,
             event_stream,
             active_queries: FuturesUnordered::new(),
-            cached_enrs: LruCache::new(50),
+            cached_enrs: LruCache::new(NonZeroUsize::new(50).expect("non zero usize")),
         }
     }
 
