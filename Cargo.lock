@@ -779,7 +779,7 @@ dependencies = [
  "hkdf",
  "lazy_static",
  "libp2p-core 0.30.2",
- "lru",
+ "lru 0.7.8",
  "parking_lot 0.11.2",
  "rand 0.8.5",
  "rlp",
@@ -811,7 +811,7 @@ dependencies = [
  "hex",
  "hkdf",
  "lazy_static",
- "lru",
+ "lru 0.7.8",
  "more-asserts",
  "parking_lot 0.11.2",
  "rand 0.8.5",
@@ -1961,7 +1961,7 @@ dependencies = [
  "libp2p-core 0.32.1",
  "libp2p-swarm 0.34.0",
  "log",
- "lru",
+ "lru 0.7.8",
  "prost 0.9.0",
  "prost-build 0.9.0",
  "smallvec",
@@ -2315,7 +2315,7 @@ dependencies = [
  "libp2p 0.43.0",
  "lighthouse_metrics",
  "lighthouse_version",
- "lru",
+ "lru 0.7.8",
  "parking_lot 0.12.1",
  "prometheus-client",
  "rand 0.8.5",
@@ -2377,6 +2377,15 @@ name = "lru"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e999beba7b6e8345721bd280141ed958096a2e4abdf74f67ff4ce49b4b54e47a"
+dependencies = [
+ "hashbrown 0.12.1",
+]
+
+[[package]]
+name = "lru"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "936d98d2ddd79c18641c6709e7bb09981449694e402d1a0f0f657ea8d61f4a51"
 dependencies = [
  "hashbrown 0.12.1",
 ]
@@ -3272,7 +3281,7 @@ dependencies = [
  "hex",
  "libp2p 0.47.0",
  "lighthouse_network",
- "lru",
+ "lru 0.8.0",
  "parking_lot 0.12.1",
  "primitive-types 0.11.1",
  "serde_yaml 0.9.11",
