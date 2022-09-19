@@ -4,6 +4,7 @@ use hashset_delay::HashSetDelay;
 use libp2p::PeerId;
 use parking_lot::RwLock;
 use smallvec::{smallvec, SmallVec};
+use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::info;
@@ -40,12 +41,14 @@ pub(crate) enum PeerManagerEvent {
 pub(crate) struct PeerManager {
     peer_db: Arc<RwLock<PeerDB>>,
     events: SmallVec<[PeerManagerEvent; 10]>,
-    // Target number of peers to connect to.
+    /// Target number of peers to connect to.
     target_peers_count: usize,
-    // The heartbeat interval to perform routine maintenance.
+    /// The heartbeat interval to perform routine maintenance.
     heartbeat: tokio::time::Interval,
-    // A collection of peers awaiting to be Status'd.
+    /// A collection of peers awaiting to be Status'd.
     status_peers: HashSetDelay<PeerId>,
+    /// Peers queued to be dialed.
+    peers_to_dial: VecDeque<PeerId>,
 }
 
 impl PeerManager {
@@ -62,6 +65,7 @@ impl PeerManager {
             target_peers_count,
             heartbeat,
             status_peers: HashSetDelay::new(status_interval),
+            peers_to_dial: VecDeque::new(),
         }
     }
 
@@ -69,6 +73,10 @@ impl PeerManager {
         let count = self.peer_db.read().active_peer_count();
         info!("Current peers count: {}", count);
         count < self.target_peers_count
+    }
+
+    pub(crate) fn dial_peer(&mut self, peer_id: PeerId) {
+        self.peers_to_dial.push_back(peer_id);
     }
 
     // A STATUS message has been received from a peer. This resets the status timer.
