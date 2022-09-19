@@ -1,4 +1,3 @@
-use crate::sync::SyncOperation;
 use crate::{
     BeaconChain, BehaviourComposer, CombinedKey, NetworkConfig, PeerDB, TARGET_PEERS_COUNT,
 };
@@ -10,7 +9,6 @@ use libp2p::{noise, PeerId, Transport};
 use parking_lot::RwLock;
 use std::process::exit;
 use std::sync::Arc;
-use tokio::sync::mpsc::UnboundedSender;
 use tracing::error;
 use types::{ForkContext, MainnetEthSpec};
 
@@ -44,7 +42,6 @@ pub(crate) async fn build_network_behaviour(
     enr: Enr,
     enr_key: CombinedKey,
     network_config: NetworkConfig,
-    sync_sender: UnboundedSender<SyncOperation>,
     peer_db: Arc<RwLock<PeerDB>>,
     beacon_chain: Arc<RwLock<BeaconChain>>,
 ) -> BehaviourComposer {
@@ -71,7 +68,5 @@ pub(crate) async fn build_network_behaviour(
         discovery,
         crate::peer_manager::PeerManager::new(TARGET_PEERS_COUNT, peer_db),
         crate::rpc::behaviour::Behaviour::new(fork_context),
-        beacon_chain.clone(),
-        sync_sender,
     )
 }

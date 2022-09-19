@@ -4,6 +4,7 @@ mod bootstrap;
 mod config;
 mod discovery;
 mod identity;
+mod network;
 mod peer_db;
 mod peer_manager;
 mod rpc;
@@ -15,18 +16,13 @@ use crate::beacon_chain::BeaconChain;
 use crate::behaviour::{BehaviourComposer, BehaviourComposerEvent};
 use crate::bootstrap::{build_network_behaviour, build_network_transport};
 use crate::config::NetworkConfig;
+use crate::network::Network;
 use crate::peer_db::PeerDB;
 use discv5::enr::{CombinedKey, EnrBuilder};
-use futures::StreamExt;
 use libp2p::identity::Keypair;
-use libp2p::swarm::SwarmBuilder;
 use parking_lot::RwLock;
-use std::future::Future;
-use std::pin::Pin;
-use std::process::exit;
-use std::sync::{Arc, Weak};
-use tokio::runtime::Runtime;
-use tracing::{error, info, warn};
+use std::sync::Arc;
+use tracing::info;
 
 // Target number of peers to connect to.
 const TARGET_PEERS_COUNT: usize = 50;
@@ -85,84 +81,19 @@ fn main() {
     // SyncManager
     let sync_sender = sync::spawn(runtime.clone(), peer_db.clone(), beacon_chain.clone());
 
-    // libp2p
-    // Ref: https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L66
-    let local_peer_id = crate::identity::enr_to_peer_id(&enr);
-    info!("Local PeerId: {}", local_peer_id);
-    let transport = runtime.block_on(build_network_transport(key_pair));
-    let behaviour = runtime.block_on(build_network_behaviour(
+    // Network
+    let network = runtime.block_on(Network::new(
+        beacon_chain,
+        sync_sender,
+        key_pair,
         enr,
         enr_key,
         network_config,
-        sync_sender,
         peer_db,
-        beacon_chain,
+        runtime.clone(),
     ));
 
-    // use the executor for libp2p
-    struct Executor(Weak<Runtime>);
-    impl libp2p::core::Executor for Executor {
-        fn exec(&self, f: Pin<Box<dyn Future<Output = ()> + Send>>) {
-            if let Some(runtime) = self.0.upgrade() {
-                info!("Executor: Spawning a task");
-                runtime.spawn(f);
-            } else {
-                warn!("Executor: Couldn't spawn task. Runtime shutting down");
-            }
-        }
-    }
-    let mut swarm = SwarmBuilder::new(transport, behaviour, local_peer_id)
-        .executor(Box::new(Executor(Arc::downgrade(&runtime))))
-        .build();
-
-    runtime.spawn(async move {
-        let listen_multiaddr = {
-            let mut multiaddr =
-                libp2p::core::multiaddr::Multiaddr::from(std::net::Ipv4Addr::new(0, 0, 0, 0));
-            multiaddr.push(libp2p::core::multiaddr::Protocol::Tcp(9000));
-            multiaddr
-        };
-
-        match swarm.listen_on(listen_multiaddr.clone()) {
-            Ok(_) => {
-                info!("Listening established: {}", listen_multiaddr);
-            }
-            Err(e) => {
-                error!("{}", e);
-                exit(1);
-            }
-        }
-
-        // SEE:
-        // https://github.com/sigp/lighthouse/blob/9667dc2f0379272fe0f36a2ec015c5a560bca652/beacon_node/network/src/service.rs#L309
-        // https://github.com/sigp/lighthouse/blob/0aee7ec873bcc7206b9acf2741f46c209b510c57/beacon_node/eth2_libp2p/src/service.rs#L305
-        loop {
-            match swarm.select_next_some().await {
-                libp2p::swarm::SwarmEvent::Behaviour(event) => match event {
-                    BehaviourComposerEvent::Discovery(event) => {
-                        swarm.behaviour_mut().handle_discovery_event(event)
-                    }
-                    BehaviourComposerEvent::PeerManager(event) => {
-                        swarm.behaviour_mut().handle_peer_manager_event(event)
-                    }
-                    BehaviourComposerEvent::Rpc(event) => {
-                        swarm.behaviour_mut().handle_rpc_event(event)
-                    }
-                },
-                libp2p::swarm::SwarmEvent::ConnectionEstablished {
-                    peer_id,
-                    endpoint: _,
-                    num_established: _,
-                    concurrent_dial_errors: _,
-                } => {
-                    info!("SwarmEvent::ConnectionEstablished. peer_id: {}", peer_id);
-                }
-                event => {
-                    info!("other event: {:?}", event);
-                }
-            }
-        }
-    });
+    runtime.block_on(network.spawn(runtime.clone()));
 
     // block until shutdown requested
     let message = crate::signal::block_until_shutdown_requested(runtime);

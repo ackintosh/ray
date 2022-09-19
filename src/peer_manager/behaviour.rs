@@ -3,6 +3,7 @@ use crate::peer_manager::{PeerManager, PeerManagerEvent};
 use futures::StreamExt;
 use libp2p::core::connection::ConnectionId;
 use libp2p::core::ConnectedPoint;
+use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::handler::DummyConnectionHandler;
 use libp2p::swarm::{
     ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
@@ -129,6 +130,16 @@ impl NetworkBehaviour for PeerManager {
                     break;
                 }
             }
+        }
+
+        if let Some(peer_id) = self.peers_to_dial.pop_front() {
+            let handler = self.new_handler();
+            return Poll::Ready(NetworkBehaviourAction::Dial {
+                opts: DialOpts::peer_id(peer_id)
+                    .condition(PeerCondition::Disconnected)
+                    .build(),
+                handler,
+            });
         }
 
         Poll::Pending

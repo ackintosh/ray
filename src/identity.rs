@@ -48,7 +48,6 @@ pub(crate) fn peer_id_to_node_id(peer_id: &PeerId) -> Result<NodeId, String> {
             hasher.finalize(&mut output);
             Ok(discv5::enr::NodeId::parse(&output).expect("Must be correct length"))
         }
-        _ => Err("Unsupported public key".into()),
     }
 }
 
