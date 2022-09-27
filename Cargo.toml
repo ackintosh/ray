@@ -7,7 +7,8 @@ rust-version = "1.61"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 # Packages that are part of lighthouse (e.g. types, eth2_ssz) are used in this package.
-# https://github.com/ackintosh/lighthouse/pull/4
+# NOTE: we are using the forked one due to the package visibility.
+# see https://github.com/ackintosh/lighthouse/pull/4
 
 [dependencies]
 # NOTE: Specifying the latest revision. This should be updated once the next version is released.
