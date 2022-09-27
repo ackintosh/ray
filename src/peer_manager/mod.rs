@@ -1,6 +1,6 @@
 use crate::peer_db::{ConnectionStatus, SyncStatus};
 use crate::PeerDB;
-use hashset_delay::HashSetDelay;
+use delay_map::HashSetDelay;
 use libp2p::PeerId;
 use parking_lot::RwLock;
 use smallvec::{smallvec, SmallVec};

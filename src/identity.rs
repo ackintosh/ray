@@ -1,4 +1,4 @@
-use discv5::enr::{CombinedPublicKey, NodeId};
+use discv5::enr::CombinedPublicKey;
 use discv5::Enr;
 use libp2p::identity::PublicKey;
 use libp2p::multiaddr::Protocol;
@@ -21,7 +21,7 @@ pub(crate) fn enr_to_peer_id(enr: &Enr) -> PeerId {
 }
 
 // SEE: https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L242
-pub(crate) fn peer_id_to_node_id(peer_id: &PeerId) -> Result<NodeId, String> {
+pub(crate) fn peer_id_to_node_id(peer_id: &PeerId) -> Result<discv5::enr::NodeId, String> {
     // A libp2p peer id byte representation should be 2 length bytes + 4 protobuf bytes + compressed pk bytes
     // if generated from a PublicKey with Identity multihash.
     let pk_bytes = &peer_id.to_bytes()[2..];
@@ -48,6 +48,7 @@ pub(crate) fn peer_id_to_node_id(peer_id: &PeerId) -> Result<NodeId, String> {
             hasher.finalize(&mut output);
             Ok(discv5::enr::NodeId::parse(&output).expect("Must be correct length"))
         }
+        // _ => Err("Unsupported public key".into()),
     }
 }
 
