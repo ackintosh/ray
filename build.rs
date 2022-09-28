@@ -12,7 +12,8 @@ fn main() {
 
 // Uncompress the genesis state archive into `network_config` folder.
 // The `genesis.ssz.zip` file is copied from:
-// https://github.com/sigp/lighthouse/tree/15b88115804fd8de4ed81e773aadecfe9afdd674/common/eth2_network_config/built_in_network_configs/kiln
+// https://github.com/sigp/lighthouse/blob/stable/common/eth2_network_config/built_in_network_configs/prater/genesis.ssz.zip
+//   -> rev: 87825b2
 fn uncompress_genesis_state() -> Result<(), String> {
     let network_config_dir = env!("CARGO_MANIFEST_DIR")
         .parse::<PathBuf>()
