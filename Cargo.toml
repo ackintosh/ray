@@ -37,7 +37,7 @@ void = "1.0.2"
 libp2p = { version = "0.48.0", default-features = false, features = ["dns-tokio", "noise", "mplex", "secp256k1", "tcp-tokio", "yamux"] }
 
 [build-dependencies]
-zip = "0.6.2"
+zip = "0.6.3"
 
 [patch]
 [patch.crates-io]
