@@ -19,7 +19,7 @@ lru = "0.8.1"
 primitive-types = "0.12.0"
 parking_lot = "0.12.1"
 serde_yaml = "0.9.13"
-smallvec = "1.9.0"
+smallvec = "1.10.0"
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
 eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
 eth2_ssz_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "2b05246383ab5b7576db34a05ed5965593d4b786" }
