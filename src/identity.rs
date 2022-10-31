@@ -47,8 +47,7 @@ pub(crate) fn peer_id_to_node_id(peer_id: &PeerId) -> Result<discv5::enr::NodeId
             hasher.update(&uncompressed_key_bytes);
             hasher.finalize(&mut output);
             Ok(discv5::enr::NodeId::parse(&output).expect("Must be correct length"))
-        }
-        // _ => Err("Unsupported public key".into()),
+        } // _ => Err("Unsupported public key".into()),
     }
 }
 
