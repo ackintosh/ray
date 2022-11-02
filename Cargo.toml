@@ -22,7 +22,7 @@ lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev 
 lru = "0.8.1"
 primitive-types = "0.12.1"
 parking_lot = "0.12.1"
-serde_yaml = "0.9.13"
+serde_yaml = "0.9.14"
 smallvec = "1.10.0"
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "ef01d39c66f01cad80c02883412db47db9474c1a" }
 eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "ef01d39c66f01cad80c02883412db47db9474c1a" }
