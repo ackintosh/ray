@@ -1,5 +1,8 @@
 # #######################################################################################
-# Copied from: https://github.com/eth-clients/goerli/blob/main/prater/bootstrap_nodes.txt
+# Copied from: https://github.com/sigp/lighthouse/blob/stable/common/eth2_network_config/built_in_network_configs/prater/boot_enr.yaml
+#  -> rev: 5bb4aad
+#  -> the original file (txt format) is:
+#     https://github.com/eth-clients/goerli/blob/main/prater/bootstrap_nodes.txt
 # #######################################################################################
 
 # q9f bootnode errai (lighthouse)
