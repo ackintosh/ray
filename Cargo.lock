@@ -653,9 +653,9 @@ checksum = "3ee2393c4a91429dffb4bedf19f4d6abf27d8a732c8ce4980305d782e5426d57"
 
 [[package]]
 name = "delay_map"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6716ce9729be9628979ae1ff63e8bc8b7ad53b5472a2633bf079607a55328d36"
+checksum = "9c4d75d3abfe4830dcbf9bcb1b926954e121669f74dd1ca7aa0183b1755d83f6"
 dependencies = [
  "futures",
  "tokio-util",

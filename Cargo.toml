@@ -14,7 +14,7 @@ rust-version = "1.61"
 # NOTE: Specifying the latest revision. This should be updated once the next version is released.
 discv5 = "0.1.0"
 futures = "0.3.25"
-delay_map = "0.1.1"
+delay_map = "0.1.2"
 hex = "0.4.3"
 # Switched to the forked version so use the codec implemented in lighthouse.
 # SEE: https://github.com/ackintosh/lighthouse/compare/unstable...ackintosh:lighthouse:publish-codec
