@@ -20,7 +20,7 @@ pub(crate) fn enr_to_peer_id(enr: &Enr) -> PeerId {
     }
 }
 
-// SEE: https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/discovery/enr_ext.rs#L242
+// SEE: https://github.com/sigp/lighthouse/blob/unstable/beacon_node/lighthouse_network/src/discovery/enr_ext.rs#L240-L274
 pub(crate) fn peer_id_to_node_id(peer_id: &PeerId) -> Result<discv5::enr::NodeId, String> {
     // A libp2p peer id byte representation should be 2 length bytes + 4 protobuf bytes + compressed pk bytes
     // if generated from a PublicKey with Identity multihash.
@@ -47,7 +47,11 @@ pub(crate) fn peer_id_to_node_id(peer_id: &PeerId) -> Result<discv5::enr::NodeId
             hasher.update(&uncompressed_key_bytes);
             hasher.finalize(&mut output);
             Ok(discv5::enr::NodeId::parse(&output).expect("Must be correct length"))
-        } // _ => Err("Unsupported public key".into()),
+        }
+        PublicKey::Ecdsa(_) => Err(format!(
+            "Unsupported public key (Ecdsa) from peer {}",
+            peer_id
+        )),
     }
 }
 
