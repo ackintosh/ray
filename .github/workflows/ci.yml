@@ -29,8 +29,8 @@ jobs:
         with:
           command: check
 
-  lints:
-    name: Lints
+  fmt:
+    name: Fmt
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -42,7 +42,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-          components: rustfmt, clippy
+          components: rustfmt
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
@@ -52,12 +52,6 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
 
   build:
     name: Build
