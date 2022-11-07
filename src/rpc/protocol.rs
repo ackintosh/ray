@@ -4,16 +4,15 @@ use futures::prelude::*;
 use libp2p::core::{ProtocolName, UpgradeInfo};
 use libp2p::swarm::NegotiatedSubstream;
 use libp2p::{InboundUpgrade, OutboundUpgrade};
+use lighthouse_network::rpc::RPCError;
 use std::fmt::{Display, Formatter};
-use std::io::Error;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio_io_timeout::TimeoutStream;
 use tokio_util::codec::Framed;
 use tokio_util::compat::{Compat, FuturesAsyncReadCompatExt};
-use tracing::info;
+use tracing::{error, info};
 use types::MainnetEthSpec;
-use void::Void;
 
 // spec:
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#protocol-identification
@@ -28,12 +27,14 @@ const REQUEST_TIMEOUT: u64 = 15;
 enum Protocol {
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     Status,
+    Goodbye,
 }
 
 impl Display for Protocol {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let protocol_name = match self {
             Protocol::Status => "status",
+            Protocol::Goodbye => "goodbye",
         };
         f.write_str(protocol_name)
     }
@@ -200,11 +201,10 @@ impl UpgradeInfo for RpcProtocol {
 
     // The list of supported RPC protocols
     fn protocol_info(&self) -> Self::InfoIter {
-        vec![ProtocolId::new(
-            Protocol::Status,
-            SchemaVersion::V1,
-            Encoding::SSZSnappy,
-        )]
+        vec![
+            ProtocolId::new(Protocol::Status, SchemaVersion::V1, Encoding::SSZSnappy),
+            ProtocolId::new(Protocol::Goodbye, SchemaVersion::V1, Encoding::SSZSnappy),
+        ]
     }
 }
 
@@ -222,7 +222,7 @@ where
     TSocket: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
     type Output = InboundOutput<TSocket>;
-    type Error = Void;
+    type Error = RPCError;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
     fn upgrade_inbound(self, socket: TSocket, protocol_id: Self::Info) -> Self::Future {
@@ -255,7 +255,10 @@ where
             {
                 Err(_e) => todo!(),
                 Ok((Some(Ok(request)), stream)) => Ok((request, stream)),
-                Ok((Some(Err(_)), _)) => todo!(),
+                Ok((Some(Err(rpc_error)), _)) => {
+                    error!("RPC error: {:?}", rpc_error);
+                    Err(rpc_error)
+                }
                 Ok((None, _)) => todo!(),
             }
         }
@@ -266,12 +269,12 @@ where
 // /////////////////////////////////////////////////////////////////////////////////////////////////
 // Error
 // /////////////////////////////////////////////////////////////////////////////////////////////////
-pub(crate) enum RpcError {
-    IoError(String),
-}
-
-impl From<std::io::Error> for RpcError {
-    fn from(error: Error) -> Self {
-        RpcError::IoError(error.to_string())
-    }
-}
+// pub(crate) enum RpcError {
+//     IoError(String),
+// }
+//
+// impl From<std::io::Error> for RpcError {
+//     fn from(error: Error) -> Self {
+//         RpcError::IoError(error.to_string())
+//     }
+// }
