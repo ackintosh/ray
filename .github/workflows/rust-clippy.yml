@@ -38,6 +38,9 @@ jobs:
           components: clippy
           override: true
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+
       - name: Install required cargo
         run: cargo install clippy-sarif sarif-fmt
 
