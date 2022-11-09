@@ -65,12 +65,12 @@ impl PeerDB {
     pub(crate) fn update_sync_status(&mut self, peer_id: &PeerId, sync_status: SyncStatus) {
         match self.peers.get_mut(peer_id) {
             None => {
-                error!("update_sync_status: Peer not found. peer_id: {}", peer_id);
+                error!("[{}] update_sync_status: Peer not found.", peer_id);
             }
             Some(peer_info) => {
                 info!(
-                    "Updated sync_status: before: {:?}, after: {:?}, peer: {}",
-                    peer_info.sync_status, sync_status, peer_id
+                    "[{}] Updated sync_status: before: {:?}, after: {:?}",
+                    peer_id, peer_info.sync_status, sync_status
                 );
                 peer_info.sync_status = sync_status;
             }

@@ -1,3 +1,5 @@
+use slot_clock::{SlotClock, SystemTimeSlotClock};
+use std::time::Duration;
 use tracing::info;
 use types::{
     BeaconBlock, BeaconState, ChainSpec, EnrForkId, Hash256, MainnetEthSpec, Signature,
@@ -10,6 +12,7 @@ pub(crate) struct BeaconChain {
     pub(crate) genesis_validators_root: Hash256,
     // Stores a "snapshot" of the chain at the time the head-of-the-chain block was received.
     canonical_head: BeaconSnapshot,
+    slot_clock: SystemTimeSlotClock,
 }
 
 impl BeaconChain {
@@ -24,6 +27,11 @@ impl BeaconChain {
             beacon_block: genesis_block,
             beacon_state: genesis_state,
         };
+        let slot_clock = SystemTimeSlotClock::new(
+            chain_spec.genesis_slot,
+            Duration::from_secs(chain_spec.genesis_delay),
+            Duration::from_secs(chain_spec.seconds_per_slot),
+        );
 
         // TODO: Store the genesis block
 
@@ -31,24 +39,22 @@ impl BeaconChain {
             chain_spec,
             genesis_validators_root,
             canonical_head: beacon_snapshot,
+            slot_clock,
         })
     }
 
     pub(crate) fn enr_fork_id(&self) -> EnrForkId {
-        // NOTE: Fixing to the genesis for now as we don't implement beacon chain yet.
-        self.chain_spec.enr_fork_id::<MainnetEthSpec>(
-            self.chain_spec.genesis_slot,
-            self.genesis_validators_root,
-        )
+        self.chain_spec
+            .enr_fork_id::<MainnetEthSpec>(self.slot(), self.genesis_validators_root)
     }
 
     pub(crate) fn head(&self) -> BeaconSnapshot {
         self.canonical_head.clone()
     }
 
+    /// Returns the slot _right now_ according to `self.slot_clock`.
     pub(crate) fn slot(&self) -> Slot {
-        // NOTE: Fixing to the genesis for now as we don't implement beacon chain yet.
-        self.chain_spec.genesis_slot
+        self.slot_clock.now().expect("Read slot")
     }
 
     /// Build a `StatusMessage`

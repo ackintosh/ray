@@ -313,7 +313,7 @@ impl ConnectionHandler for Handler {
             Self::Error,
         >,
     > {
-        trace!("poll");
+        // trace!("poll");
 
         // /////////////////////////////////////////////////////////////////////////////////////////////////
         // Check if we are shutting down, and if the timer ran out

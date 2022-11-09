@@ -7,7 +7,7 @@ use smallvec::{smallvec, SmallVec};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
-use tracing::info;
+use tracing::{info, trace};
 
 pub(crate) mod behaviour;
 
@@ -89,6 +89,8 @@ impl PeerManager {
         peer_id: &PeerId,
         reason: lighthouse_network::rpc::GoodbyeReason,
     ) {
+        trace!("[{}] sending goodbye to the peer.", peer_id);
+
         let mut guard = self.peer_db.write();
 
         if matches!(

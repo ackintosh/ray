@@ -24,6 +24,7 @@ primitive-types = "0.12.1"
 parking_lot = "0.12.1"
 serde_yaml = "0.9.14"
 smallvec = "1.10.0"
+slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
 eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
 eth2_ssz_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }

@@ -2910,6 +2910,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "primitive-types 0.12.1",
  "serde_yaml 0.9.14",
+ "slot_clock",
  "smallvec",
  "tiny-keccak",
  "tokio",
@@ -3459,6 +3460,17 @@ dependencies = [
  "trackable",
  "winapi",
  "windows-acl",
+]
+
+[[package]]
+name = "slot_clock"
+version = "0.2.0"
+source = "git+https://github.com/ackintosh/lighthouse.git?rev=63e8d895d1e416bb5fb94bec178fc6f138602493#63e8d895d1e416bb5fb94bec178fc6f138602493"
+dependencies = [
+ "lazy_static",
+ "lighthouse_metrics",
+ "parking_lot 0.12.1",
+ "types",
 ]
 
 [[package]]
