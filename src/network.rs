@@ -206,11 +206,11 @@ impl Network {
                         );
                     }
                 }
-                InboundRequest::Goodbye(_) => {}
-                InboundRequest::BlocksByRange(_) => {}
-                InboundRequest::BlocksByRoot(_) => {}
-                InboundRequest::Ping(_) => {}
-                InboundRequest::MetaData(_) => {}
+                InboundRequest::Goodbye(reason) => warn!("[{}] Received `InboundRequest::Goodbye` (reason: {}) but it was not handled.", request.peer_id, reason),
+                InboundRequest::BlocksByRange(blocks_by_range_request) => warn!("[{}] Received `InboundRequest::BlocksByRange` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_range_request),
+                InboundRequest::BlocksByRoot(blocks_by_root_request) => warn!("[{}] Received `InboundRequest::BlocksByRoot` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_root_request),
+                InboundRequest::Ping(ping) => warn!("[{}] Received `InboundRequest::Ping` (ping: {:?}) but it was not handled.", request.peer_id, ping),
+                InboundRequest::MetaData(_) => warn!("[{}] Received `InboundRequest::MetaData` but it was not handled.", request.peer_id),
             },
             RpcEvent::ReceivedResponse(response) => match &response.response {
                 RPCResponse::Status(message) => {

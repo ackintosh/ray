@@ -32,6 +32,11 @@ impl NetworkBehaviour for PeerManager {
         _failed_addresses: Option<&Vec<Multiaddr>>,
         _other_established: usize,
     ) {
+        trace!(
+            "[{}] Connection established. endpoint: {:?}",
+            peer_id,
+            endpoint
+        );
         // TODO: Check the connection limits
         // https://github.com/sigp/lighthouse/blob/81c667b58e78243df38dc2d7311cb285f7c1d4f4/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L142
 
@@ -69,13 +74,15 @@ impl NetworkBehaviour for PeerManager {
         &mut self,
         peer_id: &PeerId,
         _: &ConnectionId,
-        _: &ConnectedPoint,
+        endpoint: &ConnectedPoint,
         _: <Self::ConnectionHandler as IntoConnectionHandler>::Handler,
         remaining_established: usize,
     ) {
         if remaining_established > 0 {
             return;
         }
+
+        trace!("[{}] Connection closed. endpoint: {:?}", peer_id, endpoint);
 
         self.status_peers.remove(peer_id);
         self.peer_db.write().update_connection_status(
@@ -133,6 +140,8 @@ impl NetworkBehaviour for PeerManager {
         }
 
         if let Some(peer_id) = self.peers_to_dial.pop_front() {
+            trace!("[{}] Dialing to the peer.", peer_id);
+
             let handler = self.new_handler();
             return Poll::Ready(NetworkBehaviourAction::Dial {
                 opts: DialOpts::peer_id(peer_id)

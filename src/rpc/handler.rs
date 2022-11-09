@@ -8,6 +8,7 @@ use libp2p::swarm::{
     NegotiatedSubstream, SubstreamProtocol,
 };
 use lighthouse_network::rpc::methods::RPCCodedResponse;
+use lighthouse_network::PeerId;
 use smallvec::SmallVec;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
@@ -115,6 +116,8 @@ pub(crate) struct Handler {
     outbound_substreams: HashMap<SubstreamId, OutboundFramed>,
     // Sequential ID generator for outbound substreams.
     outbound_substream_id: SubstreamIdGenerator,
+    // The PeerId this handler communicate to. Note this is just for debugging.
+    peer_id: Option<PeerId>,
 }
 
 impl Handler {
@@ -131,6 +134,7 @@ impl Handler {
             inbound_substream_id: SubstreamIdGenerator::new(),
             outbound_substreams: HashMap::new(),
             outbound_substream_id: SubstreamIdGenerator::new(),
+            peer_id: None,
         }
     }
 
@@ -264,7 +268,10 @@ impl ConnectionHandler for Handler {
     fn inject_event(&mut self, event: Self::InEvent) {
         info!("inject_event. event: {:?}", event);
         match event {
-            InstructionToHandler::Status(status_request) => self.send_status(status_request),
+            InstructionToHandler::Status(status_request, peer_id) => {
+                self.peer_id = Some(peer_id); // This is just for debugging.
+                self.send_status(status_request)
+            }
             InstructionToHandler::Goodbye(reason) => self.send_goodbye_and_shutdown(reason),
             InstructionToHandler::Response(substream_id, response) => {
                 self.send_response(substream_id, response)
@@ -404,7 +411,7 @@ impl ConnectionHandler for Handler {
                             // The pending messages have been sent successfully and the stream has
                             // terminated
                             Poll::Ready(Ok(_stream)) => {
-                                info!("Sent a response successfully.");
+                                trace!("[{:?}] Sent a response successfully.", self.peer_id);
                                 inbound_substreams_to_remove.push(*substream_id);
                                 // There is nothing more to process on this substream as it has
                                 // been closed. Move on to the next one.
@@ -413,7 +420,10 @@ impl ConnectionHandler for Handler {
                             // An error occurred when trying to send a response.
                             Poll::Ready(Err(error_message)) => {
                                 // TODO: Report the error that occurred during the send process
-                                error!("Failed to send a response: {}", error_message);
+                                error!(
+                                    "[{:?}] Failed to send a response. error: {}",
+                                    self.peer_id, error_message
+                                );
                                 inbound_substreams_to_remove.push(*substream_id);
                                 break;
                             }
@@ -459,16 +469,17 @@ impl ConnectionHandler for Handler {
                 },
                 Poll::Ready(Some(Err(e))) => {
                     error!(
-                        "An error occurred while processing outbound stream. error: {:?}",
-                        e
+                        "[{:?}] An error occurred while processing outbound stream. error: {:?}",
+                        self.peer_id, e
                     );
                 }
                 Poll::Ready(None) => {
                     // ////////////////
                     // stream closed
                     // ////////////////
-                    info!(
-                        "Stream closed by remote. outbound_substream_id: {:?}",
+                    trace!(
+                        "[{:?}] Stream closed by remote. outbound_substream_id: {:?}",
+                        self.peer_id,
                         outbound_substream_id
                     );
                     // drop the stream
