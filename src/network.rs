@@ -21,7 +21,7 @@ use std::pin::Pin;
 use std::sync::{Arc, Weak};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, trace, warn};
 
 /// The executor for libp2p
 struct Executor(Weak<Runtime>);
@@ -29,7 +29,7 @@ struct Executor(Weak<Runtime>);
 impl libp2p::core::Executor for Executor {
     fn exec(&self, f: Pin<Box<dyn Future<Output = ()> + Send>>) {
         if let Some(runtime) = self.0.upgrade() {
-            info!("Executor: Spawning a task");
+            trace!("Executor: Spawning a task");
             runtime.spawn(f);
         } else {
             warn!("Executor: Couldn't spawn task. Runtime shutting down");
@@ -230,7 +230,11 @@ impl Network {
     }
 
     fn validate_status_message(&mut self, peer_id: &PeerId, message: &StatusMessage) -> bool {
+        trace!("[{}] validating status message.", peer_id);
+
         if self.beacon_chain.read().is_relevant(message) {
+            trace!("[{}] the peer is relevant to our beacon chain.", peer_id);
+
             self.sync_sender
                 .send(SyncOperation::AddPeer(*peer_id, message.clone().into()))
                 .unwrap_or_else(|e| {
@@ -238,6 +242,7 @@ impl Network {
                 });
             true
         } else {
+            trace!("[{}] the remote chain is not relevant to ours.", peer_id);
             self.swarm.behaviour_mut().peer_manager.goodbye(
                 peer_id,
                 lighthouse_network::rpc::GoodbyeReason::IrrelevantNetwork,

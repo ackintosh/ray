@@ -147,7 +147,7 @@ impl NetworkBehaviour for Behaviour {
         _cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
     ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
-        trace!("poll");
+        // trace!("poll");
 
         if !self.events.is_empty() {
             return Poll::Ready(self.events.remove(0));

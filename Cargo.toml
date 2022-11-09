@@ -11,34 +11,33 @@ rust-version = "1.61"
 # see https://github.com/ackintosh/lighthouse/pull/4
 
 [dependencies]
-# NOTE: Specifying the latest revision. This should be updated once the next version is released.
-discv5 = "0.1.0"
-futures = "0.3.25"
 delay_map = "0.1.2"
+discv5 = "0.1.0"
+eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
+eth2_ssz_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
+futures = "0.3.25"
 hex = "0.4.3"
+libp2p = { version = "0.48.0", default-features = false, features = ["dns-tokio", "noise", "mplex", "secp256k1", "tcp-tokio", "yamux"] }
 # Switched to the forked version so use the codec implemented in lighthouse.
 # SEE: https://github.com/ackintosh/lighthouse/compare/unstable...ackintosh:lighthouse:publish-codec
 lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
 lru = "0.8.1"
-primitive-types = "0.12.1"
 parking_lot = "0.12.1"
+primitive-types = "0.12.1"
 serde_yaml = "0.9.14"
 smallvec = "1.10.0"
-types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
-eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
-eth2_ssz_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
+slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
-tracing = "0.1"
-tracing-subscriber = "0.3"
 tokio = { version = "1.21.2", features = ["full"] }
 tokio-io-timeout = "1.2.0"
 # NOTE: Build fails if we upadte tokio-util >= 0.7.0.
 # -> RpcProtocol::upgrade_inbound()
 # https://github.com/tokio-rs/tokio/blob/master/tokio-util/CHANGELOG.md
 tokio-util = { version = "=0.6.10", features = ["codec", "compat"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "63e8d895d1e416bb5fb94bec178fc6f138602493" }
 void = "1.0.2"
-
-libp2p = { version = "0.48.0", default-features = false, features = ["dns-tokio", "noise", "mplex", "secp256k1", "tcp-tokio", "yamux"] }
 
 [build-dependencies]
 zip = "0.6.3"
