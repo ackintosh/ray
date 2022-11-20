@@ -1,3 +1,4 @@
+use beacon_node::ClientBuilder;
 use slot_clock::{SlotClock, SystemTimeSlotClock};
 use std::time::Duration;
 use tracing::info;
@@ -99,6 +100,11 @@ impl BeaconChain {
         // https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L86-L97
 
         true
+    }
+
+    // ref: https://github.com/sigp/lighthouse/blob/be4e261e7433e02983648f7d7d8f21f74d3fa9d8/beacon_node/network/src/sync/range_sync/block_storage.rs#L10
+    pub(crate) fn is_block_known(&self, block_root: &Hash256) -> bool {
+        todo!()
     }
 }
 

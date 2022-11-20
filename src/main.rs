@@ -18,7 +18,11 @@ use crate::bootstrap::{build_network_behaviour, build_network_transport};
 use crate::config::NetworkConfig;
 use crate::network::Network;
 use crate::peer_db::PeerDB;
+use ::types::MainnetEthSpec;
+use beacon_node::{ClientBuilder, ClientConfig, ClientGenesis};
 use discv5::enr::{CombinedKey, EnrBuilder};
+use environment::{EnvironmentBuilder, LoggerConfig};
+use eth2_network_config::Eth2NetworkConfig;
 use libp2p::identity::Keypair;
 use parking_lot::RwLock;
 use std::sync::Arc;
@@ -67,6 +71,58 @@ fn main() {
     // PeerDB
     let peer_db = Arc::new(RwLock::new(PeerDB::new()));
 
+    // BeaconChain from lighthouse
+    let eth2_network_config = Eth2NetworkConfig::constant("prater")
+        .expect("Initiating the network config never fail")
+        .expect("wrong network name");
+
+    let mut environment = EnvironmentBuilder::mainnet()
+        .initialize_logger(LoggerConfig::default())
+        .expect("initialize_logger")
+        .multi_threaded_tokio_runtime()
+        .expect("multi_threaded_tokio_runtime")
+        .optional_eth2_network_config(Some(eth2_network_config))
+        .expect("optional_eth2_network_config")
+        .build()
+        .expect("environment builder");
+
+    let lh_beacon_chain = runtime.block_on(async {
+        let client_config = ClientConfig::default();
+        let db_path = client_config.create_db_path().expect("db_path");
+        let freezer_db_path = client_config
+            .create_freezer_db_path()
+            .expect("freezer_db_path");
+
+        let runtime_context = environment.core_context();
+
+        let client_builder = ClientBuilder::new(MainnetEthSpec)
+            .chain_spec(runtime_context.eth2_config.spec.clone())
+            .runtime_context(runtime_context.clone())
+            .disk_store(
+                &db_path,
+                &freezer_db_path,
+                client_config.store.clone(),
+                runtime_context.log().clone(),
+            )
+            .expect("disk_store")
+            .beacon_chain_builder(
+                ClientGenesis::SszBytes {
+                    genesis_state_bytes: network_config.genesis_state_bytes.clone(),
+                },
+                client_config,
+            )
+            .await
+            .expect("beacon_chain_builder")
+            .system_time_slot_clock()
+            .expect("")
+            .dummy_eth1_backend()
+            .expect("")
+            .build_beacon_chain()
+            .expect("build_beacon_chain");
+
+        client_builder.beacon_chain.expect("beacon_chain")
+    });
+
     // BeaconChain
     let beacon_chain = Arc::new(RwLock::new(
         BeaconChain::new(
@@ -83,6 +139,7 @@ fn main() {
 
     // Network
     let network = runtime.block_on(Network::new(
+        lh_beacon_chain,
         beacon_chain,
         sync_sender,
         key_pair,

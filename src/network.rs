@@ -6,6 +6,7 @@ use crate::{
     build_network_behaviour, build_network_transport, BeaconChain, BehaviourComposer,
     BehaviourComposerEvent, NetworkConfig, PeerDB,
 };
+use beacon_node::beacon_chain::BeaconChainTypes;
 use discv5::enr::CombinedKey;
 use discv5::Enr;
 use futures::StreamExt;
@@ -37,15 +38,20 @@ impl libp2p::core::Executor for Executor {
     }
 }
 
-pub(crate) struct Network {
+pub(crate) struct Network<T: BeaconChainTypes> {
     swarm: Swarm<BehaviourComposer>,
+    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
     beacon_chain: Arc<RwLock<BeaconChain>>,
     sync_sender: UnboundedSender<SyncOperation>,
 }
 
-impl Network {
+impl<T> Network<T>
+where
+    T: BeaconChainTypes,
+{
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn new(
+        lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
         beacon_chain: Arc<RwLock<BeaconChain>>,
         sync_sender: UnboundedSender<SyncOperation>,
         key_pair: Keypair,
@@ -69,6 +75,7 @@ impl Network {
 
         Network {
             swarm,
+            lh_beacon_chain,
             beacon_chain,
             sync_sender,
         }
@@ -86,10 +93,12 @@ impl Network {
             .listen_on(listen_multiaddr)
             .expect("Swarm starts listening");
 
-        match self.swarm.next().await.unwrap() {
-            SwarmEvent::NewListenAddr { .. } => {}
-            e => panic!("Unexpected event {:?}", e),
-        };
+        loop {
+            match self.swarm.next().await.unwrap() {
+                SwarmEvent::NewListenAddr { .. } => break,
+                e => warn!("Unexpected event {:?}", e),
+            };
+        }
     }
 
     pub(crate) async fn spawn(mut self, runtime: Arc<Runtime>) {
