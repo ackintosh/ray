@@ -1,6 +1,6 @@
 # Ray
 
-An Ethereum Beacon Node implementation _for learning opportunities for to-be-implementers_.
+An Ethereum Beacon Node implementation _for learning opportunities for to-be-implementers_. Ray would be a good starting point If you are interested to implement Beacon Node.
 
 [![CI](https://github.com/ackintosh/ray/actions/workflows/ci.yml/badge.svg)](https://github.com/ackintosh/ray/actions/workflows/ci.yml)
 
@@ -10,19 +10,20 @@ An Ethereum Beacon Node implementation _for learning opportunities for to-be-imp
 
 ## Overview
 
-This project provides developers with an opportunity to learn how to implement Beacon Node, which is one of component of Ethereum Consensus Layer, via running the binary on testnet or reading the source codes. 
+This project `Ray` provides developers with an opportunity to learn how to implement Beacon Node via running the node or reading the source codes. We're focusing to _networking_, so some components needed to implement a BeaconNode (e.g. BeaconChain) are borrowed from [lighthouse](https://github.com/sigp/lighthouse), which is an Ethereum consensus client in Rust.
 
-> NOTE: Ray is under active development.
+Ray is never production ready but should be enough to learn from.
 
-We aim for a simpler implementation, by narrowing down the functions.
+NOTE: Ray is under active development.
 
-- Implemented for macOS
+We aim for a simple implementation, by narrowing down the functions. 
+
+- Available on only macOS
 - Runs for _Prater_ testnet
   - Görli testnet has been merged with the Prater proof-of-stake beacon chain.
   - https://github.com/eth-clients/goerli
-- Simplicity over multifunctionality
 
-### What does Beacon Node do
+### Current status
 
 - [x] [Node discovery](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#the-discovery-domain-discv5)
 - RPC
