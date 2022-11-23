@@ -1,4 +1,3 @@
-mod beacon_chain;
 mod behaviour;
 mod bootstrap;
 mod config;
@@ -12,7 +11,6 @@ mod signal;
 mod sync;
 mod types;
 
-use crate::beacon_chain::BeaconChain;
 use crate::behaviour::{BehaviourComposer, BehaviourComposerEvent};
 use crate::bootstrap::{build_network_behaviour, build_network_transport};
 use crate::config::NetworkConfig;
@@ -123,24 +121,12 @@ fn main() {
         client_builder.beacon_chain.expect("beacon_chain")
     });
 
-    // BeaconChain
-    let beacon_chain = Arc::new(RwLock::new(
-        BeaconChain::new(
-            network_config.chain_spec().expect("chain spec"),
-            network_config
-                .genesis_beacon_state()
-                .expect("genesis beacon state"),
-        )
-        .expect("beacon chain"),
-    ));
-
     // SyncManager
-    let sync_sender = sync::spawn(runtime.clone(), peer_db.clone(), beacon_chain.clone());
+    let sync_sender = sync::spawn(runtime.clone(), peer_db.clone(), lh_beacon_chain.clone());
 
     // Network
     let network = runtime.block_on(Network::new(
         lh_beacon_chain,
-        beacon_chain,
         sync_sender,
         key_pair,
         enr,

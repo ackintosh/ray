@@ -1,5 +1,5 @@
 use crate::{
-    BeaconChain, BehaviourComposer, CombinedKey, NetworkConfig, PeerDB, TARGET_PEERS_COUNT,
+    BehaviourComposer, CombinedKey, NetworkConfig, PeerDB, TARGET_PEERS_COUNT,
 };
 use discv5::Enr;
 use libp2p::core::muxing::StreamMuxerBox;
@@ -9,6 +9,7 @@ use libp2p::{noise, PeerId, Transport};
 use parking_lot::RwLock;
 use std::process::exit;
 use std::sync::Arc;
+use beacon_node::beacon_chain::BeaconChainTypes;
 use tracing::error;
 use types::{ForkContext, MainnetEthSpec};
 
@@ -38,30 +39,22 @@ pub(crate) async fn build_network_transport(
         .boxed()
 }
 
-pub(crate) async fn build_network_behaviour(
+pub(crate) async fn build_network_behaviour<T: BeaconChainTypes>(
     enr: Enr,
     enr_key: CombinedKey,
     network_config: NetworkConfig,
     peer_db: Arc<RwLock<PeerDB>>,
-    beacon_chain: Arc<RwLock<BeaconChain>>,
+    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
 ) -> BehaviourComposer {
     let mut discovery =
         crate::discovery::behaviour::Behaviour::new(enr, enr_key, &network_config.boot_enr).await;
     // start searching for peers
     discovery.discover_peers();
 
-    let (slot, genesis_validators_root, chain_spec) = {
-        let chain = beacon_chain.read();
-        (
-            chain.slot(),
-            chain.genesis_validators_root,
-            chain.chain_spec.clone(),
-        )
-    };
     let fork_context = Arc::new(ForkContext::new::<MainnetEthSpec>(
-        slot,
-        genesis_validators_root,
-        &chain_spec,
+        lh_beacon_chain.slot().expect("slot"),
+        lh_beacon_chain.genesis_validators_root.clone(),
+        &lh_beacon_chain.spec,
     ));
 
     BehaviourComposer::new(

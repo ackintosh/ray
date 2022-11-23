@@ -3,15 +3,17 @@ mod syncing_chain;
 
 use crate::peer_db::SyncStatus;
 use crate::sync::range_sync::RangeSync;
-use crate::{BeaconChain, PeerDB};
+use crate::PeerDB;
 use libp2p::PeerId;
 use parking_lot::RwLock;
 use std::cmp::Ordering;
 use std::sync::Arc;
+use beacon_node::beacon_chain::BeaconChainTypes;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tracing::warn;
 use types::{Epoch, Hash256, Slot};
+use crate::rpc::status::status_message;
 
 #[derive(Debug)]
 /// A message that can be sent to the sync manager thread.
@@ -68,14 +70,17 @@ impl From<lighthouse_network::rpc::StatusMessage> for SyncInfo {
     }
 }
 
-pub(crate) struct SyncManager {
+pub(crate) struct SyncManager<T: BeaconChainTypes> {
     peer_db: Arc<RwLock<PeerDB>>,
-    beacon_chain: Arc<RwLock<BeaconChain>>,
+    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
     receiver: UnboundedReceiver<SyncOperation>,
-    range_sync: RangeSync,
+    range_sync: RangeSync<T>,
 }
 
-impl SyncManager {
+impl<T> SyncManager<T>
+where
+    T: BeaconChainTypes
+{
     async fn main(&mut self) {
         loop {
             // Process inbound messages
@@ -91,7 +96,7 @@ impl SyncManager {
 
     /// A peer has connected which has blocks that are unknown to us.
     fn add_peer(&mut self, peer_id: PeerId, remote_sync_info: SyncInfo) {
-        let local_sync_info: SyncInfo = self.beacon_chain.read().create_status_message().into();
+        let local_sync_info: SyncInfo = status_message(&self.lh_beacon_chain).into();
         let sync_relevance = self.determine_sync_relevance(&local_sync_info, &remote_sync_info);
 
         // update the state of the peer.
@@ -123,18 +128,18 @@ impl SyncManager {
     }
 }
 
-pub(crate) fn spawn(
+pub(crate) fn spawn<T: BeaconChainTypes>(
     runtime: Arc<Runtime>,
     peer_db: Arc<RwLock<PeerDB>>,
-    beacon_chain: Arc<RwLock<BeaconChain>>,
+    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
 ) -> UnboundedSender<SyncOperation> {
     let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
 
     let mut sync_manager = SyncManager {
         receiver,
         peer_db,
-        beacon_chain: beacon_chain.clone(),
-        range_sync: RangeSync::new(beacon_chain),
+        lh_beacon_chain: lh_beacon_chain.clone(),
+        range_sync: RangeSync::new(lh_beacon_chain.clone()),
     };
 
     runtime.spawn(async move {

@@ -8,6 +8,7 @@ mod error;
 pub(crate) mod handler;
 mod message;
 mod protocol;
+pub(crate) mod status;
 
 // ////////////////////////////////////////////////////////
 // Public events sent by RPC module

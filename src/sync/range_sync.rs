@@ -1,21 +1,24 @@
 use crate::sync::syncing_chain::SyncingChain;
 use crate::sync::SyncInfo;
-use crate::BeaconChain;
 use libp2p::PeerId;
 use parking_lot::RwLock;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::sync::Arc;
+use beacon_node::beacon_chain::BeaconChainTypes;
 
-pub(crate) struct RangeSync {
-    beacon_chain: Arc<RwLock<BeaconChain>>,
+pub(crate) struct RangeSync<T: BeaconChainTypes> {
+    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
     chains: HashMap<u64, SyncingChain>,
 }
 
-impl RangeSync {
-    pub(crate) fn new(beacon_chain: Arc<RwLock<BeaconChain>>) -> Self {
+impl<T> RangeSync<T>
+where
+    T: BeaconChainTypes
+{
+    pub(crate) fn new(lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>) -> Self {
         RangeSync {
-            beacon_chain,
+            lh_beacon_chain,
             chains: HashMap::new(),
         }
     }

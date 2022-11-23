@@ -3,7 +3,7 @@ use crate::peer_manager::PeerManagerEvent;
 use crate::rpc::RpcEvent;
 use crate::sync::SyncOperation;
 use crate::{
-    build_network_behaviour, build_network_transport, BeaconChain, BehaviourComposer,
+    build_network_behaviour, build_network_transport, BehaviourComposer,
     BehaviourComposerEvent, NetworkConfig, PeerDB,
 };
 use beacon_node::beacon_chain::BeaconChainTypes;
@@ -23,6 +23,8 @@ use std::sync::{Arc, Weak};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error, info, trace, warn};
+use types::{EthSpec, Hash256, MainnetEthSpec};
+use crate::rpc::status::status_message;
 
 /// The executor for libp2p
 struct Executor(Weak<Runtime>);
@@ -41,7 +43,6 @@ impl libp2p::core::Executor for Executor {
 pub(crate) struct Network<T: BeaconChainTypes> {
     swarm: Swarm<BehaviourComposer>,
     lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
-    beacon_chain: Arc<RwLock<BeaconChain>>,
     sync_sender: UnboundedSender<SyncOperation>,
 }
 
@@ -52,7 +53,6 @@ where
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn new(
         lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
-        beacon_chain: Arc<RwLock<BeaconChain>>,
         sync_sender: UnboundedSender<SyncOperation>,
         key_pair: Keypair,
         enr: Enr,
@@ -66,7 +66,7 @@ where
         let local_peer_id = crate::identity::enr_to_peer_id(&enr);
 
         let behaviour =
-            build_network_behaviour(enr, enr_key, network_config, peer_db, beacon_chain.clone())
+            build_network_behaviour(enr, enr_key, network_config, peer_db, lh_beacon_chain.clone())
                 .await;
 
         let swarm = SwarmBuilder::new(transport, behaviour, local_peer_id)
@@ -76,7 +76,6 @@ where
         Network {
             swarm,
             lh_beacon_chain,
-            beacon_chain,
             sync_sender,
         }
     }
@@ -172,7 +171,7 @@ where
                 self.swarm
                     .behaviour_mut()
                     .rpc
-                    .send_status(peer_id, self.beacon_chain.read().create_status_message());
+                    .send_status(peer_id, status_message(&self.lh_beacon_chain));
             }
             PeerManagerEvent::NeedMorePeers => {
                 let behaviour = self.swarm.behaviour_mut();
@@ -184,7 +183,7 @@ where
                 self.swarm
                     .behaviour_mut()
                     .rpc
-                    .send_status(peer_id, self.beacon_chain.read().create_status_message());
+                    .send_status(peer_id, status_message(&self.lh_beacon_chain));
             }
             PeerManagerEvent::DisconnectPeer(peer_id, goodbye_reason) => {
                 self.swarm
@@ -210,7 +209,7 @@ where
                             request.connection_id,
                             request.substream_id,
                             lighthouse_network::Response::Status(
-                                self.beacon_chain.read().create_status_message(),
+                                status_message(&self.lh_beacon_chain),
                             ),
                         );
                     }
@@ -241,7 +240,7 @@ where
     fn validate_status_message(&mut self, peer_id: &PeerId, message: &StatusMessage) -> bool {
         trace!("[{}] validating status message.", peer_id);
 
-        if self.beacon_chain.read().is_relevant(message) {
+        if self.check_peer_relevance(message) {
             trace!("[{}] the peer is relevant to our beacon chain.", peer_id);
 
             self.sync_sender
@@ -258,5 +257,30 @@ where
             );
             false
         }
+    }
+
+    // Determine if the node is relevant to us.
+    // ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L61
+    fn check_peer_relevance(&self, remote_status: &lighthouse_network::rpc::StatusMessage) -> bool {
+        let local_status = status_message(&self.lh_beacon_chain);
+
+        if local_status.fork_digest != remote_status.fork_digest {
+            info!(
+                "The node is not relevant to us: Incompatible forks. Ours:{} Theirs:{}",
+                hex::encode(local_status.fork_digest),
+                hex::encode(remote_status.fork_digest)
+            );
+            return false;
+        }
+
+        if remote_status.head_slot > self.lh_beacon_chain.slot().expect("slot") {
+            info!("The node is not relevant to us: Different system clocks or genesis time");
+            return false;
+        }
+
+        // NOTE: We can implement more checks to be production-ready.
+        // https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L86-L97
+
+        true
     }
 }
