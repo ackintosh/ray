@@ -1,6 +1,5 @@
-use crate::{
-    BehaviourComposer, CombinedKey, NetworkConfig, PeerDB, TARGET_PEERS_COUNT,
-};
+use crate::{BehaviourComposer, CombinedKey, NetworkConfig, PeerDB, TARGET_PEERS_COUNT};
+use beacon_node::beacon_chain::BeaconChainTypes;
 use discv5::Enr;
 use libp2p::core::muxing::StreamMuxerBox;
 use libp2p::identity::Keypair;
@@ -9,7 +8,6 @@ use libp2p::{noise, PeerId, Transport};
 use parking_lot::RwLock;
 use std::process::exit;
 use std::sync::Arc;
-use beacon_node::beacon_chain::BeaconChainTypes;
 use tracing::error;
 use types::{ForkContext, MainnetEthSpec};
 

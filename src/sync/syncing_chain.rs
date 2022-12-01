@@ -44,4 +44,14 @@ impl SyncingChain {
             peers: vec![peer_id],
         }
     }
+
+    pub(crate) fn available_peers(&self) -> usize {
+        self.peers.len()
+    }
+
+    pub(crate) fn start_syncing(&mut self) {
+        // NOTE: Ideally we should align the epochs
+        // https://github.com/sigp/lighthouse/blob/8c69d57c2ce0d5f1a3cd44c215b2d52844043150/beacon_node/network/src/sync/range_sync/chain.rs#L779
+
+    }
 }

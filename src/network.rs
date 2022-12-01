@@ -1,10 +1,11 @@
 use crate::discovery::DiscoveryEvent;
 use crate::peer_manager::PeerManagerEvent;
+use crate::rpc::status::status_message;
 use crate::rpc::RpcEvent;
 use crate::sync::SyncOperation;
 use crate::{
-    build_network_behaviour, build_network_transport, BehaviourComposer,
-    BehaviourComposerEvent, NetworkConfig, PeerDB,
+    build_network_behaviour, build_network_transport, BehaviourComposer, BehaviourComposerEvent,
+    NetworkConfig, PeerDB,
 };
 use beacon_node::beacon_chain::BeaconChainTypes;
 use discv5::enr::CombinedKey;
@@ -23,8 +24,6 @@ use std::sync::{Arc, Weak};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error, info, trace, warn};
-use types::{EthSpec, Hash256, MainnetEthSpec};
-use crate::rpc::status::status_message;
 
 /// The executor for libp2p
 struct Executor(Weak<Runtime>);
@@ -65,9 +64,14 @@ where
 
         let local_peer_id = crate::identity::enr_to_peer_id(&enr);
 
-        let behaviour =
-            build_network_behaviour(enr, enr_key, network_config, peer_db, lh_beacon_chain.clone())
-                .await;
+        let behaviour = build_network_behaviour(
+            enr,
+            enr_key,
+            network_config,
+            peer_db,
+            lh_beacon_chain.clone(),
+        )
+        .await;
 
         let swarm = SwarmBuilder::new(transport, behaviour, local_peer_id)
             .executor(Box::new(Executor(Arc::downgrade(&runtime))))

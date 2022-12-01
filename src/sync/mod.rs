@@ -1,19 +1,19 @@
+mod chain_collection;
 mod range_sync;
 mod syncing_chain;
 
 use crate::peer_db::SyncStatus;
+use crate::rpc::status::status_message;
 use crate::sync::range_sync::RangeSync;
 use crate::PeerDB;
+use beacon_node::beacon_chain::BeaconChainTypes;
 use libp2p::PeerId;
 use parking_lot::RwLock;
 use std::cmp::Ordering;
 use std::sync::Arc;
-use beacon_node::beacon_chain::BeaconChainTypes;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use tracing::warn;
 use types::{Epoch, Hash256, Slot};
-use crate::rpc::status::status_message;
 
 #[derive(Debug)]
 /// A message that can be sent to the sync manager thread.
@@ -79,7 +79,7 @@ pub(crate) struct SyncManager<T: BeaconChainTypes> {
 
 impl<T> SyncManager<T>
 where
-    T: BeaconChainTypes
+    T: BeaconChainTypes,
 {
     async fn main(&mut self) {
         loop {
