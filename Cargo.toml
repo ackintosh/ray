@@ -22,7 +22,7 @@ primitive-types = "0.12.1"
 serde_yaml = "0.9.14"
 smallvec = "1.10.0"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
-tokio = { version = "1.21.2", features = ["full"] }
+tokio = { version = "1.22.0", features = ["full"] }
 tokio-io-timeout = "1.2.0"
 # NOTE: Build fails if we upadte tokio-util >= 0.7.0.
 # -> RpcProtocol::upgrade_inbound()
