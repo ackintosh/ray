@@ -51,13 +51,13 @@ impl ChainCollection {
         }
     }
 
-    pub(crate) fn update(&mut self) {
+    pub(crate) fn update(&mut self, local_finalized_epoch: Epoch) {
         // TODO: purge outdated chains.
 
-        self.update_finalized_chains();
+        self.update_finalized_chains(local_finalized_epoch);
     }
 
-    fn update_finalized_chains(&mut self) {
+    fn update_finalized_chains(&mut self, local_finalized_epoch: Epoch) {
         let new_syncing_chain_id = {
             let chain_id = self
                 .finalized_chains
@@ -90,6 +90,6 @@ impl ChainCollection {
         }
 
         self.state = RangeSyncState::Syncing(new_syncing_chain_id);
-        chain.start_syncing();
+        chain.start_syncing(local_finalized_epoch);
     }
 }

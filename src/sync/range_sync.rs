@@ -47,7 +47,7 @@ where
             }
         }
 
-        self.chains.update();
+        self.chains.update(local_sync_info.finalized_epoch);
     }
 }
 
