@@ -1,16 +1,24 @@
+mod chain_collection;
+mod range_sync;
+mod syncing_chain;
+
 use crate::peer_db::SyncStatus;
-use crate::{BeaconChain, PeerDB};
+use crate::rpc::status::status_message;
+use crate::sync::range_sync::RangeSync;
+use crate::PeerDB;
+use beacon_node::beacon_chain::BeaconChainTypes;
 use libp2p::PeerId;
 use parking_lot::RwLock;
 use std::cmp::Ordering;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use tracing::warn;
 use types::{Epoch, Hash256, Slot};
 
 #[derive(Debug)]
+/// A message that can be sent to the sync manager thread.
 pub(crate) enum SyncOperation {
+    /// A useful peer has been discovered.
     AddPeer(PeerId, SyncInfo),
 }
 
@@ -62,13 +70,17 @@ impl From<lighthouse_network::rpc::StatusMessage> for SyncInfo {
     }
 }
 
-pub(crate) struct SyncManager {
+pub(crate) struct SyncManager<T: BeaconChainTypes> {
     peer_db: Arc<RwLock<PeerDB>>,
-    beacon_chain: Arc<RwLock<BeaconChain>>,
+    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
     receiver: UnboundedReceiver<SyncOperation>,
+    range_sync: RangeSync<T>,
 }
 
-impl SyncManager {
+impl<T> SyncManager<T>
+where
+    T: BeaconChainTypes,
+{
     async fn main(&mut self) {
         loop {
             // Process inbound messages
@@ -82,21 +94,27 @@ impl SyncManager {
         }
     }
 
-    fn add_peer(&mut self, peer_id: PeerId, sync_info: SyncInfo) {
-        let sync_relevance = self.determine_sync_relevance(sync_info);
+    /// A peer has connected which has blocks that are unknown to us.
+    fn add_peer(&mut self, peer_id: PeerId, remote_sync_info: SyncInfo) {
+        let local_sync_info: SyncInfo = status_message(&self.lh_beacon_chain).into();
+        let sync_relevance = self.determine_sync_relevance(&local_sync_info, &remote_sync_info);
 
+        // update the state of the peer.
         self.peer_db
             .write()
             .update_sync_status(&peer_id, sync_relevance.clone().into());
 
         if matches!(sync_relevance, SyncRelevance::Advanced) {
-            warn!("TODO: Range sync");
+            self.range_sync
+                .add_peer(peer_id, &local_sync_info, &remote_sync_info);
         }
     }
 
-    fn determine_sync_relevance(&self, remote_sync_info: SyncInfo) -> SyncRelevance {
-        let local_sync_info: SyncInfo = self.beacon_chain.read().create_status_message().into();
-
+    fn determine_sync_relevance(
+        &self,
+        local_sync_info: &SyncInfo,
+        remote_sync_info: &SyncInfo,
+    ) -> SyncRelevance {
         // NOTE: We can more strict compare.
         // https://github.com/sigp/lighthouse/blob/df40700ddd2dcc3c73859cc3f8e315eab899d87c/beacon_node/network/src/sync/peer_sync_info.rs#L36
         match remote_sync_info
@@ -110,17 +128,18 @@ impl SyncManager {
     }
 }
 
-pub(crate) fn spawn(
+pub(crate) fn spawn<T: BeaconChainTypes>(
     runtime: Arc<Runtime>,
     peer_db: Arc<RwLock<PeerDB>>,
-    beacon_chain: Arc<RwLock<BeaconChain>>,
+    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
 ) -> UnboundedSender<SyncOperation> {
     let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
 
     let mut sync_manager = SyncManager {
         receiver,
         peer_db,
-        beacon_chain,
+        lh_beacon_chain: lh_beacon_chain.clone(),
+        range_sync: RangeSync::new(lh_beacon_chain.clone()),
     };
 
     runtime.spawn(async move {
