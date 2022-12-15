@@ -3167,6 +3167,7 @@ dependencies = [
  "multiaddr",
  "multihash",
  "multistream-select 0.12.1",
+ "p256",
  "parking_lot 0.12.1",
  "pin-project",
  "prost",
