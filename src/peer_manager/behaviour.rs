@@ -4,7 +4,7 @@ use futures::StreamExt;
 use libp2p::core::connection::ConnectionId;
 use libp2p::core::ConnectedPoint;
 use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
-use libp2p::swarm::handler::DummyConnectionHandler;
+use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
     ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
     PollParameters,
@@ -21,7 +21,7 @@ impl NetworkBehaviour for PeerManager {
     type OutEvent = PeerManagerEvent;
 
     fn new_handler(&mut self) -> Self::ConnectionHandler {
-        DummyConnectionHandler::default()
+        DummyConnectionHandler {}
     }
 
     fn inject_connection_established(

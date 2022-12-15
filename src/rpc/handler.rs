@@ -7,8 +7,8 @@ use libp2p::swarm::{
     ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive,
     NegotiatedSubstream, SubstreamProtocol,
 };
+use libp2p::PeerId;
 use lighthouse_network::rpc::methods::RPCCodedResponse;
-use lighthouse_network::PeerId;
 use smallvec::SmallVec;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};

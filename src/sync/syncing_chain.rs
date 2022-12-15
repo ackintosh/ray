@@ -168,7 +168,7 @@ impl SyncingChain {
         }
     }
 
-    fn send_batch(&self, peer_id: &PeerId, epoch: Epoch) {
+    fn send_batch(&self, _peer_id: &PeerId, _epoch: Epoch) {
         // TODO
         // println!("send_batch: {} {}", peer_id.to_string(), epoch);
     }
