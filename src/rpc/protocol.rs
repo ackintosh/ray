@@ -4,7 +4,6 @@ use futures::prelude::*;
 use libp2p::core::{ProtocolName, UpgradeInfo};
 use libp2p::swarm::NegotiatedSubstream;
 use libp2p::{InboundUpgrade, OutboundUpgrade};
-use lighthouse_network::rpc::RPCError;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::time::Duration;
@@ -28,6 +27,17 @@ enum Protocol {
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     Status,
     Goodbye,
+    BlocksByRange,
+}
+
+impl Protocol {
+    fn to_lighthouse_protocol(&self) -> lighthouse_network::rpc::protocol::Protocol {
+        match self {
+            Protocol::Status => lighthouse_network::rpc::protocol::Protocol::Status,
+            Protocol::Goodbye => lighthouse_network::rpc::protocol::Protocol::Goodbye,
+            Protocol::BlocksByRange => lighthouse_network::rpc::protocol::Protocol::BlocksByRange,
+        }
+    }
 }
 
 impl Display for Protocol {
@@ -35,6 +45,7 @@ impl Display for Protocol {
         let protocol_name = match self {
             Protocol::Status => "status",
             Protocol::Goodbye => "goodbye",
+            Protocol::BlocksByRange => "beacon_blocks_by_range",
         };
         f.write_str(protocol_name)
     }
@@ -43,6 +54,12 @@ impl Display for Protocol {
 #[derive(Clone, Debug)]
 enum SchemaVersion {
     V1,
+}
+
+impl SchemaVersion {
+    fn to_lighthouse_version(&self) -> lighthouse_network::rpc::protocol::Version {
+        match self { SchemaVersion::V1 => lighthouse_network::rpc::protocol::Version::V1 }
+    }
 }
 
 impl Display for SchemaVersion {
@@ -58,6 +75,12 @@ impl Display for SchemaVersion {
 enum Encoding {
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#encoding-strategies
     SSZSnappy,
+}
+
+impl Encoding {
+    fn to_lighthouse_encoding(&self) -> lighthouse_network::rpc::protocol::Encoding {
+        match self { Encoding::SSZSnappy => lighthouse_network::rpc::protocol::Encoding::SSZSnappy }
+    }
 }
 
 impl Display for Encoding {
@@ -102,11 +125,10 @@ impl ProtocolId {
     }
 
     fn lighthouse_protocol_id(&self) -> lighthouse_network::rpc::protocol::ProtocolId {
-        // TODO:
         lighthouse_network::rpc::protocol::ProtocolId::new(
-            lighthouse_network::rpc::protocol::Protocol::Status,
-            lighthouse_network::rpc::protocol::Version::V1,
-            lighthouse_network::rpc::protocol::Encoding::SSZSnappy,
+            self.protocol.to_lighthouse_protocol(),
+            self.schema_version.to_lighthouse_version(),
+            self.encoding.to_lighthouse_encoding(),
         )
     }
 }
@@ -176,7 +198,10 @@ impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
         let mut socket = Framed::new(socket, codec);
 
         async move {
-            socket.send(self.request).await?;
+            if let Err(rpc_error) = socket.send(self.request.clone()).await {
+                error!("[RpcRequestProtocol::upgrade_outbound] RPCError: {rpc_error}, request: {:?}", self.request);
+                return Err(rpc_error);
+            }
             socket.close().await?;
             Ok(socket)
         }
@@ -204,6 +229,7 @@ impl UpgradeInfo for RpcProtocol {
         vec![
             ProtocolId::new(Protocol::Status, SchemaVersion::V1, Encoding::SSZSnappy),
             ProtocolId::new(Protocol::Goodbye, SchemaVersion::V1, Encoding::SSZSnappy),
+            ProtocolId::new(Protocol::BlocksByRange, SchemaVersion::V1, Encoding::SSZSnappy),
         ]
     }
 }
@@ -222,7 +248,7 @@ where
     TSocket: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
     type Output = InboundOutput<TSocket>;
-    type Error = RPCError;
+    type Error = lighthouse_network::rpc::RPCError;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
     fn upgrade_inbound(self, socket: TSocket, protocol_id: Self::Info) -> Self::Future {
@@ -256,7 +282,7 @@ where
                 Err(_e) => todo!(),
                 Ok((Some(Ok(request)), stream)) => Ok((request, stream)),
                 Ok((Some(Err(rpc_error)), _)) => {
-                    error!("RPC error: {:?}", rpc_error);
+                    error!("[RpcProtocol::upgrade_inbound] protocol_id: {protocol_id:?}, rpc_error: {rpc_error:?}");
                     Err(rpc_error)
                 }
                 Ok((None, _)) => todo!(),

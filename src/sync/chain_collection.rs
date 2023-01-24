@@ -1,3 +1,4 @@
+use crate::sync::network_context::SyncNetworkContext;
 use crate::sync::syncing_chain::{ChainId, SyncingChain};
 use libp2p::PeerId;
 use std::collections::hash_map::Entry;
@@ -51,13 +52,21 @@ impl ChainCollection {
         }
     }
 
-    pub(crate) fn update(&mut self, local_finalized_epoch: Epoch) {
+    pub(crate) fn update(
+        &mut self,
+        network_context: &mut SyncNetworkContext,
+        local_finalized_epoch: Epoch,
+    ) {
         // TODO: purge outdated chains.
 
-        self.update_finalized_chains(local_finalized_epoch);
+        self.update_finalized_chains(network_context, local_finalized_epoch);
     }
 
-    fn update_finalized_chains(&mut self, local_finalized_epoch: Epoch) {
+    fn update_finalized_chains(
+        &mut self,
+        network_context: &mut SyncNetworkContext,
+        local_finalized_epoch: Epoch,
+    ) {
         let new_syncing_chain_id = {
             let chain_id = self
                 .finalized_chains
@@ -90,6 +99,6 @@ impl ChainCollection {
         }
 
         self.state = RangeSyncState::Syncing(new_syncing_chain_id);
-        chain.start_syncing(local_finalized_epoch);
+        chain.start_syncing(network_context, local_finalized_epoch);
     }
 }

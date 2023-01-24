@@ -1,13 +1,14 @@
 use crate::sync::chain_collection::ChainCollection;
+use crate::sync::network_context::SyncNetworkContext;
 use crate::sync::SyncInfo;
-use beacon_node::beacon_chain::BeaconChainTypes;
+use beacon_chain::BeaconChainTypes;
 use libp2p::PeerId;
 use std::sync::Arc;
-use tracing::warn;
+use tracing::{trace, warn};
 
 pub(crate) struct RangeSync<T: BeaconChainTypes> {
     /// The beacon chain for processing.
-    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
+    lh_beacon_chain: Arc<beacon_chain::BeaconChain<T>>,
     /// A collection of chains that need to be downloaded. This stores any head or finalized chains
     /// that need to be downloaded.
     chains: ChainCollection,
@@ -17,7 +18,7 @@ impl<T> RangeSync<T>
 where
     T: BeaconChainTypes,
 {
-    pub(crate) fn new(lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>) -> Self {
+    pub(crate) fn new(lh_beacon_chain: Arc<beacon_chain::BeaconChain<T>>) -> Self {
         RangeSync {
             lh_beacon_chain,
             chains: ChainCollection::new(),
@@ -26,10 +27,13 @@ where
 
     pub(crate) fn add_peer(
         &mut self,
+        network_context: &mut SyncNetworkContext,
         peer_id: PeerId,
         local_sync_info: &SyncInfo,
         remote_sync_info: &SyncInfo,
     ) {
+        trace!("add_peer: {peer_id}");
+
         let is_block_known = false; // TODO
 
         // determine which kind of sync to perform and set up the chains
@@ -47,7 +51,8 @@ where
             }
         }
 
-        self.chains.update(local_sync_info.finalized_epoch);
+        self.chains
+            .update(network_context, local_sync_info.finalized_epoch);
     }
 }
 

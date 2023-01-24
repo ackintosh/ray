@@ -20,6 +20,10 @@ use types::{ForkContext, MainnetEthSpec};
 pub(crate) enum InstructionToHandler {
     Status(lighthouse_network::rpc::StatusMessage, PeerId),
     Goodbye(lighthouse_network::rpc::GoodbyeReason),
+    Request(
+        // lighthouse_network::service::api_types::RequestId<AppReqId>,
+        lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+    ),
     Response(SubstreamId, lighthouse_network::Response<MainnetEthSpec>),
 }
 
@@ -67,6 +71,22 @@ impl Behaviour {
             peer_id,
             handler: NotifyHandler::Any,
             event: InstructionToHandler::Goodbye(reason),
+        })
+    }
+
+    pub(crate) fn send_request<AppReqId: lighthouse_network::rpc::ReqId>(
+        &mut self,
+        peer_id: PeerId,
+        request: lighthouse_network::service::api_types::Request,
+        request_id: AppReqId,
+    ) {
+        self.events.push(NetworkBehaviourAction::NotifyHandler {
+            peer_id,
+            handler: NotifyHandler::Any,
+            event: InstructionToHandler::Request(
+                // lighthouse_network::service::api_types::RequestId::Application(request_id),
+                request.into(),
+            ),
         })
     }
 

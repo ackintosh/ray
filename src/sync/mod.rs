@@ -1,12 +1,15 @@
 mod chain_collection;
+mod network_context;
 mod range_sync;
 mod syncing_chain;
 
+use crate::network::NetworkMessage;
 use crate::peer_db::SyncStatus;
 use crate::rpc::status::status_message;
+use crate::sync::network_context::SyncNetworkContext;
 use crate::sync::range_sync::RangeSync;
 use crate::PeerDB;
-use beacon_node::beacon_chain::BeaconChainTypes;
+use beacon_chain::BeaconChainTypes;
 use libp2p::PeerId;
 use parking_lot::RwLock;
 use std::cmp::Ordering;
@@ -72,7 +75,8 @@ impl From<lighthouse_network::rpc::StatusMessage> for SyncInfo {
 
 pub(crate) struct SyncManager<T: BeaconChainTypes> {
     peer_db: Arc<RwLock<PeerDB>>,
-    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
+    lh_beacon_chain: Arc<beacon_chain::BeaconChain<T>>,
+    network_context: SyncNetworkContext,
     receiver: UnboundedReceiver<SyncOperation>,
     range_sync: RangeSync<T>,
 }
@@ -105,8 +109,12 @@ where
             .update_sync_status(&peer_id, sync_relevance.clone().into());
 
         if matches!(sync_relevance, SyncRelevance::Advanced) {
-            self.range_sync
-                .add_peer(peer_id, &local_sync_info, &remote_sync_info);
+            self.range_sync.add_peer(
+                &mut self.network_context,
+                peer_id,
+                &local_sync_info,
+                &remote_sync_info,
+            );
         }
     }
 
@@ -131,11 +139,13 @@ where
 pub(crate) fn spawn<T: BeaconChainTypes>(
     runtime: Arc<Runtime>,
     peer_db: Arc<RwLock<PeerDB>>,
-    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
+    lh_beacon_chain: Arc<beacon_chain::BeaconChain<T>>,
+    network_sender: UnboundedSender<NetworkMessage>,
 ) -> UnboundedSender<SyncOperation> {
     let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
 
     let mut sync_manager = SyncManager {
+        network_context: SyncNetworkContext::new(network_sender),
         receiver,
         peer_db,
         lh_beacon_chain: lh_beacon_chain.clone(),

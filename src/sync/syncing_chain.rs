@@ -1,8 +1,10 @@
+use crate::sync::network_context::SyncNetworkContext;
 use libp2p::PeerId;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use tracing::{info, warn};
+use std::ops::Sub;
+use tracing::{error, info, trace, warn};
 use types::{Epoch, EthSpec, Hash256, MainnetEthSpec, Slot};
 
 /// A chain identifier
@@ -57,6 +59,14 @@ impl BatchInfo {
             end_slot,
         }
     }
+
+    /// Returns a BlocksByRange request associated with the batch.
+    fn to_blocks_by_range_request(&self) -> lighthouse_network::rpc::BlocksByRangeRequest {
+        lighthouse_network::rpc::BlocksByRangeRequest {
+            start_slot: self.start_slot.into(),
+            count: self.end_slot.sub(self.start_slot).into(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -92,14 +102,20 @@ impl SyncingChain {
         self.peers.len()
     }
 
-    pub(crate) fn start_syncing(&mut self, local_finalized_epoch: Epoch) {
+    pub(crate) fn start_syncing(
+        &mut self,
+        network_context: &mut SyncNetworkContext,
+        local_finalized_epoch: Epoch,
+    ) {
+        trace!("start_syncing: chain_id: {}", self.id);
+
         // NOTE: Ideally we should align the epochs
         // https://github.com/sigp/lighthouse/blob/8c69d57c2ce0d5f1a3cd44c215b2d52844043150/beacon_node/network/src/sync/range_sync/chain.rs#L779
 
         self.advance_chain(local_finalized_epoch);
 
         self.state = SyncingState::Syncing;
-        self.request_batches();
+        self.request_batches(network_context);
     }
 
     fn advance_chain(&mut self, local_finalized_epoch: Epoch) {
@@ -119,7 +135,7 @@ impl SyncingChain {
         );
     }
 
-    fn request_batches(&mut self) {
+    fn request_batches(&mut self, network_context: &mut SyncNetworkContext) {
         if !matches!(self.state, SyncingState::Syncing) {
             warn!("sync state is not Syncing: {:?}", self.state);
             return;
@@ -130,7 +146,7 @@ impl SyncingChain {
 
         for peer in self.peers.clone().iter() {
             if let Some(epoch) = self.next_batch() {
-                self.send_batch(peer, epoch);
+                self.send_batch(network_context, peer, epoch);
             } else {
                 // No more batches, simply stop
                 return;
@@ -168,8 +184,34 @@ impl SyncingChain {
         }
     }
 
-    fn send_batch(&self, _peer_id: &PeerId, _epoch: Epoch) {
-        // TODO
-        // println!("send_batch: {} {}", peer_id.to_string(), epoch);
+    /// Requests the batch assigned to the given epoch (batch id) from a given peer.
+    fn send_batch(
+        &mut self,
+        network_context: &mut SyncNetworkContext,
+        peer_id: &PeerId,
+        epoch: Epoch,
+    ) {
+        trace!("[{peer_id}] [SyncingChain::send_batch] epoch(batch_id):{epoch}");
+
+        let batch_info = match self.batches.get_mut(&epoch) {
+            Some(batch_info) => batch_info,
+            None => {
+                warn!("[{peer_id}] [SyncingChain::send_batch] BatchInfo not found. epoch:{epoch}");
+                return;
+            }
+        };
+
+        let request = batch_info.to_blocks_by_range_request();
+        match network_context.blocks_by_range_request(peer_id, request) {
+            Ok(_request_id) => {
+                // TODO: store the request_id in self.peers
+                // https://github.com/ackintosh/lighthouse/blob/8c69d57c2ce0d5f1a3cd44c215b2d52844043150/beacon_node/network/src/sync/range_sync/chain.rs#L902
+            }
+            Err(e) => {
+                error!("[{peer_id}] [SyncingChain::send_batch] Failed to send `BlocksByRange` request. error:{e}")
+                // TODO: error handling
+                // https://github.com/ackintosh/lighthouse/blob/8c69d57c2ce0d5f1a3cd44c215b2d52844043150/beacon_node/network/src/sync/range_sync/chain.rs#L929
+            }
+        }
     }
 }

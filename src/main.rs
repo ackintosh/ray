@@ -17,7 +17,8 @@ use crate::config::NetworkConfig;
 use crate::network::Network;
 use crate::peer_db::PeerDB;
 use ::types::MainnetEthSpec;
-use beacon_node::{ClientBuilder, ClientConfig, ClientGenesis};
+use client::config::{ClientGenesis, Config};
+use client::ClientBuilder;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use environment::{EnvironmentBuilder, LoggerConfig};
 use eth2_network_config::Eth2NetworkConfig;
@@ -85,7 +86,7 @@ fn main() {
         .expect("environment builder");
 
     let lh_beacon_chain = runtime.block_on(async {
-        let client_config = ClientConfig::default();
+        let client_config = Config::default();
         let db_path = client_config.create_db_path().expect("db_path");
         let freezer_db_path = client_config
             .create_freezer_db_path()
@@ -121,11 +122,19 @@ fn main() {
         client_builder.beacon_chain.expect("beacon_chain")
     });
 
+    let (network_sender, network_receiver) = tokio::sync::mpsc::unbounded_channel();
+
     // SyncManager
-    let sync_sender = sync::spawn(runtime.clone(), peer_db.clone(), lh_beacon_chain.clone());
+    let sync_sender = sync::spawn(
+        runtime.clone(),
+        peer_db.clone(),
+        lh_beacon_chain.clone(),
+        network_sender,
+    );
 
     // Network
     let network = runtime.block_on(Network::new(
+        network_receiver,
         lh_beacon_chain,
         sync_sender,
         key_pair,

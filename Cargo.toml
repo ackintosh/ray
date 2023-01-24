@@ -34,14 +34,16 @@ void = "1.0.2"
 
 # Switched to the forked version so use the codec implemented in lighthouse.
 # SEE: https://github.com/ackintosh/lighthouse/compare/unstable...ackintosh:lighthouse:publish-codec
-lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-beacon_node = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-eth2_ssz_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
+lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+beacon_chain = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+eth2_ssz_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
 
 [build-dependencies]
 zip = "0.6.3"
@@ -50,11 +52,11 @@ zip = "0.6.3"
 [patch.crates-io]
 # Download these crates from GitHub because latest version of these, depened by `types` crate, are not published on crates.io.
 # SEE: https://github.com/sigp/lighthouse/issues/3166
-eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-eth2_ssz_types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-eth2_hashing = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-tree_hash = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-tree_hash_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-eth2_serde_utils = { git = "https://github.com/ackintosh/lighthouse.git", rev = "9b2ef905171d11ff866f3590b7332871b80fc0df" }
-
-
+eth2_ssz = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+eth2_ssz_types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+eth2_hashing = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+tree_hash = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+tree_hash_derive = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+eth2_serde_utils = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
+# SEE: https://github.com/sigp/lighthouse/blob/230168deffc0adcae90e53256d42942b3ae97d93/Cargo.toml#L95
+warp = { git = "https://github.com/macladson/warp", rev="7e75acc368229a46a236a8c991bf251fe7fe50ef" }

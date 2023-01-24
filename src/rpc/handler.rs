@@ -164,6 +164,23 @@ impl Handler {
         )));
     }
 
+    fn send_request(
+        &mut self,
+        // TODO: request_id
+        // request_id: lighthouse_network::service::api_types::RequestId<AppReqId>,
+        request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+    ) {
+        match self.state {
+            HandlerState::Active => {
+                self.dial_queue.push(request);
+            }
+            _ => {
+                // TODO: handle this case
+                // https://github.com/sigp/lighthouse/blob/4e5e7ee1fcbb60b9a36260da150ad8215c0d37ba/beacon_node/lighthouse_network/src/rpc/handler.rs#L270
+            }
+        }
+    }
+
     fn send_response(
         &mut self,
         substream_id: SubstreamId,
@@ -273,6 +290,9 @@ impl ConnectionHandler for Handler {
                 self.send_status(status_request)
             }
             InstructionToHandler::Goodbye(reason) => self.send_goodbye_and_shutdown(reason),
+            InstructionToHandler::Request(request) => {
+                self.send_request(request);
+            }
             InstructionToHandler::Response(substream_id, response) => {
                 self.send_response(substream_id, response)
             }
