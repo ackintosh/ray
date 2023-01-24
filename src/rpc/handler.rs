@@ -19,7 +19,7 @@ use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::time::{sleep_until, Instant, Sleep};
 use tracing::log::trace;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use types::fork_context::ForkContext;
 use types::MainnetEthSpec;
 
@@ -424,6 +424,11 @@ impl ConnectionHandler for Handler {
 
                             inbound_substream_info.state =
                                 InboundSubstreamState::Busy(Box::pin(boxed_future));
+                        } else {
+                            // There is nothing left to process. Set the stream to idle and
+                            // move on to the next one.
+                            inbound_substream_info.state = InboundSubstreamState::Idle(substream);
+                            break;
                         }
                     }
                     InboundSubstreamState::Busy(mut future) => {
