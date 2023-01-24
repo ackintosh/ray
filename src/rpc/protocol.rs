@@ -54,11 +54,15 @@ impl Display for Protocol {
 #[derive(Clone, Debug)]
 enum SchemaVersion {
     V1,
+    V2,
 }
 
 impl SchemaVersion {
     fn to_lighthouse_version(&self) -> lighthouse_network::rpc::protocol::Version {
-        match self { SchemaVersion::V1 => lighthouse_network::rpc::protocol::Version::V1 }
+        match self {
+            SchemaVersion::V1 => lighthouse_network::rpc::protocol::Version::V1,
+            SchemaVersion::V2 => lighthouse_network::rpc::protocol::Version::V2,
+        }
     }
 }
 
@@ -66,6 +70,7 @@ impl Display for SchemaVersion {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let version = match self {
             SchemaVersion::V1 => "1",
+            SchemaVersion::V2 => "2",
         };
         f.write_str(version)
     }
@@ -229,6 +234,7 @@ impl UpgradeInfo for RpcProtocol {
         vec![
             ProtocolId::new(Protocol::Status, SchemaVersion::V1, Encoding::SSZSnappy),
             ProtocolId::new(Protocol::Goodbye, SchemaVersion::V1, Encoding::SSZSnappy),
+            ProtocolId::new(Protocol::BlocksByRange, SchemaVersion::V2, Encoding::SSZSnappy),
             ProtocolId::new(Protocol::BlocksByRange, SchemaVersion::V1, Encoding::SSZSnappy),
         ]
     }

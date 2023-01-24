@@ -19,7 +19,7 @@ use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::time::{sleep_until, Instant, Sleep};
 use tracing::log::trace;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 use types::fork_context::ForkContext;
 use types::MainnetEthSpec;
 
@@ -158,7 +158,10 @@ impl Handler {
             ));
 
         // Update the state to start shutdown process.
-        info!("send_goodbye_and_shutdown: Updated the handler state to ShuttingDown");
+        info!(
+            "[{}] send_goodbye_and_shutdown: Updated the handler state to ShuttingDown",
+            self.peer_id.map(|p| p.to_string()).unwrap_or("no_peer_id".to_string()),
+        );
         self.state = HandlerState::ShuttingDown(Box::pin(sleep_until(
             Instant::now() + Duration::from_secs(SHUTDOWN_TIMEOUT_SECS),
         )));
@@ -355,8 +358,9 @@ impl ConnectionHandler for Handler {
         if !self.dial_queue.is_empty() {
             let request = self.dial_queue.remove(0);
             info!(
-                "ConnectionHandlerEvent::OutboundSubstreamRequest. request: {:?}",
-                request
+                "[{}] ConnectionHandlerEvent::OutboundSubstreamRequest. request: {:?}",
+                self.peer_id.map(|p| p.to_string()).unwrap_or("no_peer_id".to_string()),
+                request,
             );
             return Poll::Ready(ConnectionHandlerEvent::OutboundSubstreamRequest {
                 protocol: SubstreamProtocol::new(
@@ -436,7 +440,7 @@ impl ConnectionHandler for Handler {
                             // The pending messages have been sent successfully and the stream has
                             // terminated
                             Poll::Ready(Ok(_stream)) => {
-                                trace!("[{:?}] Sent a response successfully.", self.peer_id);
+                                trace!("[{}] Sent a response successfully.", self.peer_id.map(|p| p.to_string()).unwrap_or("no_peer_id".to_string()));
                                 inbound_substreams_to_remove.push(*substream_id);
                                 // There is nothing more to process on this substream as it has
                                 // been closed. Move on to the next one.
@@ -446,8 +450,8 @@ impl ConnectionHandler for Handler {
                             Poll::Ready(Err(error_message)) => {
                                 // TODO: Report the error that occurred during the send process
                                 error!(
-                                    "[{:?}] Failed to send a response. error: {}",
-                                    self.peer_id, error_message
+                                    "[{}] Failed to send a response. error: {}",
+                                    self.peer_id.map(|p| p.to_string()).unwrap_or("no_peer_id".to_string()), error_message
                                 );
                                 inbound_substreams_to_remove.push(*substream_id);
                                 break;
@@ -494,8 +498,8 @@ impl ConnectionHandler for Handler {
                 },
                 Poll::Ready(Some(Err(e))) => {
                     error!(
-                        "[{:?}] An error occurred while processing outbound stream. error: {:?}",
-                        self.peer_id, e
+                        "[{}] An error occurred while processing outbound stream. error: {:?}",
+                        self.peer_id.map(|p| p.to_string()).unwrap_or("no_peer_id".to_string()), e
                     );
                 }
                 Poll::Ready(None) => {

@@ -157,8 +157,9 @@ impl NetworkBehaviour for Behaviour {
         error: &DialError,
     ) {
         warn!(
-            "inject_dial_failure: peer_id: {:?}, error: {}",
-            peer_id, error
+            "[{}] inject_dial_failure. error: {}",
+            peer_id.map(|p| p.to_string()).unwrap_or("no_peer_id".to_string()),
+            error,
         );
     }
 
