@@ -226,10 +226,11 @@ impl ConnectionHandler for Handler {
         trace!("ConnectionHandler::listen_protocol");
 
         SubstreamProtocol::new(
-            RpcProtocol {
-                fork_context: self.fork_context.clone(),
-                max_rpc_size: self.max_rpc_size,
-            },
+            RpcProtocol::new(
+                self.fork_context.clone(),
+                self.max_rpc_size,
+                self.peer_id.clone(),
+            ),
             (),
         )
     }

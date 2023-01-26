@@ -4,7 +4,6 @@ use futures::prelude::*;
 use libp2p::core::{ProtocolName, UpgradeInfo};
 use libp2p::swarm::NegotiatedSubstream;
 use libp2p::{InboundUpgrade, OutboundUpgrade, PeerId};
-use lighthouse_network::rpc::RPCError;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::time::Duration;
@@ -241,6 +240,28 @@ impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
 pub(crate) struct RpcProtocol {
     pub(crate) fork_context: Arc<ForkContext>,
     pub(crate) max_rpc_size: usize,
+    // The PeerId this communicate to. Note this is just for debugging.
+    peer_id: Option<PeerId>,
+}
+
+impl RpcProtocol {
+    pub(crate) fn new(
+        fork_context: Arc<ForkContext>,
+        max_rpc_size: usize,
+        peer_id: Option<PeerId>,
+    ) -> RpcProtocol {
+        RpcProtocol {
+            fork_context,
+            max_rpc_size,
+            peer_id,
+        }
+    }
+
+    fn peer_id(&self) -> String {
+        self.peer_id
+            .map(|p| p.to_string())
+            .unwrap_or("no_peer_id".to_string())
+    }
 }
 
 impl UpgradeInfo for RpcProtocol {
@@ -284,7 +305,11 @@ where
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
     fn upgrade_inbound(self, socket: TSocket, protocol_id: Self::Info) -> Self::Future {
-        info!("upgrade_inbound: protocol_id: {:?}", protocol_id);
+        info!(
+            "[{}] upgrade_inbound: protocol_id: {:?}",
+            self.peer_id(),
+            protocol_id,
+        );
 
         async move {
             let codec: lighthouse_network::rpc::codec::InboundCodec<MainnetEthSpec> =
@@ -312,9 +337,15 @@ where
                 .await
             {
                 Err(_e) => todo!(),
-                Ok((Some(Ok(request)), stream)) => Ok((request, stream)),
+                Ok((Some(Ok(request)), stream)) => {
+                    info!("[{}] [RpcProtocol::upgrade_inbound] received inbound message: {:?}", self.peer_id(), request);
+                    Ok((request, stream))
+                },
                 Ok((Some(Err(rpc_error)), _)) => {
-                    error!("[RpcProtocol::upgrade_inbound] protocol_id: {protocol_id:?}, rpc_error: {rpc_error:?}");
+                    error!(
+                        "[{}] [RpcProtocol::upgrade_inbound] protocol_id: {protocol_id:?}, rpc_error: {rpc_error:?}",
+                        self.peer_id()
+                    );
                     Err(rpc_error)
                 }
                 Ok((None, _)) => todo!(),
