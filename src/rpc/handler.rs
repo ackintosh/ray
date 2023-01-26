@@ -140,6 +140,12 @@ impl Handler {
         }
     }
 
+    fn peer_id(&self) -> String {
+        self.peer_id
+            .map(|p| p.to_string())
+            .unwrap_or("no_peer_id".to_string())
+    }
+
     // Status
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     fn send_status(
@@ -223,7 +229,7 @@ impl ConnectionHandler for Handler {
     type OutboundOpenInfo = lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>;
 
     fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
-        trace!("ConnectionHandler::listen_protocol");
+        info!("[{}] [ConnectionHandler::listen_protocol]", self.peer_id());
 
         SubstreamProtocol::new(
             RpcProtocol::new(
@@ -242,7 +248,10 @@ impl ConnectionHandler for Handler {
         _info: Self::InboundOpenInfo,
     ) {
         let (request, substream) = inbound;
-        info!("inject_fully_negotiated_inbound. request: {:?}", request);
+        info!(
+            "[{}] inject_fully_negotiated_inbound. request: {request:?}",
+            self.peer_id()
+        );
 
         let inbound_substream_id = self.inbound_substream_id.next();
 
@@ -297,18 +306,22 @@ impl ConnectionHandler for Handler {
 
     fn inject_event(&mut self, event: Self::InEvent) {
         info!("inject_event. event: {:?}", event);
+
         match event {
             InstructionToHandler::Status(status_message, peer_id) => {
                 self.peer_id = Some(peer_id.clone()); // This is just for debugging.
                 self.send_status(peer_id, status_message);
             }
             InstructionToHandler::Goodbye(reason, peer_id) => {
+                self.peer_id = Some(peer_id.clone()); // This is just for debugging.
                 self.send_goodbye_and_shutdown(peer_id, reason);
             }
             InstructionToHandler::Request(request, peer_id) => {
+                self.peer_id = Some(peer_id.clone()); // This is just for debugging.
                 self.send_request(peer_id, request);
             }
             InstructionToHandler::Response(substream_id, response, peer_id) => {
+                self.peer_id = Some(peer_id.clone()); // This is just for debugging.
                 self.send_response(peer_id, substream_id, response)
             }
         }
@@ -320,8 +333,10 @@ impl ConnectionHandler for Handler {
         error: ConnectionHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgradeSend>::Error>,
     ) {
         warn!(
-            "inject_dial_upgrade_error. info: {}, error: {}",
-            info, error
+            "[{}] inject_dial_upgrade_error. info: {}, error: {}",
+            self.peer_id(),
+            info,
+            error,
         );
 
         // TODO
@@ -504,6 +519,7 @@ impl ConnectionHandler for Handler {
             match entry.get_mut().poll_next_unpin(cx) {
                 Poll::Ready(Some(Ok(rpc_coded_response))) => match rpc_coded_response {
                     RPCCodedResponse::Success(response) => {
+                        info!("[{}] received a response: {response:?}", self.peer_id());
                         return Poll::Ready(ConnectionHandlerEvent::Custom(
                             HandlerReceived::Response(response),
                         ));
@@ -518,19 +534,17 @@ impl ConnectionHandler for Handler {
                 Poll::Ready(Some(Err(e))) => {
                     error!(
                         "[{}] An error occurred while processing outbound stream. error: {:?}",
-                        self.peer_id
-                            .map(|p| p.to_string())
-                            .unwrap_or("no_peer_id".to_string()),
-                        e
+                        self.peer_id(),
+                        e,
                     );
                 }
                 Poll::Ready(None) => {
                     // ////////////////
                     // stream closed
                     // ////////////////
-                    trace!(
-                        "[{:?}] Stream closed by remote. outbound_substream_id: {:?}",
-                        self.peer_id,
+                    info!(
+                        "[{}] Stream closed by remote. outbound_substream_id: {:?}",
+                        self.peer_id(),
                         outbound_substream_id
                     );
                     // drop the stream

@@ -8,7 +8,7 @@ use libp2p::swarm::{
 use libp2p::PeerId;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use tracing::{trace, warn};
+use tracing::{info, trace, warn};
 use types::{ForkContext, MainnetEthSpec};
 
 // ////////////////////////////////////////////////////////
@@ -135,7 +135,10 @@ impl NetworkBehaviour for Behaviour {
     ) {
         match event {
             HandlerReceived::Request(inbound_request) => {
-                trace!("[{}] Received request: {:?}", peer_id, inbound_request);
+                info!(
+                    "[{}] [inject_event] Received request: {:?}",
+                    peer_id, inbound_request
+                );
 
                 self.events.push(NetworkBehaviourAction::GenerateEvent(
                     RpcEvent::ReceivedRequest(ReceivedRequest {
@@ -147,7 +150,10 @@ impl NetworkBehaviour for Behaviour {
                 ));
             }
             HandlerReceived::Response(response) => {
-                trace!("[{}] Received response: {:?}", peer_id, response);
+                info!(
+                    "[{}] [inject_event] Received response: {:?}",
+                    peer_id, response
+                );
 
                 self.events.push(NetworkBehaviourAction::GenerateEvent(
                     RpcEvent::ReceivedResponse(ReceivedResponse { peer_id, response }),
