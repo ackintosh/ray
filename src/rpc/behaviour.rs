@@ -19,12 +19,17 @@ use types::{ForkContext, MainnetEthSpec};
 #[derive(Debug)]
 pub(crate) enum InstructionToHandler {
     Status(lighthouse_network::rpc::StatusMessage, PeerId),
-    Goodbye(lighthouse_network::rpc::GoodbyeReason),
+    Goodbye(lighthouse_network::rpc::GoodbyeReason, PeerId),
     Request(
         // lighthouse_network::service::api_types::RequestId<AppReqId>,
         lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+        PeerId,
     ),
-    Response(SubstreamId, lighthouse_network::Response<MainnetEthSpec>),
+    Response(
+        SubstreamId,
+        lighthouse_network::Response<MainnetEthSpec>,
+        PeerId,
+    ),
 }
 
 // ////////////////////////////////////////////////////////
@@ -68,9 +73,9 @@ impl Behaviour {
         reason: lighthouse_network::rpc::GoodbyeReason,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
-            peer_id,
+            peer_id: peer_id.clone(),
             handler: NotifyHandler::Any,
-            event: InstructionToHandler::Goodbye(reason),
+            event: InstructionToHandler::Goodbye(reason, peer_id),
         })
     }
 
@@ -81,11 +86,12 @@ impl Behaviour {
         request_id: AppReqId,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
-            peer_id,
+            peer_id: peer_id.clone(),
             handler: NotifyHandler::Any,
             event: InstructionToHandler::Request(
                 // lighthouse_network::service::api_types::RequestId::Application(request_id),
                 request.into(),
+                peer_id,
             ),
         })
     }
@@ -98,9 +104,9 @@ impl Behaviour {
         response: lighthouse_network::Response<MainnetEthSpec>,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
-            peer_id,
+            peer_id: peer_id.clone(),
             handler: NotifyHandler::One(connection_id),
-            event: InstructionToHandler::Response(substream_id, response),
+            event: InstructionToHandler::Response(substream_id, response, peer_id),
         })
     }
 }
@@ -158,7 +164,9 @@ impl NetworkBehaviour for Behaviour {
     ) {
         warn!(
             "[{}] inject_dial_failure. error: {}",
-            peer_id.map(|p| p.to_string()).unwrap_or("no_peer_id".to_string()),
+            peer_id
+                .map(|p| p.to_string())
+                .unwrap_or("no_peer_id".to_string()),
             error,
         );
     }

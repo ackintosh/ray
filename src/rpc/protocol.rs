@@ -3,7 +3,8 @@ use futures::future::BoxFuture;
 use futures::prelude::*;
 use libp2p::core::{ProtocolName, UpgradeInfo};
 use libp2p::swarm::NegotiatedSubstream;
-use libp2p::{InboundUpgrade, OutboundUpgrade};
+use libp2p::{InboundUpgrade, OutboundUpgrade, PeerId};
+use lighthouse_network::rpc::RPCError;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::time::Duration;
@@ -84,7 +85,9 @@ enum Encoding {
 
 impl Encoding {
     fn to_lighthouse_encoding(&self) -> lighthouse_network::rpc::protocol::Encoding {
-        match self { Encoding::SSZSnappy => lighthouse_network::rpc::protocol::Encoding::SSZSnappy }
+        match self {
+            Encoding::SSZSnappy => lighthouse_network::rpc::protocol::Encoding::SSZSnappy,
+        }
     }
 }
 
@@ -149,8 +152,15 @@ impl ProtocolName for ProtocolId {
 // * implements `UpgradeInfo` and `OutboundUpgrade`
 // * ref: https://github.com/libp2p/rust-libp2p/blob/master/protocols/request-response/src/handler/protocol.rs -> `RequestProtocol`
 // /////////////////////////////////////////////////////////////////////////////////////////////////
-pub(crate) struct RpcRequestProtocol {
+#[derive(Clone)]
+pub(super) struct OutboundRequest {
+    pub(super) peer_id: PeerId,
     pub(super) request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+}
+
+pub(crate) struct RpcRequestProtocol {
+    // pub(super) request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+    pub(super) request: OutboundRequest,
     pub(super) max_rpc_size: usize,
     pub(super) fork_context: Arc<ForkContext>,
 }
@@ -184,7 +194,10 @@ impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
         socket: NegotiatedSubstream,
         protocol_id: Self::Info,
     ) -> Self::Future {
-        info!("upgrade_outbound: request: {:?}", self.request);
+        info!(
+            "[{}] RpcRequestProtocol::upgrade_outbound: request: {:?}",
+            self.request.peer_id, self.request.request
+        );
         // convert to a tokio compatible socket
         let socket = socket.compat();
         let codec = match protocol_id.encoding {
@@ -203,9 +216,14 @@ impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
         let mut socket = Framed::new(socket, codec);
 
         async move {
-            if let Err(rpc_error) = socket.send(self.request.clone()).await {
-                error!("[RpcRequestProtocol::upgrade_outbound] RPCError: {rpc_error}, request: {:?}", self.request);
-                return Err(rpc_error);
+            match socket.send(self.request.request.clone()).await {
+                Ok(_) => {
+                    info!("[{}] [RpcRequestProtocol::upgrade_outbound] sent outbound rpc: {:?}", self.request.peer_id, self.request.request);
+                }
+                Err(rpc_error) => {
+                    error!("[{}] [RpcRequestProtocol::upgrade_outbound] RPCError: {rpc_error}, request: {:?}", self.request.peer_id, self.request.request);
+                    return Err(rpc_error);
+                }
             }
             socket.close().await?;
             Ok(socket)
@@ -234,8 +252,16 @@ impl UpgradeInfo for RpcProtocol {
         vec![
             ProtocolId::new(Protocol::Status, SchemaVersion::V1, Encoding::SSZSnappy),
             ProtocolId::new(Protocol::Goodbye, SchemaVersion::V1, Encoding::SSZSnappy),
-            ProtocolId::new(Protocol::BlocksByRange, SchemaVersion::V2, Encoding::SSZSnappy),
-            ProtocolId::new(Protocol::BlocksByRange, SchemaVersion::V1, Encoding::SSZSnappy),
+            ProtocolId::new(
+                Protocol::BlocksByRange,
+                SchemaVersion::V2,
+                Encoding::SSZSnappy,
+            ),
+            ProtocolId::new(
+                Protocol::BlocksByRange,
+                SchemaVersion::V1,
+                Encoding::SSZSnappy,
+            ),
         ]
     }
 }
