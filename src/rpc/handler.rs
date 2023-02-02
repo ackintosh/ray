@@ -88,6 +88,7 @@ pub struct InboundRequest {
 /// Maximum time given to the handler to perform shutdown operations.
 const SHUTDOWN_TIMEOUT_SECS: u64 = 15;
 
+#[derive(Debug)]
 enum HandlerState {
     /// The handler is active. All messages are sent and received.
     Active,
@@ -161,20 +162,30 @@ impl Handler {
 
     // Goodbye
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
-    fn send_goodbye_and_shutdown(
-        &mut self,
-        peer_id: PeerId,
-        reason: lighthouse_network::rpc::GoodbyeReason,
-    ) {
+    fn shutdown(&mut self, reason: Option<(PeerId, lighthouse_network::rpc::GoodbyeReason)>) {
+        if !matches!(self.state, HandlerState::Active) {
+            warn!(
+                "[{}] [send_goodbye_and_shutdown] the handler state is not Active: {:?}",
+                self.peer_id(),
+                self.state
+            );
+            return;
+        }
+
         // Queue our goodbye message.
         // Ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L239
-        self.dial_queue.push(OutboundRequest {
-            peer_id,
-            request: lighthouse_network::rpc::outbound::OutboundRequest::Goodbye(reason),
-        });
+        if let Some((peer_id, reason)) = reason {
+            self.dial_queue.push(OutboundRequest {
+                peer_id,
+                request: lighthouse_network::rpc::outbound::OutboundRequest::Goodbye(reason),
+            });
+        }
 
         // Update the state to start shutdown process.
-        info!("[{peer_id}] send_goodbye_and_shutdown: Updated the handler state to ShuttingDown");
+        info!(
+            "[{}] [send_goodbye_and_shutdown] Updated the handler state to `ShuttingDown`",
+            self.peer_id()
+        );
         self.state = HandlerState::ShuttingDown(Box::pin(sleep_until(
             Instant::now() + Duration::from_secs(SHUTDOWN_TIMEOUT_SECS),
         )));
@@ -269,8 +280,14 @@ impl ConnectionHandler for Handler {
             );
         }
 
-        // TODO: Handle `Goodbye` message
+        // Handle `Goodbye` message
         // spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
+        if matches!(
+            request,
+            lighthouse_network::rpc::protocol::InboundRequest::Goodbye(_)
+        ) {
+            self.shutdown(None);
+        }
 
         // Inform the received request to the behaviour
         self.out_events
@@ -314,7 +331,7 @@ impl ConnectionHandler for Handler {
             }
             InstructionToHandler::Goodbye(reason, peer_id) => {
                 self.peer_id = Some(peer_id.clone()); // This is just for debugging.
-                self.send_goodbye_and_shutdown(peer_id, reason);
+                self.shutdown(Some((peer_id, reason)));
             }
             InstructionToHandler::Request(request, peer_id) => {
                 self.peer_id = Some(peer_id.clone()); // This is just for debugging.
