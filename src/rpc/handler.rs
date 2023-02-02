@@ -535,8 +535,7 @@ impl ConnectionHandler for Handler {
                 Poll::Ready(Some(Err(e))) => {
                     error!(
                         "[{}] An error occurred while processing outbound stream. error: {:?}",
-                        peer_id,
-                        e,
+                        peer_id, e,
                     );
                 }
                 Poll::Ready(None) => {
@@ -545,8 +544,7 @@ impl ConnectionHandler for Handler {
                     // ////////////////
                     info!(
                         "[{}] Stream closed by remote. outbound_substream_id: {:?}",
-                        peer_id,
-                        outbound_substream_id
+                        peer_id, outbound_substream_id
                     );
                     // drop the stream
                     entry.remove_entry();
