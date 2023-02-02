@@ -511,6 +511,7 @@ impl ConnectionHandler for Handler {
         // Drive outbound streams that need to be processed
         // /////////////////////////////////////////////////////////////////////////////////////////////////
         for outbound_substream_id in self.outbound_substreams.keys().copied().collect::<Vec<_>>() {
+            let peer_id = self.peer_id();
             let mut entry = match self.outbound_substreams.entry(outbound_substream_id) {
                 Entry::Occupied(entry) => entry,
                 Entry::Vacant(_) => unreachable!(),
@@ -534,7 +535,7 @@ impl ConnectionHandler for Handler {
                 Poll::Ready(Some(Err(e))) => {
                     error!(
                         "[{}] An error occurred while processing outbound stream. error: {:?}",
-                        self.peer_id(),
+                        peer_id,
                         e,
                     );
                 }
@@ -544,7 +545,7 @@ impl ConnectionHandler for Handler {
                     // ////////////////
                     info!(
                         "[{}] Stream closed by remote. outbound_substream_id: {:?}",
-                        self.peer_id(),
+                        peer_id,
                         outbound_substream_id
                     );
                     // drop the stream
