@@ -2,7 +2,7 @@ use discv5::Enr;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
-use types::{BeaconState, ChainSpec, Config, MainnetEthSpec};
+use types::Config;
 
 // Ref: kiln-testnet config
 // https://github.com/eth-clients/merge-testnets/tree/main/kiln
@@ -26,17 +26,17 @@ impl NetworkConfig {
         })
     }
 
-    pub(crate) fn genesis_beacon_state(&self) -> Result<BeaconState<MainnetEthSpec>, String> {
-        let spec = self.chain_spec()?;
-        BeaconState::from_ssz_bytes(&self.genesis_state_bytes, &spec)
-            .map_err(|e| format!("Failed to decode genesis state bytes: {:?}", e))
-    }
-
-    pub(crate) fn chain_spec(&self) -> Result<ChainSpec, String> {
-        ChainSpec::from_config::<MainnetEthSpec>(&self.config).ok_or_else(|| {
-            "YAML configuration incompatible with spec constants for MainnetEthSpec".to_string()
-        })
-    }
+    // pub(crate) fn genesis_beacon_state(&self) -> Result<BeaconState<MainnetEthSpec>, String> {
+    //     let spec = self.chain_spec()?;
+    //     BeaconState::from_ssz_bytes(&self.genesis_state_bytes, &spec)
+    //         .map_err(|e| format!("Failed to decode genesis state bytes: {:?}", e))
+    // }
+    //
+    // pub(crate) fn chain_spec(&self) -> Result<ChainSpec, String> {
+    //     ChainSpec::from_config::<MainnetEthSpec>(&self.config).ok_or_else(|| {
+    //         "YAML configuration incompatible with spec constants for MainnetEthSpec".to_string()
+    //     })
+    // }
 }
 
 fn load_config(network_config_dir: &Path) -> Result<Config, String> {

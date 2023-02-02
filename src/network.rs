@@ -7,7 +7,7 @@ use crate::{
     build_network_behaviour, build_network_transport, BehaviourComposer, BehaviourComposerEvent,
     NetworkConfig, PeerDB,
 };
-use beacon_node::beacon_chain::BeaconChainTypes;
+use beacon_chain::BeaconChainTypes;
 use discv5::enr::CombinedKey;
 use discv5::Enr;
 use futures::StreamExt;
@@ -22,7 +22,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Weak};
 use tokio::runtime::Runtime;
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tracing::{debug, error, info, trace, warn};
 
 /// The executor for libp2p
@@ -41,7 +41,8 @@ impl libp2p::core::Executor for Executor {
 
 pub(crate) struct Network<T: BeaconChainTypes> {
     swarm: Swarm<BehaviourComposer>,
-    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
+    network_receiver: UnboundedReceiver<NetworkMessage>,
+    lh_beacon_chain: Arc<beacon_chain::BeaconChain<T>>,
     sync_sender: UnboundedSender<SyncOperation>,
 }
 
@@ -51,7 +52,8 @@ where
 {
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn new(
-        lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
+        network_receiver: UnboundedReceiver<NetworkMessage>,
+        lh_beacon_chain: Arc<beacon_chain::BeaconChain<T>>,
         sync_sender: UnboundedSender<SyncOperation>,
         key_pair: Keypair,
         enr: Enr,
@@ -79,6 +81,7 @@ where
 
         Network {
             swarm,
+            network_receiver,
             lh_beacon_chain,
             sync_sender,
         }
@@ -122,6 +125,7 @@ where
                             }
                         }
                     }
+                    Some(message) = self.network_receiver.recv() => self.on_network_message(message),
                 }
             }
         };
@@ -287,4 +291,28 @@ where
 
         true
     }
+
+    /// Handle a message sent to the network service.
+    fn on_network_message(&mut self, message: NetworkMessage) {
+        match message {
+            NetworkMessage::SendRequest {
+                peer_id,
+                request,
+                request_id,
+            } => self
+                .swarm
+                .behaviour_mut()
+                .rpc
+                .send_request(peer_id, request, request_id),
+        }
+    }
+}
+
+/// Types of messages that the network service can receive.
+pub(crate) enum NetworkMessage {
+    SendRequest {
+        peer_id: PeerId,
+        request: lighthouse_network::service::api_types::Request,
+        request_id: network::service::RequestId,
+    },
 }

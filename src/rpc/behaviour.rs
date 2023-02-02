@@ -8,7 +8,7 @@ use libp2p::swarm::{
 use libp2p::PeerId;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use tracing::{trace, warn};
+use tracing::{info, trace, warn};
 use types::{ForkContext, MainnetEthSpec};
 
 // ////////////////////////////////////////////////////////
@@ -19,8 +19,17 @@ use types::{ForkContext, MainnetEthSpec};
 #[derive(Debug)]
 pub(crate) enum InstructionToHandler {
     Status(lighthouse_network::rpc::StatusMessage, PeerId),
-    Goodbye(lighthouse_network::rpc::GoodbyeReason),
-    Response(SubstreamId, lighthouse_network::Response<MainnetEthSpec>),
+    Goodbye(lighthouse_network::rpc::GoodbyeReason, PeerId),
+    Request(
+        // lighthouse_network::service::api_types::RequestId<AppReqId>,
+        lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+        PeerId,
+    ),
+    Response(
+        SubstreamId,
+        lighthouse_network::Response<MainnetEthSpec>,
+        PeerId,
+    ),
 }
 
 // ////////////////////////////////////////////////////////
@@ -64,9 +73,26 @@ impl Behaviour {
         reason: lighthouse_network::rpc::GoodbyeReason,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
-            peer_id,
+            peer_id: peer_id.clone(),
             handler: NotifyHandler::Any,
-            event: InstructionToHandler::Goodbye(reason),
+            event: InstructionToHandler::Goodbye(reason, peer_id),
+        })
+    }
+
+    pub(crate) fn send_request<AppReqId: lighthouse_network::rpc::ReqId>(
+        &mut self,
+        peer_id: PeerId,
+        request: lighthouse_network::service::api_types::Request,
+        request_id: AppReqId,
+    ) {
+        self.events.push(NetworkBehaviourAction::NotifyHandler {
+            peer_id: peer_id.clone(),
+            handler: NotifyHandler::Any,
+            event: InstructionToHandler::Request(
+                // lighthouse_network::service::api_types::RequestId::Application(request_id),
+                request.into(),
+                peer_id,
+            ),
         })
     }
 
@@ -78,9 +104,9 @@ impl Behaviour {
         response: lighthouse_network::Response<MainnetEthSpec>,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
-            peer_id,
+            peer_id: peer_id.clone(),
             handler: NotifyHandler::One(connection_id),
-            event: InstructionToHandler::Response(substream_id, response),
+            event: InstructionToHandler::Response(substream_id, response, peer_id),
         })
     }
 }
@@ -109,7 +135,10 @@ impl NetworkBehaviour for Behaviour {
     ) {
         match event {
             HandlerReceived::Request(inbound_request) => {
-                trace!("[{}] Received request: {:?}", peer_id, inbound_request);
+                info!(
+                    "[{}] [inject_event] Received request: {:?}",
+                    peer_id, inbound_request
+                );
 
                 self.events.push(NetworkBehaviourAction::GenerateEvent(
                     RpcEvent::ReceivedRequest(ReceivedRequest {
@@ -121,7 +150,10 @@ impl NetworkBehaviour for Behaviour {
                 ));
             }
             HandlerReceived::Response(response) => {
-                trace!("[{}] Received response: {:?}", peer_id, response);
+                info!(
+                    "[{}] [inject_event] Received response: {:?}",
+                    peer_id, response
+                );
 
                 self.events.push(NetworkBehaviourAction::GenerateEvent(
                     RpcEvent::ReceivedResponse(ReceivedResponse { peer_id, response }),
@@ -137,8 +169,11 @@ impl NetworkBehaviour for Behaviour {
         error: &DialError,
     ) {
         warn!(
-            "inject_dial_failure: peer_id: {:?}, error: {}",
-            peer_id, error
+            "[{}] inject_dial_failure. error: {}",
+            peer_id
+                .map(|p| p.to_string())
+                .unwrap_or("no_peer_id".to_string()),
+            error,
         );
     }
 

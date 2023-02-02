@@ -1,5 +1,5 @@
 use crate::{BehaviourComposer, CombinedKey, NetworkConfig, PeerDB, TARGET_PEERS_COUNT};
-use beacon_node::beacon_chain::BeaconChainTypes;
+use beacon_chain::BeaconChainTypes;
 use discv5::Enr;
 use libp2p::core::muxing::StreamMuxerBox;
 use libp2p::identity::Keypair;
@@ -42,7 +42,7 @@ pub(crate) async fn build_network_behaviour<T: BeaconChainTypes>(
     enr_key: CombinedKey,
     network_config: NetworkConfig,
     peer_db: Arc<RwLock<PeerDB>>,
-    lh_beacon_chain: Arc<beacon_node::beacon_chain::BeaconChain<T>>,
+    lh_beacon_chain: Arc<beacon_chain::BeaconChain<T>>,
 ) -> BehaviourComposer {
     let mut discovery =
         crate::discovery::behaviour::Behaviour::new(enr, enr_key, &network_config.boot_enr).await;

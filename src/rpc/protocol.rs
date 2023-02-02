@@ -3,8 +3,7 @@ use futures::future::BoxFuture;
 use futures::prelude::*;
 use libp2p::core::{ProtocolName, UpgradeInfo};
 use libp2p::swarm::NegotiatedSubstream;
-use libp2p::{InboundUpgrade, OutboundUpgrade};
-use lighthouse_network::rpc::RPCError;
+use libp2p::{InboundUpgrade, OutboundUpgrade, PeerId};
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::time::Duration;
@@ -28,6 +27,17 @@ enum Protocol {
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     Status,
     Goodbye,
+    BlocksByRange,
+}
+
+impl Protocol {
+    fn to_lighthouse_protocol(&self) -> lighthouse_network::rpc::protocol::Protocol {
+        match self {
+            Protocol::Status => lighthouse_network::rpc::protocol::Protocol::Status,
+            Protocol::Goodbye => lighthouse_network::rpc::protocol::Protocol::Goodbye,
+            Protocol::BlocksByRange => lighthouse_network::rpc::protocol::Protocol::BlocksByRange,
+        }
+    }
 }
 
 impl Display for Protocol {
@@ -35,6 +45,7 @@ impl Display for Protocol {
         let protocol_name = match self {
             Protocol::Status => "status",
             Protocol::Goodbye => "goodbye",
+            Protocol::BlocksByRange => "beacon_blocks_by_range",
         };
         f.write_str(protocol_name)
     }
@@ -43,12 +54,23 @@ impl Display for Protocol {
 #[derive(Clone, Debug)]
 enum SchemaVersion {
     V1,
+    V2,
+}
+
+impl SchemaVersion {
+    fn to_lighthouse_version(&self) -> lighthouse_network::rpc::protocol::Version {
+        match self {
+            SchemaVersion::V1 => lighthouse_network::rpc::protocol::Version::V1,
+            SchemaVersion::V2 => lighthouse_network::rpc::protocol::Version::V2,
+        }
+    }
 }
 
 impl Display for SchemaVersion {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let version = match self {
             SchemaVersion::V1 => "1",
+            SchemaVersion::V2 => "2",
         };
         f.write_str(version)
     }
@@ -58,6 +80,14 @@ impl Display for SchemaVersion {
 enum Encoding {
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#encoding-strategies
     SSZSnappy,
+}
+
+impl Encoding {
+    fn to_lighthouse_encoding(&self) -> lighthouse_network::rpc::protocol::Encoding {
+        match self {
+            Encoding::SSZSnappy => lighthouse_network::rpc::protocol::Encoding::SSZSnappy,
+        }
+    }
 }
 
 impl Display for Encoding {
@@ -102,11 +132,10 @@ impl ProtocolId {
     }
 
     fn lighthouse_protocol_id(&self) -> lighthouse_network::rpc::protocol::ProtocolId {
-        // TODO:
         lighthouse_network::rpc::protocol::ProtocolId::new(
-            lighthouse_network::rpc::protocol::Protocol::Status,
-            lighthouse_network::rpc::protocol::Version::V1,
-            lighthouse_network::rpc::protocol::Encoding::SSZSnappy,
+            self.protocol.to_lighthouse_protocol(),
+            self.schema_version.to_lighthouse_version(),
+            self.encoding.to_lighthouse_encoding(),
         )
     }
 }
@@ -122,8 +151,15 @@ impl ProtocolName for ProtocolId {
 // * implements `UpgradeInfo` and `OutboundUpgrade`
 // * ref: https://github.com/libp2p/rust-libp2p/blob/master/protocols/request-response/src/handler/protocol.rs -> `RequestProtocol`
 // /////////////////////////////////////////////////////////////////////////////////////////////////
-pub(crate) struct RpcRequestProtocol {
+#[derive(Clone)]
+pub(super) struct OutboundRequest {
+    pub(super) peer_id: PeerId,
     pub(super) request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+}
+
+pub(crate) struct RpcRequestProtocol {
+    // pub(super) request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+    pub(super) request: OutboundRequest,
     pub(super) max_rpc_size: usize,
     pub(super) fork_context: Arc<ForkContext>,
 }
@@ -157,7 +193,10 @@ impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
         socket: NegotiatedSubstream,
         protocol_id: Self::Info,
     ) -> Self::Future {
-        info!("upgrade_outbound: request: {:?}", self.request);
+        info!(
+            "[{}] RpcRequestProtocol::upgrade_outbound: request: {:?}",
+            self.request.peer_id, self.request.request
+        );
         // convert to a tokio compatible socket
         let socket = socket.compat();
         let codec = match protocol_id.encoding {
@@ -176,7 +215,15 @@ impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
         let mut socket = Framed::new(socket, codec);
 
         async move {
-            socket.send(self.request).await?;
+            match socket.send(self.request.request.clone()).await {
+                Ok(_) => {
+                    info!("[{}] [RpcRequestProtocol::upgrade_outbound] sent outbound rpc: {:?}", self.request.peer_id, self.request.request);
+                }
+                Err(rpc_error) => {
+                    error!("[{}] [RpcRequestProtocol::upgrade_outbound] RPCError: {rpc_error}, request: {:?}", self.request.peer_id, self.request.request);
+                    return Err(rpc_error);
+                }
+            }
             socket.close().await?;
             Ok(socket)
         }
@@ -193,6 +240,28 @@ impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
 pub(crate) struct RpcProtocol {
     pub(crate) fork_context: Arc<ForkContext>,
     pub(crate) max_rpc_size: usize,
+    // The PeerId this communicate to. Note this is just for debugging.
+    peer_id: Option<PeerId>,
+}
+
+impl RpcProtocol {
+    pub(crate) fn new(
+        fork_context: Arc<ForkContext>,
+        max_rpc_size: usize,
+        peer_id: Option<PeerId>,
+    ) -> RpcProtocol {
+        RpcProtocol {
+            fork_context,
+            max_rpc_size,
+            peer_id,
+        }
+    }
+
+    fn peer_id(&self) -> String {
+        self.peer_id
+            .map(|p| p.to_string())
+            .unwrap_or("no_peer_id".to_string())
+    }
 }
 
 impl UpgradeInfo for RpcProtocol {
@@ -204,6 +273,16 @@ impl UpgradeInfo for RpcProtocol {
         vec![
             ProtocolId::new(Protocol::Status, SchemaVersion::V1, Encoding::SSZSnappy),
             ProtocolId::new(Protocol::Goodbye, SchemaVersion::V1, Encoding::SSZSnappy),
+            ProtocolId::new(
+                Protocol::BlocksByRange,
+                SchemaVersion::V2,
+                Encoding::SSZSnappy,
+            ),
+            ProtocolId::new(
+                Protocol::BlocksByRange,
+                SchemaVersion::V1,
+                Encoding::SSZSnappy,
+            ),
         ]
     }
 }
@@ -222,11 +301,15 @@ where
     TSocket: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
     type Output = InboundOutput<TSocket>;
-    type Error = RPCError;
+    type Error = lighthouse_network::rpc::RPCError;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
     fn upgrade_inbound(self, socket: TSocket, protocol_id: Self::Info) -> Self::Future {
-        info!("upgrade_inbound: protocol_id: {:?}", protocol_id);
+        info!(
+            "[{}] upgrade_inbound: protocol_id: {:?}",
+            self.peer_id(),
+            protocol_id,
+        );
 
         async move {
             let codec: lighthouse_network::rpc::codec::InboundCodec<MainnetEthSpec> =
@@ -254,9 +337,15 @@ where
                 .await
             {
                 Err(_e) => todo!(),
-                Ok((Some(Ok(request)), stream)) => Ok((request, stream)),
+                Ok((Some(Ok(request)), stream)) => {
+                    info!("[{}] [RpcProtocol::upgrade_inbound] received inbound message: {:?}", self.peer_id(), request);
+                    Ok((request, stream))
+                },
                 Ok((Some(Err(rpc_error)), _)) => {
-                    error!("RPC error: {:?}", rpc_error);
+                    error!(
+                        "[{}] [RpcProtocol::upgrade_inbound] protocol_id: {protocol_id:?}, rpc_error: {rpc_error:?}",
+                        self.peer_id()
+                    );
                     Err(rpc_error)
                 }
                 Ok((None, _)) => todo!(),

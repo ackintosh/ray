@@ -1,4 +1,4 @@
-use beacon_node::beacon_chain::{BeaconChain, BeaconChainTypes};
+use beacon_chain::{BeaconChain, BeaconChainTypes};
 use lighthouse_network::rpc::StatusMessage;
 use types::{EthSpec, Hash256, MainnetEthSpec};
 
