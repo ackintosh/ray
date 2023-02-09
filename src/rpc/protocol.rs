@@ -153,7 +153,7 @@ impl ProtocolName for ProtocolId {
 // /////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Clone)]
 pub(super) struct OutboundRequest {
-    pub(super) peer_id: PeerId,
+    pub(super) peer_id: PeerId, // Only for debugging
     pub(super) request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
 }
 
@@ -306,7 +306,7 @@ where
 
     fn upgrade_inbound(self, socket: TSocket, protocol_id: Self::Info) -> Self::Future {
         info!(
-            "[{}] upgrade_inbound: protocol_id: {:?}",
+            "[{}] [RpcProtocol::upgrade_inbound] protocol_id: {:?}",
             self.peer_id(),
             protocol_id,
         );
