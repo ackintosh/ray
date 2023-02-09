@@ -172,6 +172,9 @@ impl Handler {
             return;
         }
 
+        // TODO: Drive self.dial_queue to complete communications
+        // Ref: https://github.com/sigp/lighthouse/blob/9976d3bbbcff07ebb2503e48baba1a04cae59390/beacon_node/lighthouse_network/src/rpc/handler.rs#L244-L251
+
         // Queue our goodbye message.
         // Ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L239
         if let Some((peer_id, reason)) = reason {
