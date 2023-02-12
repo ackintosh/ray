@@ -1302,6 +1302,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "delay_map"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58eb846486f70f5acd1f95e6fc50319e3382bc45a1e48daf3b88ac3a438e3f66"
+dependencies = [
+ "futures",
+ "tokio-util 0.6.10",
+]
+
+[[package]]
 name = "deposit_contract"
 version = "0.2.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=c0b8700e68f4ce74f0f7f9349ac845289e92fcbc#c0b8700e68f4ce74f0f7f9349ac845289e92fcbc"
@@ -1430,7 +1440,7 @@ dependencies = [
  "aes",
  "aes-gcm",
  "arrayvec",
- "delay_map",
+ "delay_map 0.1.2",
  "enr",
  "fnv",
  "futures",
@@ -3663,7 +3673,7 @@ name = "lighthouse_network"
 version = "0.2.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=c0b8700e68f4ce74f0f7f9349ac845289e92fcbc#c0b8700e68f4ce74f0f7f9349ac845289e92fcbc"
 dependencies = [
- "delay_map",
+ "delay_map 0.1.2",
  "directory",
  "dirs",
  "discv5",
@@ -4171,7 +4181,7 @@ version = "0.2.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=c0b8700e68f4ce74f0f7f9349ac845289e92fcbc#c0b8700e68f4ce74f0f7f9349ac845289e92fcbc"
 dependencies = [
  "beacon_chain",
- "delay_map",
+ "delay_map 0.1.2",
  "derivative",
  "error-chain",
  "eth2_ssz",
@@ -5219,7 +5229,7 @@ version = "0.1.0"
 dependencies = [
  "beacon_chain",
  "client",
- "delay_map",
+ "delay_map 0.2.0",
  "discv5",
  "environment",
  "eth2_network_config",
