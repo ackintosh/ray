@@ -46,7 +46,7 @@ slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "c0b8700e6
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "c0b8700e68f4ce74f0f7f9349ac845289e92fcbc" }
 
 [build-dependencies]
-zip = "0.6.3"
+zip = "0.6.4"
 
 [patch]
 [patch.crates-io]
