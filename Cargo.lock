@@ -1441,7 +1441,7 @@ dependencies = [
  "aes-gcm",
  "arrayvec",
  "delay_map 0.1.2",
- "enr",
+ "enr 0.6.2",
  "fnv",
  "futures",
  "hashlink",
@@ -1451,6 +1451,40 @@ dependencies = [
  "libp2p-core 0.36.0",
  "lru 0.7.8",
  "more-asserts",
+ "parking_lot 0.11.2",
+ "rand 0.8.5",
+ "rlp",
+ "smallvec",
+ "socket2",
+ "tokio",
+ "tokio-stream",
+ "tokio-util 0.6.10",
+ "tracing",
+ "tracing-subscriber",
+ "uint",
+ "zeroize",
+]
+
+[[package]]
+name = "discv5"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "081ac520cce73d9c19d9b49bd177a6ea6dae943b614ee72c67fcd40407ae545c"
+dependencies = [
+ "aes",
+ "aes-gcm",
+ "arrayvec",
+ "delay_map 0.1.2",
+ "enr 0.7.0",
+ "fnv",
+ "futures",
+ "hashlink",
+ "hex",
+ "hkdf",
+ "lazy_static",
+ "lru 0.7.8",
+ "more-asserts",
+ "once_cell",
  "parking_lot 0.11.2",
  "rand 0.8.5",
  "rlp",
@@ -1546,6 +1580,26 @@ name = "enr"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26fa0a0be8915790626d5759eb51fe47435a8eac92c2f212bd2da9aa7f30ea56"
+dependencies = [
+ "base64 0.13.1",
+ "bs58",
+ "bytes",
+ "ed25519-dalek",
+ "hex",
+ "k256",
+ "log",
+ "rand 0.8.5",
+ "rlp",
+ "serde",
+ "sha3 0.10.6",
+ "zeroize",
+]
+
+[[package]]
+name = "enr"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "492a7e5fc2504d5fdce8e124d3e263b244a68b283cac67a69eda0cd43e0aebad"
 dependencies = [
  "base64 0.13.1",
  "bs58",
@@ -1749,7 +1803,7 @@ name = "eth2_network_config"
 version = "0.2.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=c0b8700e68f4ce74f0f7f9349ac845289e92fcbc#c0b8700e68f4ce74f0f7f9349ac845289e92fcbc"
 dependencies = [
- "enr",
+ "enr 0.6.2",
  "eth2_config",
  "eth2_ssz",
  "serde_yaml 0.8.26",
@@ -1898,7 +1952,7 @@ dependencies = [
  "async-stream",
  "blst",
  "bs58",
- "enr",
+ "enr 0.6.2",
  "hex",
  "integer-sqrt",
  "multiaddr",
@@ -3676,7 +3730,7 @@ dependencies = [
  "delay_map 0.1.2",
  "directory",
  "dirs",
- "discv5",
+ "discv5 0.1.0",
  "error-chain",
  "eth2_ssz",
  "eth2_ssz_derive 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -5230,7 +5284,7 @@ dependencies = [
  "beacon_chain",
  "client",
  "delay_map 0.2.0",
- "discv5",
+ "discv5 0.2.0",
  "environment",
  "eth2_network_config",
  "eth2_ssz",
