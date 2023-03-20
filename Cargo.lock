@@ -1303,16 +1303,6 @@ dependencies = [
 
 [[package]]
 name = "delay_map"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58eb846486f70f5acd1f95e6fc50319e3382bc45a1e48daf3b88ac3a438e3f66"
-dependencies = [
- "futures",
- "tokio-util 0.6.10",
-]
-
-[[package]]
-name = "delay_map"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4355c25cbf99edcb6b4a0e906f6bdc6956eda149e84455bea49696429b2f8e8"
@@ -5292,7 +5282,7 @@ version = "0.1.0"
 dependencies = [
  "beacon_chain",
  "client",
- "delay_map 0.2.0",
+ "delay_map 0.3.0",
  "discv5 0.2.2",
  "environment",
  "eth2_network_config",
