@@ -1,4 +1,5 @@
-use crate::network::NetworkMessage;
+use crate::network::{ApplicationRequestId, NetworkMessage};
+use crate::sync::SyncRequestId::RangeSync;
 use libp2p::PeerId;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
@@ -29,8 +30,8 @@ impl SyncNetworkContext {
 
         let request = lighthouse_network::service::api_types::Request::BlocksByRange(request);
         let id = self.next_id();
-        let request_id =
-            network::service::RequestId::Sync(network::sync::manager::RequestId::RangeSync { id });
+        let request_id = ApplicationRequestId::Sync(RangeSync { id });
+        // network::service::RequestId::Sync(network::sync::manager::RequestId::RangeSync { id });
 
         self.network_send
             .send(NetworkMessage::SendRequest {

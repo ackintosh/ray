@@ -1,3 +1,4 @@
+use crate::network::ReqId;
 use crate::{BehaviourComposer, CombinedKey, NetworkConfig, PeerDB, TARGET_PEERS_COUNT};
 use beacon_chain::BeaconChainTypes;
 use discv5::Enr;
@@ -37,13 +38,13 @@ pub(crate) async fn build_network_transport(
         .boxed()
 }
 
-pub(crate) async fn build_network_behaviour<T: BeaconChainTypes>(
+pub(crate) async fn build_network_behaviour<T: BeaconChainTypes, AppReqId: ReqId>(
     enr: Enr,
     enr_key: CombinedKey,
     network_config: NetworkConfig,
     peer_db: Arc<RwLock<PeerDB>>,
     lh_beacon_chain: Arc<beacon_chain::BeaconChain<T>>,
-) -> BehaviourComposer {
+) -> BehaviourComposer<AppReqId> {
     let mut discovery =
         crate::discovery::behaviour::Behaviour::new(enr, enr_key, &network_config.boot_enr).await;
     // start searching for peers

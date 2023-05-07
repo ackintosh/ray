@@ -1,3 +1,4 @@
+use crate::network::ReqId;
 use crate::rpc::behaviour::InstructionToHandler;
 use crate::rpc::error::RPCError;
 use crate::rpc::protocol::{
@@ -102,11 +103,11 @@ enum HandlerState {
     Deactivated,
 }
 
-pub(crate) struct Handler {
+pub(crate) struct Handler<Id> {
     /// State of the handler.
     state: HandlerState,
     // Queue of outbound substreams to open.
-    dial_queue: SmallVec<[OutboundRequest; 4]>,
+    dial_queue: SmallVec<[(Id, OutboundRequest); 4]>,
     fork_context: Arc<ForkContext>,
     max_rpc_size: usize,
     // Queue of events to produce in `poll()`.
@@ -123,7 +124,7 @@ pub(crate) struct Handler {
     peer_id: Option<PeerId>,
 }
 
-impl Handler {
+impl<Id> Handler<Id> {
     pub(crate) fn new(fork_context: Arc<ForkContext>) -> Self {
         // SEE: https://github.com/sigp/lighthouse/blob/fff4dd6311695c1d772a9d6991463915edf223d5/beacon_node/lighthouse_network/src/rpc/protocol.rs#L114
         let max_rpc_size = 10 * 1_048_576; // 10M
@@ -151,18 +152,22 @@ impl Handler {
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     fn send_status(
         &mut self,
+        request_id: Id,
         peer_id: PeerId,
         status_message: lighthouse_network::rpc::StatusMessage,
     ) {
-        self.dial_queue.push(OutboundRequest {
-            peer_id,
-            request: lighthouse_network::rpc::outbound::OutboundRequest::Status(status_message),
-        });
+        self.dial_queue.push((
+            request_id,
+            OutboundRequest {
+                peer_id,
+                request: lighthouse_network::rpc::outbound::OutboundRequest::Status(status_message),
+            },
+        ));
     }
 
     // Goodbye
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
-    fn shutdown(&mut self, reason: Option<(PeerId, lighthouse_network::rpc::GoodbyeReason)>) {
+    fn shutdown(&mut self, reason: Option<(Id, PeerId, lighthouse_network::rpc::GoodbyeReason)>) {
         if !matches!(self.state, HandlerState::Active) {
             warn!(
                 "[{}] [send_goodbye_and_shutdown] the handler state is not Active: {:?}",
@@ -177,11 +182,14 @@ impl Handler {
 
         // Queue our goodbye message.
         // Ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L239
-        if let Some((peer_id, reason)) = reason {
-            self.dial_queue.push(OutboundRequest {
-                peer_id,
-                request: lighthouse_network::rpc::outbound::OutboundRequest::Goodbye(reason),
-            });
+        if let Some((request_id, peer_id, reason)) = reason {
+            self.dial_queue.push((
+                request_id,
+                OutboundRequest {
+                    peer_id,
+                    request: lighthouse_network::rpc::outbound::OutboundRequest::Goodbye(reason),
+                },
+            ));
         }
 
         // Update the state to start shutdown process.
@@ -196,14 +204,14 @@ impl Handler {
 
     fn send_request(
         &mut self,
+        request_id: Id,
         peer_id: PeerId,
-        // TODO: request_id
-        // request_id: lighthouse_network::service::api_types::RequestId<AppReqId>,
         request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
     ) {
         match self.state {
             HandlerState::Active => {
-                self.dial_queue.push(OutboundRequest { peer_id, request });
+                self.dial_queue
+                    .push((request_id, OutboundRequest { peer_id, request }));
             }
             _ => {
                 // TODO: handle this case
@@ -233,8 +241,8 @@ impl Handler {
 }
 
 // SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
-impl ConnectionHandler for Handler {
-    type InEvent = InstructionToHandler;
+impl<Id: ReqId> ConnectionHandler for Handler<Id> {
+    type InEvent = InstructionToHandler<Id>;
     type OutEvent = HandlerReceived;
     type Error = RPCError;
     type InboundProtocol = RpcProtocol;
@@ -328,17 +336,17 @@ impl ConnectionHandler for Handler {
         info!("inject_event. event: {:?}", event);
 
         match event {
-            InstructionToHandler::Status(status_message, peer_id) => {
+            InstructionToHandler::Status(request_id, status_message, peer_id) => {
                 self.peer_id = Some(peer_id.clone()); // This is just for debugging.
-                self.send_status(peer_id, status_message);
+                self.send_status(request_id, peer_id, status_message);
             }
-            InstructionToHandler::Goodbye(reason, peer_id) => {
+            InstructionToHandler::Goodbye(request_id, reason, peer_id) => {
                 self.peer_id = Some(peer_id.clone()); // This is just for debugging.
-                self.shutdown(Some((peer_id, reason)));
+                self.shutdown(Some((request_id, peer_id, reason)));
             }
-            InstructionToHandler::Request(request, peer_id) => {
+            InstructionToHandler::Request(request_id, request, peer_id) => {
                 self.peer_id = Some(peer_id.clone()); // This is just for debugging.
-                self.send_request(peer_id, request);
+                self.send_request(request_id, peer_id, request);
             }
             InstructionToHandler::Response(substream_id, response, peer_id) => {
                 self.peer_id = Some(peer_id.clone()); // This is just for debugging.
@@ -403,7 +411,7 @@ impl ConnectionHandler for Handler {
         // Establish outbound substreams
         // /////////////////////////////////////////////////////////////////////////////////////////////////
         if !self.dial_queue.is_empty() {
-            let request = self.dial_queue.remove(0);
+            let (_id, request) = self.dial_queue.remove(0);
             info!(
                 "[{}] ConnectionHandlerEvent::OutboundSubstreamRequest. request: {:?}",
                 request.peer_id, request.request,

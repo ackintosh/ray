@@ -1,3 +1,4 @@
+use crate::network::ReqId;
 use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use libp2p::core::connection::ConnectionId;
@@ -17,11 +18,11 @@ use types::{ForkContext, MainnetEthSpec};
 
 // RPC internal message sent from behaviour to handlers
 #[derive(Debug)]
-pub(crate) enum InstructionToHandler {
-    Status(lighthouse_network::rpc::StatusMessage, PeerId),
-    Goodbye(lighthouse_network::rpc::GoodbyeReason, PeerId),
+pub(crate) enum InstructionToHandler<Id> {
+    Status(Id, lighthouse_network::rpc::StatusMessage, PeerId),
+    Goodbye(Id, lighthouse_network::rpc::GoodbyeReason, PeerId),
     Request(
-        // lighthouse_network::service::api_types::RequestId<AppReqId>,
+        Id,
         lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
         PeerId,
     ),
@@ -36,12 +37,12 @@ pub(crate) enum InstructionToHandler {
 // Behaviour
 // ////////////////////////////////////////////////////////
 
-pub(crate) struct Behaviour {
-    events: Vec<NetworkBehaviourAction<RpcEvent, Handler>>,
+pub(crate) struct Behaviour<Id: ReqId> {
+    events: Vec<NetworkBehaviourAction<RpcEvent, Handler<Id>>>,
     fork_context: Arc<ForkContext>,
 }
 
-impl Behaviour {
+impl<Id: ReqId> Behaviour<Id> {
     pub(crate) fn new(fork_context: Arc<ForkContext>) -> Self {
         Behaviour {
             events: vec![],
@@ -53,6 +54,7 @@ impl Behaviour {
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
     pub(crate) fn send_status(
         &mut self,
+        request_id: Id,
         peer_id: PeerId,
         message: lighthouse_network::rpc::StatusMessage,
     ) {
@@ -61,7 +63,7 @@ impl Behaviour {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,
-            event: InstructionToHandler::Status(message, peer_id),
+            event: InstructionToHandler::Status(request_id, message, peer_id),
         })
     }
 
@@ -69,30 +71,27 @@ impl Behaviour {
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
     pub(crate) fn send_goodbye(
         &mut self,
+        request_id: Id,
         peer_id: PeerId,
         reason: lighthouse_network::rpc::GoodbyeReason,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id: peer_id.clone(),
             handler: NotifyHandler::Any,
-            event: InstructionToHandler::Goodbye(reason, peer_id),
+            event: InstructionToHandler::Goodbye(request_id, reason, peer_id),
         })
     }
 
-    pub(crate) fn send_request<AppReqId: lighthouse_network::rpc::ReqId>(
+    pub(crate) fn send_request(
         &mut self,
         peer_id: PeerId,
         request: lighthouse_network::service::api_types::Request,
-        request_id: AppReqId,
+        request_id: Id,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
             peer_id: peer_id.clone(),
             handler: NotifyHandler::Any,
-            event: InstructionToHandler::Request(
-                // lighthouse_network::service::api_types::RequestId::Application(request_id),
-                request.into(),
-                peer_id,
-            ),
+            event: InstructionToHandler::Request(request_id, request.into(), peer_id),
         })
     }
 
@@ -113,8 +112,8 @@ impl Behaviour {
 
 // NetworkBehaviour defines "what" bytes to send on the network.
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
-impl NetworkBehaviour for Behaviour {
-    type ConnectionHandler = Handler;
+impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
+    type ConnectionHandler = Handler<Id>;
     type OutEvent = RpcEvent;
 
     fn new_handler(&mut self) -> Self::ConnectionHandler {

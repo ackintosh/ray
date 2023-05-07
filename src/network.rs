@@ -1,8 +1,9 @@
+use crate::behaviour::RequestId;
 use crate::discovery::DiscoveryEvent;
 use crate::peer_manager::PeerManagerEvent;
 use crate::rpc::status::status_message;
 use crate::rpc::RpcEvent;
-use crate::sync::SyncOperation;
+use crate::sync::{SyncOperation, SyncRequestId};
 use crate::{
     build_network_behaviour, build_network_transport, BehaviourComposer, BehaviourComposerEvent,
     NetworkConfig, PeerDB,
@@ -17,6 +18,7 @@ use libp2p::{PeerId, Swarm};
 use lighthouse_network::rpc::methods::RPCResponse;
 use lighthouse_network::rpc::protocol::InboundRequest;
 use lighthouse_network::rpc::StatusMessage;
+use lighthouse_network::Request;
 use parking_lot::RwLock;
 use std::future::Future;
 use std::pin::Pin;
@@ -39,16 +41,20 @@ impl libp2p::core::Executor for Executor {
     }
 }
 
-pub(crate) struct Network<T: BeaconChainTypes> {
-    swarm: Swarm<BehaviourComposer>,
+pub trait ReqId: Send + 'static + std::fmt::Debug + Copy + Clone {}
+impl<T> ReqId for T where T: Send + 'static + std::fmt::Debug + Copy + Clone {}
+
+pub(crate) struct Network<T: BeaconChainTypes, AppReqId: ReqId> {
+    swarm: Swarm<BehaviourComposer<AppReqId>>,
     network_receiver: UnboundedReceiver<NetworkMessage>,
     lh_beacon_chain: Arc<beacon_chain::BeaconChain<T>>,
     sync_sender: UnboundedSender<SyncOperation>,
 }
 
-impl<T> Network<T>
+impl<T, AppReqId> Network<T, AppReqId>
 where
     T: BeaconChainTypes,
+    AppReqId: ReqId,
 {
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn new(
@@ -176,10 +182,11 @@ where
             PeerManagerEvent::PeerConnectedOutgoing(peer_id) => {
                 // Spec: The dialing client MUST send a Status request upon connection.
                 // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
-                self.swarm
-                    .behaviour_mut()
-                    .rpc
-                    .send_status(peer_id, status_message(&self.lh_beacon_chain));
+                self.swarm.behaviour_mut().rpc.send_status(
+                    RequestId::Internal,
+                    peer_id,
+                    status_message(&self.lh_beacon_chain),
+                );
             }
             PeerManagerEvent::NeedMorePeers => {
                 let behaviour = self.swarm.behaviour_mut();
@@ -188,16 +195,18 @@ where
                 }
             }
             PeerManagerEvent::SendStatus(peer_id) => {
-                self.swarm
-                    .behaviour_mut()
-                    .rpc
-                    .send_status(peer_id, status_message(&self.lh_beacon_chain));
+                self.swarm.behaviour_mut().rpc.send_status(
+                    RequestId::Internal,
+                    peer_id,
+                    status_message(&self.lh_beacon_chain),
+                );
             }
             PeerManagerEvent::DisconnectPeer(peer_id, goodbye_reason) => {
-                self.swarm
-                    .behaviour_mut()
-                    .rpc
-                    .send_goodbye(peer_id, goodbye_reason);
+                self.swarm.behaviour_mut().rpc.send_goodbye(
+                    RequestId::Internal,
+                    peer_id,
+                    goodbye_reason,
+                );
             }
         }
     }
@@ -299,13 +308,25 @@ where
                 peer_id,
                 request,
                 request_id,
-            } => self
-                .swarm
-                .behaviour_mut()
-                .rpc
-                .send_request(peer_id, request, request_id),
+            } => self.send_request(peer_id, request, request_id),
         }
     }
+
+    fn send_request(&mut self, peer_id: PeerId, request: Request, request_id: AppReqId) {
+        self.swarm.behaviour_mut().rpc.send_request(
+            peer_id,
+            request,
+            RequestId::Application(request_id),
+        );
+    }
+}
+
+/// Application level requests sent to the network.
+// ref:
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum ApplicationRequestId {
+    Sync(SyncRequestId),
+    Router,
 }
 
 /// Types of messages that the network service can receive.
@@ -313,6 +334,6 @@ pub(crate) enum NetworkMessage {
     SendRequest {
         peer_id: PeerId,
         request: lighthouse_network::service::api_types::Request,
-        request_id: network::service::RequestId,
+        request_id: ApplicationRequestId,
     },
 }
