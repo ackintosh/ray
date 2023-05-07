@@ -18,11 +18,17 @@ use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use types::{Epoch, Hash256, Slot};
 
-#[derive(Debug)]
 /// A message that can be sent to the sync manager thread.
+#[derive(Debug)]
 pub(crate) enum SyncOperation {
     /// A useful peer has been discovered.
     AddPeer(PeerId, SyncInfo),
+}
+
+/// Id of rpc requests sent by sync to the network.
+#[derive(Copy, Clone, Debug)]
+pub(crate) enum SyncRequestId {
+    RangeSync { id: u32 },
 }
 
 #[derive(Debug)]
