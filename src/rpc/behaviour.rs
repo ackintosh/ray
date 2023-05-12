@@ -1,5 +1,4 @@
-use crate::behaviour::RequestId;
-use crate::network::{ApplicationRequestId, ReqId};
+use crate::network::ReqId;
 use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use libp2p::core::connection::ConnectionId;
