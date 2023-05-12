@@ -44,17 +44,16 @@ impl libp2p::core::Executor for Executor {
 pub trait ReqId: Send + 'static + std::fmt::Debug + Copy + Clone {}
 impl<T> ReqId for T where T: Send + 'static + std::fmt::Debug + Copy + Clone {}
 
-pub(crate) struct Network<T: BeaconChainTypes, AppReqId: ReqId> {
-    swarm: Swarm<BehaviourComposer<AppReqId>>,
+pub(crate) struct Network<T: BeaconChainTypes> {
+    swarm: Swarm<BehaviourComposer<ApplicationRequestId>>,
     network_receiver: UnboundedReceiver<NetworkMessage>,
     lh_beacon_chain: Arc<beacon_chain::BeaconChain<T>>,
     sync_sender: UnboundedSender<SyncOperation>,
 }
 
-impl<T, AppReqId> Network<T, AppReqId>
+impl<T> Network<T>
 where
     T: BeaconChainTypes,
-    AppReqId: ReqId,
 {
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn new(
@@ -312,7 +311,12 @@ where
         }
     }
 
-    fn send_request(&mut self, peer_id: PeerId, request: Request, request_id: AppReqId) {
+    fn send_request(
+        &mut self,
+        peer_id: PeerId,
+        request: Request,
+        request_id: ApplicationRequestId,
+    ) {
         self.swarm.behaviour_mut().rpc.send_request(
             peer_id,
             request,
