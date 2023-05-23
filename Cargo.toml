@@ -16,7 +16,7 @@ discv5 = "0.2.2"
 futures = "0.3.28"
 hex = "0.4.3"
 libp2p = { version = "0.49.0", default-features = false, features = ["dns-tokio", "ecdsa", "noise", "mplex", "secp256k1", "tcp-tokio", "yamux"] }
-lru = "0.9.0"
+lru = "0.10.0"
 parking_lot = "0.12.1"
 primitive-types = "0.12.1"
 serde_yaml = "0.9.21"
