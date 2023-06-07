@@ -76,7 +76,7 @@ impl<Id: ReqId> Behaviour<Id> {
         reason: lighthouse_network::rpc::GoodbyeReason,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
-            peer_id: peer_id.clone(),
+            peer_id,
             handler: NotifyHandler::Any,
             event: InstructionToHandler::Goodbye(request_id, reason, peer_id),
         })
@@ -89,7 +89,7 @@ impl<Id: ReqId> Behaviour<Id> {
         request_id: Id,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
-            peer_id: peer_id.clone(),
+            peer_id,
             handler: NotifyHandler::Any,
             event: InstructionToHandler::Request(request_id, request.into(), peer_id),
         })
@@ -103,7 +103,7 @@ impl<Id: ReqId> Behaviour<Id> {
         response: lighthouse_network::Response<MainnetEthSpec>,
     ) {
         self.events.push(NetworkBehaviourAction::NotifyHandler {
-            peer_id: peer_id.clone(),
+            peer_id,
             handler: NotifyHandler::One(connection_id),
             event: InstructionToHandler::Response(substream_id, response, peer_id),
         })

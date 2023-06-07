@@ -52,7 +52,7 @@ pub(crate) async fn build_network_behaviour<T: BeaconChainTypes, AppReqId: ReqId
 
     let fork_context = Arc::new(ForkContext::new::<MainnetEthSpec>(
         lh_beacon_chain.slot().expect("slot"),
-        lh_beacon_chain.genesis_validators_root.clone(),
+        lh_beacon_chain.genesis_validators_root,
         &lh_beacon_chain.spec,
     ));
 

@@ -41,9 +41,9 @@ where
             RangeSyncType::Finalized => {
                 self.chains.add_peer_or_create_chain(
                     peer_id,
-                    local_sync_info.finalized_epoch.clone(),
-                    remote_sync_info.finalized_root.clone(),
-                    remote_sync_info.head_slot.clone(),
+                    local_sync_info.finalized_epoch,
+                    remote_sync_info.finalized_root,
+                    remote_sync_info.head_slot,
                 );
             }
             RangeSyncType::Head => {

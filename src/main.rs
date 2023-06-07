@@ -75,7 +75,7 @@ fn main() {
         .expect("Initiating the network config never fail")
         .expect("wrong network name");
 
-    let mut environment = EnvironmentBuilder::mainnet()
+    let environment = EnvironmentBuilder::mainnet()
         .initialize_logger(LoggerConfig::default())
         .expect("initialize_logger")
         .multi_threaded_tokio_runtime()
