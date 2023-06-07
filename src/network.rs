@@ -279,7 +279,11 @@ where
 
     // Determine if the node is relevant to us.
     // ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L61
-    fn check_peer_relevance(&self, peer_id: &PeerId, remote_status: &lighthouse_network::rpc::StatusMessage) -> bool {
+    fn check_peer_relevance(
+        &self,
+        peer_id: &PeerId,
+        remote_status: &lighthouse_network::rpc::StatusMessage,
+    ) -> bool {
         let local_status = status_message(&self.lh_beacon_chain);
 
         if local_status.fork_digest != remote_status.fork_digest {
@@ -293,7 +297,10 @@ where
         }
 
         if remote_status.head_slot > self.lh_beacon_chain.slot().expect("slot") {
-            info!("[{}] The node is not relevant to us: Different system clocks or genesis time", peer_id);
+            info!(
+                "[{}] The node is not relevant to us: Different system clocks or genesis time",
+                peer_id
+            );
             return false;
         }
 

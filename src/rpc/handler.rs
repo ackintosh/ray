@@ -315,7 +315,10 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
         stream: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
         info: Self::OutboundOpenInfo,
     ) {
-        info!("[{}] inject_fully_negotiated_outbound. info: {info:?}", self.peer_id());
+        info!(
+            "[{}] inject_fully_negotiated_outbound. info: {info:?}",
+            self.peer_id()
+        );
         let request = info;
         let outbound_substream_id = self.outbound_substream_id.next();
 
