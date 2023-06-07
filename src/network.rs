@@ -235,6 +235,7 @@ where
                 InboundRequest::BlocksByRoot(blocks_by_root_request) => warn!("[{}] Received `InboundRequest::BlocksByRoot` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_root_request),
                 InboundRequest::Ping(ping) => warn!("[{}] Received `InboundRequest::Ping` (ping: {:?}) but it was not handled.", request.peer_id, ping),
                 InboundRequest::MetaData(_) => warn!("[{}] Received `InboundRequest::MetaData` but it was not handled.", request.peer_id),
+                InboundRequest::LightClientBootstrap(_) => todo!(),
             },
             RpcEvent::ReceivedResponse(response) => match &response.response {
                 RPCResponse::Status(message) => {
@@ -249,6 +250,7 @@ where
                 RPCResponse::BlocksByRoot(_) => {}
                 RPCResponse::Pong(_) => {}
                 RPCResponse::MetaData(_) => {}
+                RPCResponse::LightClientBootstrap(_) => todo!(),
             },
         }
     }
@@ -256,8 +258,8 @@ where
     fn validate_status_message(&mut self, peer_id: &PeerId, message: &StatusMessage) -> bool {
         trace!("[{}] validating status message.", peer_id);
 
-        if self.check_peer_relevance(message) {
-            trace!("[{}] the peer is relevant to our beacon chain.", peer_id);
+        if self.check_peer_relevance(peer_id, message) {
+            info!("[{}] the peer is relevant to our beacon chain.", peer_id);
 
             self.sync_sender
                 .send(SyncOperation::AddPeer(*peer_id, message.clone().into()))
@@ -266,7 +268,7 @@ where
                 });
             true
         } else {
-            trace!("[{}] the remote chain is not relevant to ours.", peer_id);
+            info!("[{}] the remote chain is not relevant to ours.", peer_id);
             self.swarm.behaviour_mut().peer_manager.goodbye(
                 peer_id,
                 lighthouse_network::rpc::GoodbyeReason::IrrelevantNetwork,
@@ -277,12 +279,13 @@ where
 
     // Determine if the node is relevant to us.
     // ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L61
-    fn check_peer_relevance(&self, remote_status: &lighthouse_network::rpc::StatusMessage) -> bool {
+    fn check_peer_relevance(&self, peer_id: &PeerId, remote_status: &lighthouse_network::rpc::StatusMessage) -> bool {
         let local_status = status_message(&self.lh_beacon_chain);
 
         if local_status.fork_digest != remote_status.fork_digest {
             info!(
-                "The node is not relevant to us: Incompatible forks. Ours:{} Theirs:{}",
+                "[{}] The node is not relevant to us: Incompatible forks. Ours:{} Theirs:{}",
+                peer_id,
                 hex::encode(local_status.fork_digest),
                 hex::encode(remote_status.fork_digest)
             );
@@ -290,7 +293,7 @@ where
         }
 
         if remote_status.head_slot > self.lh_beacon_chain.slot().expect("slot") {
-            info!("The node is not relevant to us: Different system clocks or genesis time");
+            info!("[{}] The node is not relevant to us: Different system clocks or genesis time", peer_id);
             return false;
         }
 
