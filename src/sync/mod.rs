@@ -155,7 +155,7 @@ pub(crate) fn spawn<T: BeaconChainTypes>(
         receiver,
         peer_db,
         lh_beacon_chain: lh_beacon_chain.clone(),
-        range_sync: RangeSync::new(lh_beacon_chain.clone()),
+        range_sync: RangeSync::new(lh_beacon_chain),
     };
 
     runtime.spawn(async move {

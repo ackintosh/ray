@@ -35,7 +35,7 @@ impl SyncNetworkContext {
 
         self.network_send
             .send(NetworkMessage::SendRequest {
-                peer_id: peer_id.clone(),
+                peer_id: *peer_id,
                 request,
                 request_id,
             })

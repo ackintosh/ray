@@ -15,10 +15,6 @@ use futures::StreamExt;
 use libp2p::identity::Keypair;
 use libp2p::swarm::{SwarmBuilder, SwarmEvent};
 use libp2p::{PeerId, Swarm};
-use lighthouse_network::rpc::methods::RPCResponse;
-use lighthouse_network::rpc::protocol::InboundRequest;
-use lighthouse_network::rpc::StatusMessage;
-use lighthouse_network::Request;
 use parking_lot::RwLock;
 use std::future::Future;
 use std::pin::Pin;
@@ -216,7 +212,7 @@ where
     fn handle_rpc_event(&mut self, event: RpcEvent) {
         match event {
             RpcEvent::ReceivedRequest(request) => match &request.request {
-                InboundRequest::Status(message) => {
+                lighthouse_network::rpc::protocol::InboundRequest::Status(message) => {
                     if self.validate_status_message(&request.peer_id, message) {
                         let behaviour = self.swarm.behaviour_mut();
                         behaviour.peer_manager.statusd_peer(request.peer_id);
@@ -230,14 +226,15 @@ where
                         );
                     }
                 }
-                InboundRequest::Goodbye(reason) => warn!("[{}] Received `InboundRequest::Goodbye` (reason: {}) but it was not handled.", request.peer_id, reason),
-                InboundRequest::BlocksByRange(blocks_by_range_request) => warn!("[{}] Received `InboundRequest::BlocksByRange` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_range_request),
-                InboundRequest::BlocksByRoot(blocks_by_root_request) => warn!("[{}] Received `InboundRequest::BlocksByRoot` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_root_request),
-                InboundRequest::Ping(ping) => warn!("[{}] Received `InboundRequest::Ping` (ping: {:?}) but it was not handled.", request.peer_id, ping),
-                InboundRequest::MetaData(_) => warn!("[{}] Received `InboundRequest::MetaData` but it was not handled.", request.peer_id),
+                lighthouse_network::rpc::protocol::InboundRequest::Goodbye(reason) => warn!("[{}] Received `InboundRequest::Goodbye` (reason: {}) but it was not handled.", request.peer_id, reason),
+                lighthouse_network::rpc::protocol::InboundRequest::BlocksByRange(blocks_by_range_request) => warn!("[{}] Received `InboundRequest::BlocksByRange` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_range_request),
+                lighthouse_network::rpc::protocol::InboundRequest::BlocksByRoot(blocks_by_root_request) => warn!("[{}] Received `InboundRequest::BlocksByRoot` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_root_request),
+                lighthouse_network::rpc::protocol::InboundRequest::Ping(ping) => warn!("[{}] Received `InboundRequest::Ping` (ping: {:?}) but it was not handled.", request.peer_id, ping),
+                lighthouse_network::rpc::protocol::InboundRequest::MetaData(_) => warn!("[{}] Received `InboundRequest::MetaData` but it was not handled.", request.peer_id),
+                lighthouse_network::rpc::protocol::InboundRequest::LightClientBootstrap(_) => todo!(),
             },
             RpcEvent::ReceivedResponse(response) => match &response.response {
-                RPCResponse::Status(message) => {
+                lighthouse_network::rpc::methods::RPCResponse::Status(message) => {
                     if self.validate_status_message(&response.peer_id, message) {
                         self.swarm
                             .behaviour_mut()
@@ -245,19 +242,24 @@ where
                             .statusd_peer(response.peer_id);
                     }
                 }
-                RPCResponse::BlocksByRange(_) => {}
-                RPCResponse::BlocksByRoot(_) => {}
-                RPCResponse::Pong(_) => {}
-                RPCResponse::MetaData(_) => {}
+                lighthouse_network::rpc::methods::RPCResponse::BlocksByRange(_) => {}
+                lighthouse_network::rpc::methods::RPCResponse::BlocksByRoot(_) => {}
+                lighthouse_network::rpc::methods::RPCResponse::Pong(_) => {}
+                lighthouse_network::rpc::methods::RPCResponse::MetaData(_) => {}
+                lighthouse_network::rpc::methods::RPCResponse::LightClientBootstrap(_) => todo!(),
             },
         }
     }
 
-    fn validate_status_message(&mut self, peer_id: &PeerId, message: &StatusMessage) -> bool {
+    fn validate_status_message(
+        &mut self,
+        peer_id: &PeerId,
+        message: &lighthouse_network::rpc::StatusMessage,
+    ) -> bool {
         trace!("[{}] validating status message.", peer_id);
 
-        if self.check_peer_relevance(message) {
-            trace!("[{}] the peer is relevant to our beacon chain.", peer_id);
+        if self.check_peer_relevance(peer_id, message) {
+            info!("[{}] the peer is relevant to our beacon chain.", peer_id);
 
             self.sync_sender
                 .send(SyncOperation::AddPeer(*peer_id, message.clone().into()))
@@ -266,7 +268,7 @@ where
                 });
             true
         } else {
-            trace!("[{}] the remote chain is not relevant to ours.", peer_id);
+            info!("[{}] the remote chain is not relevant to ours.", peer_id);
             self.swarm.behaviour_mut().peer_manager.goodbye(
                 peer_id,
                 lighthouse_network::rpc::GoodbyeReason::IrrelevantNetwork,
@@ -277,12 +279,17 @@ where
 
     // Determine if the node is relevant to us.
     // ref: https://github.com/sigp/lighthouse/blob/7af57420810772b2a1b0d7d75a0d045c0333093b/beacon_node/network/src/beacon_processor/worker/rpc_methods.rs#L61
-    fn check_peer_relevance(&self, remote_status: &lighthouse_network::rpc::StatusMessage) -> bool {
+    fn check_peer_relevance(
+        &self,
+        peer_id: &PeerId,
+        remote_status: &lighthouse_network::rpc::StatusMessage,
+    ) -> bool {
         let local_status = status_message(&self.lh_beacon_chain);
 
         if local_status.fork_digest != remote_status.fork_digest {
             info!(
-                "The node is not relevant to us: Incompatible forks. Ours:{} Theirs:{}",
+                "[{}] The node is not relevant to us: Incompatible forks. Ours:{} Theirs:{}",
+                peer_id,
                 hex::encode(local_status.fork_digest),
                 hex::encode(remote_status.fork_digest)
             );
@@ -290,7 +297,10 @@ where
         }
 
         if remote_status.head_slot > self.lh_beacon_chain.slot().expect("slot") {
-            info!("The node is not relevant to us: Different system clocks or genesis time");
+            info!(
+                "[{}] The node is not relevant to us: Different system clocks or genesis time",
+                peer_id
+            );
             return false;
         }
 
@@ -314,7 +324,7 @@ where
     fn send_request(
         &mut self,
         peer_id: PeerId,
-        request: Request,
+        request: lighthouse_network::Request,
         request_id: ApplicationRequestId,
     ) {
         self.swarm.behaviour_mut().rpc.send_request(
@@ -337,7 +347,7 @@ pub(crate) enum ApplicationRequestId {
 pub(crate) enum NetworkMessage {
     SendRequest {
         peer_id: PeerId,
-        request: lighthouse_network::service::api_types::Request,
+        request: lighthouse_network::Request,
         request_id: ApplicationRequestId,
     },
 }

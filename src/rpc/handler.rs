@@ -254,11 +254,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
         info!("[{}] [ConnectionHandler::listen_protocol]", self.peer_id());
 
         SubstreamProtocol::new(
-            RpcProtocol::new(
-                self.fork_context.clone(),
-                self.max_rpc_size,
-                self.peer_id.clone(),
-            ),
+            RpcProtocol::new(self.fork_context.clone(), self.max_rpc_size, self.peer_id),
             (),
         )
     }
@@ -315,7 +311,10 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
         stream: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
         info: Self::OutboundOpenInfo,
     ) {
-        info!("inject_fully_negotiated_outbound. info: {:?}", info);
+        info!(
+            "[{}] inject_fully_negotiated_outbound. info: {info:?}",
+            self.peer_id()
+        );
         let request = info;
         let outbound_substream_id = self.outbound_substream_id.next();
 
@@ -337,19 +336,19 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
 
         match event {
             InstructionToHandler::Status(request_id, status_message, peer_id) => {
-                self.peer_id = Some(peer_id.clone()); // This is just for debugging.
+                self.peer_id = Some(peer_id); // This is just for debugging.
                 self.send_status(request_id, peer_id, status_message);
             }
             InstructionToHandler::Goodbye(request_id, reason, peer_id) => {
-                self.peer_id = Some(peer_id.clone()); // This is just for debugging.
+                self.peer_id = Some(peer_id); // This is just for debugging.
                 self.shutdown(Some((request_id, peer_id, reason)));
             }
             InstructionToHandler::Request(request_id, request, peer_id) => {
-                self.peer_id = Some(peer_id.clone()); // This is just for debugging.
+                self.peer_id = Some(peer_id); // This is just for debugging.
                 self.send_request(request_id, peer_id, request);
             }
             InstructionToHandler::Response(substream_id, response, peer_id) => {
-                self.peer_id = Some(peer_id.clone()); // This is just for debugging.
+                self.peer_id = Some(peer_id); // This is just for debugging.
                 self.send_response(peer_id, substream_id, response)
             }
         }
