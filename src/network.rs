@@ -226,7 +226,13 @@ where
                         );
                     }
                 }
-                lighthouse_network::rpc::protocol::InboundRequest::Goodbye(reason) => warn!("[{}] Received `InboundRequest::Goodbye` (reason: {}) but it was not handled.", request.peer_id, reason),
+                lighthouse_network::rpc::protocol::InboundRequest::Goodbye(reason) => {
+                    // NOTE: We currently do not inform the application that we are
+                    // disconnecting here. The RPC handler will automatically
+                    // disconnect for us.
+                    // The actual disconnection event will be relayed from `PeerManager` to the application.
+                    debug!("[{}] Peer sent goodbye. reason: {}", request.peer_id, reason);
+                },
                 lighthouse_network::rpc::protocol::InboundRequest::BlocksByRange(blocks_by_range_request) => warn!("[{}] Received `InboundRequest::BlocksByRange` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_range_request),
                 lighthouse_network::rpc::protocol::InboundRequest::BlocksByRoot(blocks_by_root_request) => warn!("[{}] Received `InboundRequest::BlocksByRoot` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_root_request),
                 lighthouse_network::rpc::protocol::InboundRequest::Ping(ping) => warn!("[{}] Received `InboundRequest::Ping` (ping: {:?}) but it was not handled.", request.peer_id, ping),

@@ -4,7 +4,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::ops::Sub;
-use tracing::{error, info, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 use types::{Epoch, EthSpec, Hash256, MainnetEthSpec, Slot};
 
 /// A chain identifier
@@ -107,7 +107,7 @@ impl SyncingChain {
         network_context: &mut SyncNetworkContext,
         local_finalized_epoch: Epoch,
     ) {
-        trace!("start_syncing: chain_id: {}", self.id);
+        debug!("start_syncing: chain_id: {}", self.id);
 
         // NOTE: Ideally we should align the epochs
         // https://github.com/sigp/lighthouse/blob/8c69d57c2ce0d5f1a3cd44c215b2d52844043150/beacon_node/network/src/sync/range_sync/chain.rs#L779
@@ -121,6 +121,7 @@ impl SyncingChain {
     fn advance_chain(&mut self, local_finalized_epoch: Epoch) {
         // make sure this epoch produces an advancement
         if local_finalized_epoch <= self.start_epoch {
+            debug!("advance_chain: local_finalized_epoch is before or equal than the start_epoch of the syncing chain.");
             return;
         }
 
