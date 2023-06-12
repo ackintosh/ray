@@ -2,7 +2,7 @@ use crate::discovery::DiscoveryEvent;
 use crate::network::ReqId;
 use crate::peer_manager::PeerManagerEvent;
 use crate::rpc::RpcEvent;
-use libp2p::NetworkBehaviour;
+use libp2p::swarm::NetworkBehaviour;
 
 // Composite trait for a request id.
 // ref: https://github.com/sigp/lighthouse/blob/8102a010857979e13d658f83594df12bd281f3a2/beacon_node/lighthouse_network/src/rpc/mod.rs#L43-L45

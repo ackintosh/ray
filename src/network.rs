@@ -26,7 +26,7 @@ use tracing::{debug, error, info, trace, warn};
 /// The executor for libp2p
 struct Executor(Weak<Runtime>);
 
-impl libp2p::core::Executor for Executor {
+impl libp2p::swarm::Executor for Executor {
     fn exec(&self, f: Pin<Box<dyn Future<Output = ()> + Send>>) {
         if let Some(runtime) = self.0.upgrade() {
             trace!("Executor: Spawning a task");
@@ -76,9 +76,13 @@ where
         )
         .await;
 
-        let swarm = SwarmBuilder::new(transport, behaviour, local_peer_id)
-            .executor(Box::new(Executor(Arc::downgrade(&runtime))))
-            .build();
+        let swarm = SwarmBuilder::with_executor(
+            transport,
+            behaviour,
+            local_peer_id,
+            Executor(Arc::downgrade(&runtime)),
+        )
+        .build();
 
         Network {
             swarm,
