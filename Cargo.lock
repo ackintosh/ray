@@ -2092,9 +2092,9 @@ dependencies = [
 
 [[package]]
 name = "ethereum_ssz"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32749e96305376af40d7a7ee8ea4c4c64c68d09ff94a81ab78c8d9bc7153c221"
+checksum = "e61ffea29f26e8249d35128a82ec8d3bd4fbc80179ea5f5e5e3daafef6a80fcb"
 dependencies = [
  "ethereum-types 0.14.1",
  "itertools",
