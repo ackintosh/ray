@@ -2103,9 +2103,9 @@ dependencies = [
 
 [[package]]
 name = "ethereum_ssz_derive"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9cac7ef2107926cea34c0064056f9bb134d2085eef882388d151d2e59174cf0"
+checksum = "6085d7fd3cf84bd2b8fec150d54c8467fb491d8db9c460607c5534f653a0ee38"
 dependencies = [
  "darling 0.13.4",
  "proc-macro2",
