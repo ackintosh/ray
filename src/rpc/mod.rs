@@ -1,5 +1,5 @@
 use crate::rpc::handler::SubstreamId;
-use libp2p::core::connection::ConnectionId;
+use libp2p::swarm::ConnectionId;
 use libp2p::PeerId;
 use types::MainnetEthSpec;
 
