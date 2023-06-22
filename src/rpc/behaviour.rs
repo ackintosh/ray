@@ -1,7 +1,11 @@
 use crate::network::ReqId;
 use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
-use libp2p::swarm::{ConnectionHandler, ConnectionId, DialError, FromSwarm, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction, NotifyHandler, PollParameters, THandlerInEvent, THandlerOutEvent, ToSwarm};
+use libp2p::swarm::{
+    ConnectionHandler, ConnectionId, DialError, FromSwarm, IntoConnectionHandler, NetworkBehaviour,
+    NetworkBehaviourAction, NotifyHandler, PollParameters, THandlerInEvent, THandlerOutEvent,
+    ToSwarm,
+};
 use libp2p::PeerId;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -136,7 +140,12 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
         };
     }
 
-    fn on_connection_handler_event(&mut self, peer_id: PeerId, connection_id: ConnectionId, event: THandlerOutEvent<Self>) {
+    fn on_connection_handler_event(
+        &mut self,
+        peer_id: PeerId,
+        connection_id: ConnectionId,
+        event: THandlerOutEvent<Self>,
+    ) {
         match event {
             HandlerReceived::Request(inbound_request) => {
                 info!(
@@ -144,14 +153,15 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
                     peer_id, inbound_request
                 );
 
-                self.events.push(ToSwarm::GenerateEvent(
-                    RpcEvent::ReceivedRequest(ReceivedRequest {
-                        peer_id,
-                        connection_id,
-                        substream_id: inbound_request.substream_id,
-                        request: inbound_request.request,
-                    }),
-                ));
+                self.events
+                    .push(ToSwarm::GenerateEvent(RpcEvent::ReceivedRequest(
+                        ReceivedRequest {
+                            peer_id,
+                            connection_id,
+                            substream_id: inbound_request.substream_id,
+                            request: inbound_request.request,
+                        },
+                    )));
             }
             HandlerReceived::Response(response) => {
                 info!(
@@ -159,9 +169,10 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
                     peer_id, response
                 );
 
-                self.events.push(ToSwarm::GenerateEvent(
-                    RpcEvent::ReceivedResponse(ReceivedResponse { peer_id, response }),
-                ));
+                self.events
+                    .push(ToSwarm::GenerateEvent(RpcEvent::ReceivedResponse(
+                        ReceivedResponse { peer_id, response },
+                    )));
             }
         }
     }

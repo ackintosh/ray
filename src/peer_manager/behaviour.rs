@@ -4,7 +4,10 @@ use futures::StreamExt;
 use libp2p::core::ConnectedPoint;
 use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
-use libp2p::swarm::{ConnectionHandler, ConnectionId, FromSwarm, IntoConnectionHandler, NetworkBehaviour, PollParameters, THandlerOutEvent, ToSwarm};
+use libp2p::swarm::{
+    ConnectionHandler, ConnectionId, FromSwarm, IntoConnectionHandler, NetworkBehaviour,
+    PollParameters, THandlerOutEvent, ToSwarm,
+};
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use std::time::Instant;
@@ -33,9 +36,12 @@ impl NetworkBehaviour for PeerManager {
                         address,
                         role_override: _,
                     } => {
-                        self.peer_db.write().add_peer(connection_established.peer_id, address.clone());
-                        self.events
-                            .push(PeerManagerEvent::PeerConnectedOutgoing(connection_established.peer_id));
+                        self.peer_db
+                            .write()
+                            .add_peer(connection_established.peer_id, address.clone());
+                        self.events.push(PeerManagerEvent::PeerConnectedOutgoing(
+                            connection_established.peer_id,
+                        ));
                         address
                     }
                     // We received the node
@@ -46,8 +52,9 @@ impl NetworkBehaviour for PeerManager {
                         self.peer_db
                             .write()
                             .add_peer(connection_established.peer_id, send_back_addr.clone());
-                        self.events
-                            .push(PeerManagerEvent::PeerConnectedIncoming(connection_established.peer_id));
+                        self.events.push(PeerManagerEvent::PeerConnectedIncoming(
+                            connection_established.peer_id,
+                        ));
                         send_back_addr
                     }
                 };
@@ -65,7 +72,10 @@ impl NetworkBehaviour for PeerManager {
                         since: Instant::now(),
                     },
                 );
-                info!("[{}] on_swarm_event ConnectionClosed. endpoint: {:?}", connection_closed.peer_id, connection_closed.endpoint);
+                info!(
+                    "[{}] on_swarm_event ConnectionClosed. endpoint: {:?}",
+                    connection_closed.peer_id, connection_closed.endpoint
+                );
             }
             FromSwarm::AddressChange(_) => {}
             FromSwarm::DialFailure(_) => {}
@@ -80,7 +90,12 @@ impl NetworkBehaviour for PeerManager {
         }
     }
 
-    fn on_connection_handler_event(&mut self, _peer_id: PeerId, _connection_id: ConnectionId, _event: THandlerOutEvent<Self>) {
+    fn on_connection_handler_event(
+        &mut self,
+        _peer_id: PeerId,
+        _connection_id: ConnectionId,
+        _event: THandlerOutEvent<Self>,
+    ) {
         unreachable!("PeerManager does not use ConnectionHandler.")
     }
 
@@ -93,9 +108,7 @@ impl NetworkBehaviour for PeerManager {
 
         while self.heartbeat.poll_tick(cx).is_ready() {
             if self.need_more_peers() {
-                return Poll::Ready(ToSwarm::GenerateEvent(
-                    PeerManagerEvent::NeedMorePeers,
-                ));
+                return Poll::Ready(ToSwarm::GenerateEvent(PeerManagerEvent::NeedMorePeers));
             }
         }
 

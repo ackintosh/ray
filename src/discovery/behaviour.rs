@@ -4,7 +4,10 @@ use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
-use libp2p::swarm::{ConnectionHandler, ConnectionId, DialFailure, FromSwarm, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters, THandlerOutEvent};
+use libp2p::swarm::{
+    ConnectionHandler, ConnectionId, DialFailure, FromSwarm, IntoConnectionHandler,
+    NetworkBehaviour, NetworkBehaviourAction, PollParameters, THandlerOutEvent,
+};
 use libp2p::{Multiaddr, PeerId};
 use lru::LruCache;
 use std::net::SocketAddr;
@@ -156,13 +159,22 @@ impl NetworkBehaviour for Behaviour {
         }
     }
 
-    fn on_connection_handler_event(&mut self, _peer_id: PeerId, _connection_id: ConnectionId, _event: THandlerOutEvent<Self>) {
+    fn on_connection_handler_event(
+        &mut self,
+        _peer_id: PeerId,
+        _connection_id: ConnectionId,
+        _event: THandlerOutEvent<Self>,
+    ) {
         // Nothing to do.
     }
 
     fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
         match event {
-            FromSwarm::DialFailure(DialFailure { peer_id, error, connection_id }) => {
+            FromSwarm::DialFailure(DialFailure {
+                peer_id,
+                error,
+                connection_id,
+            }) => {
                 // TODO: handle DialFailure
                 // https://github.com/sigp/lighthouse/blob/3b117f4bf68666747b20e39e4333073a7764b1e2/beacon_node/lighthouse_network/src/discovery/mod.rs#L1083
                 warn!("TODO: handle DialFailure. peer_id:{peer_id:?}, error:{error}, connection_id:{connection_id}");
