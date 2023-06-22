@@ -3,12 +3,8 @@ use discv5::enr::{CombinedKey, NodeId};
 use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
-use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
-use libp2p::swarm::{
-    ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
-    PollParameters,
-};
+use libp2p::swarm::{ConnectionHandler, ConnectionId, DialFailure, FromSwarm, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters, THandlerOutEvent};
 use libp2p::{Multiaddr, PeerId};
 use lru::LruCache;
 use std::net::SocketAddr;
@@ -160,14 +156,31 @@ impl NetworkBehaviour for Behaviour {
         }
     }
 
-    fn inject_event(
-        &mut self,
-        _peer_id: PeerId,
-        _connection: ConnectionId,
-        _event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as ConnectionHandler>::OutEvent,
-    ) {
-        trace!("inject_event -> nothing to do");
-        // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L948-L954
+    fn on_connection_handler_event(&mut self, _peer_id: PeerId, _connection_id: ConnectionId, _event: THandlerOutEvent<Self>) {
+        // Nothing to do.
+    }
+
+    fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
+        match event {
+            FromSwarm::DialFailure(DialFailure { peer_id, error, connection_id }) => {
+                // TODO: handle DialFailure
+                // https://github.com/sigp/lighthouse/blob/3b117f4bf68666747b20e39e4333073a7764b1e2/beacon_node/lighthouse_network/src/discovery/mod.rs#L1083
+                warn!("TODO: handle DialFailure. peer_id:{peer_id:?}, error:{error}, connection_id:{connection_id}");
+            }
+            FromSwarm::ConnectionEstablished(_)
+            | FromSwarm::ConnectionClosed(_)
+            | FromSwarm::AddressChange(_)
+            | FromSwarm::ListenFailure(_)
+            | FromSwarm::NewListener(_)
+            | FromSwarm::NewListenAddr(_)
+            | FromSwarm::ExpiredListenAddr(_)
+            | FromSwarm::ListenerError(_)
+            | FromSwarm::ListenerClosed(_)
+            | FromSwarm::NewExternalAddr(_)
+            | FromSwarm::ExpiredExternalAddr(_) => {
+                // Ignore events not relevant to discovery
+            }
+        }
     }
 
     #[allow(clippy::single_match)]
