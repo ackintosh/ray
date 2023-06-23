@@ -5,7 +5,10 @@ use crate::rpc::protocol::{
     InboundFramed, OutboundFramed, OutboundRequest, RpcProtocol, RpcRequestProtocol,
 };
 use futures::{FutureExt, SinkExt, StreamExt};
-use libp2p::swarm::handler::{InboundUpgradeSend, OutboundUpgradeSend};
+use libp2p::swarm::handler::{
+    ConnectionEvent, FullyNegotiatedInbound, FullyNegotiatedOutbound, InboundUpgradeSend,
+    OutboundUpgradeSend,
+};
 use libp2p::swarm::{
     ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive,
     NegotiatedSubstream, SubstreamProtocol,
@@ -238,36 +241,12 @@ impl<Id> Handler<Id> {
             }
         }
     }
-}
-
-// SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
-impl<Id: ReqId> ConnectionHandler for Handler<Id> {
-    type InEvent = InstructionToHandler<Id>;
-    type OutEvent = HandlerReceived;
-    type Error = RPCError;
-    type InboundProtocol = RpcProtocol;
-    type OutboundProtocol = RpcRequestProtocol;
-    type InboundOpenInfo = ();
-    type OutboundOpenInfo = lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>;
-
-    fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
-        info!("[{}] [ConnectionHandler::listen_protocol]", self.peer_id());
-
-        SubstreamProtocol::new(
-            RpcProtocol::new(self.fork_context.clone(), self.max_rpc_size, self.peer_id),
-            (),
-        )
-    }
 
     // Injects the output of a successful upgrade on a new inbound substream.
-    fn inject_fully_negotiated_inbound(
-        &mut self,
-        inbound: <Self::InboundProtocol as InboundUpgradeSend>::Output,
-        _info: Self::InboundOpenInfo,
-    ) {
-        let (request, substream) = inbound;
+    fn on_fully_negotiated_inbound(&mut self, inbound: FullyNegotiatedInbound<RpcProtocol, ()>) {
+        let (request, substream) = inbound.protocol;
         info!(
-            "[{}] inject_fully_negotiated_inbound. request: {request:?}",
+            "[{}] on_fully_negotiated_inbound. request: {request:?}",
             self.peer_id()
         );
 
@@ -282,7 +261,8 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
             },
         ) {
             error!(
-                "inbound_substream_id is duplicated. substream_id: {}",
+                "[{}] inbound_substream_id is duplicated. substream_id: {}",
+                self.peer_id(),
                 inbound_substream_id.0
             );
         }
@@ -306,22 +286,23 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
 
     // Injects the output of a successful upgrade on a new outbound substream
     // The second argument is the information that was previously passed to ConnectionHandlerEvent::OutboundSubstreamRequest.
-    fn inject_fully_negotiated_outbound(
+    fn on_fully_negotiated_outbound(
         &mut self,
-        stream: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
-        info: Self::OutboundOpenInfo,
+        outbound: FullyNegotiatedOutbound<
+            RpcRequestProtocol,
+            lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+        >,
+        // stream: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
+        // info: Self::OutboundOpenInfo,
     ) {
-        info!(
-            "[{}] inject_fully_negotiated_outbound. info: {info:?}",
-            self.peer_id()
-        );
-        let request = info;
+        info!("[{}] on_fully_negotiated_outbound", self.peer_id(),);
+        let request = outbound.info;
         let outbound_substream_id = self.outbound_substream_id.next();
 
         if request.expected_responses() > 0
             && self
                 .outbound_substreams
-                .insert(outbound_substream_id, stream)
+                .insert(outbound_substream_id, outbound.protocol)
                 .is_some()
         {
             error!(
@@ -330,44 +311,25 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
             );
         }
     }
+}
 
-    fn inject_event(&mut self, event: Self::InEvent) {
-        info!("inject_event. event: {:?}", event);
+// SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
+impl<Id: ReqId> ConnectionHandler for Handler<Id> {
+    type InEvent = InstructionToHandler<Id>;
+    type OutEvent = HandlerReceived;
+    type Error = RPCError;
+    type InboundProtocol = RpcProtocol;
+    type OutboundProtocol = RpcRequestProtocol;
+    type InboundOpenInfo = ();
+    type OutboundOpenInfo = lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>;
 
-        match event {
-            InstructionToHandler::Status(request_id, status_message, peer_id) => {
-                self.peer_id = Some(peer_id); // This is just for debugging.
-                self.send_status(request_id, peer_id, status_message);
-            }
-            InstructionToHandler::Goodbye(request_id, reason, peer_id) => {
-                self.peer_id = Some(peer_id); // This is just for debugging.
-                self.shutdown(Some((request_id, peer_id, reason)));
-            }
-            InstructionToHandler::Request(request_id, request, peer_id) => {
-                self.peer_id = Some(peer_id); // This is just for debugging.
-                self.send_request(request_id, peer_id, request);
-            }
-            InstructionToHandler::Response(substream_id, response, peer_id) => {
-                self.peer_id = Some(peer_id); // This is just for debugging.
-                self.send_response(peer_id, substream_id, response)
-            }
-        }
-    }
+    fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
+        info!("[{}] [ConnectionHandler::listen_protocol]", self.peer_id());
 
-    fn inject_dial_upgrade_error(
-        &mut self,
-        info: Self::OutboundOpenInfo,
-        error: ConnectionHandlerUpgrErr<<Self::OutboundProtocol as OutboundUpgradeSend>::Error>,
-    ) {
-        warn!(
-            "[{}] inject_dial_upgrade_error. info: {}, error: {}",
-            self.peer_id(),
-            info,
-            error,
-        );
-
-        // TODO
-        // ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L453
+        SubstreamProtocol::new(
+            RpcProtocol::new(self.fork_context.clone(), self.max_rpc_size, self.peer_id),
+            (),
+        )
     }
 
     fn connection_keep_alive(&self) -> KeepAlive {
@@ -585,5 +547,64 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
         }
 
         Poll::Pending
+    }
+
+    fn on_behaviour_event(&mut self, event: Self::InEvent) {
+        info!(
+            "[{}] on_behaviour_event. event: {:?}",
+            self.peer_id(),
+            event
+        );
+
+        match event {
+            InstructionToHandler::Status(request_id, status_message, peer_id) => {
+                self.peer_id = Some(peer_id); // This is just for debugging.
+                self.send_status(request_id, peer_id, status_message);
+            }
+            InstructionToHandler::Goodbye(request_id, reason, peer_id) => {
+                self.peer_id = Some(peer_id); // This is just for debugging.
+                self.shutdown(Some((request_id, peer_id, reason)));
+            }
+            InstructionToHandler::Request(request_id, request, peer_id) => {
+                self.peer_id = Some(peer_id); // This is just for debugging.
+                self.send_request(request_id, peer_id, request);
+            }
+            InstructionToHandler::Response(substream_id, response, peer_id) => {
+                self.peer_id = Some(peer_id); // This is just for debugging.
+                self.send_response(peer_id, substream_id, response)
+            }
+        };
+    }
+
+    fn on_connection_event(
+        &mut self,
+        event: ConnectionEvent<
+            Self::InboundProtocol,
+            Self::OutboundProtocol,
+            Self::InboundOpenInfo,
+            Self::OutboundOpenInfo,
+        >,
+    ) {
+        match event {
+            ConnectionEvent::FullyNegotiatedInbound(fully_negotiated_inbound) => {
+                self.on_fully_negotiated_inbound(fully_negotiated_inbound);
+            }
+            ConnectionEvent::FullyNegotiatedOutbound(fully_negotiated_outbound) => {
+                self.on_fully_negotiated_outbound(fully_negotiated_outbound);
+            }
+            ConnectionEvent::AddressChange(_) => {}
+            ConnectionEvent::DialUpgradeError(dial_upgrade_error) => {
+                warn!(
+                    "[{}] dial_upgrade_error. info: {}, error: {}",
+                    self.peer_id(),
+                    dial_upgrade_error.info,
+                    dial_upgrade_error.error,
+                );
+
+                // TODO
+                // ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L453
+            }
+            ConnectionEvent::ListenUpgradeError(_) => {}
+        }
     }
 }
