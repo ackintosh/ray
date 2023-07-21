@@ -16,11 +16,11 @@ discv5 = "0.2.2"
 futures = "0.3.28"
 hex = "0.4.3"
 libp2p = { version = "0.51.0", default-features = false, features = ["dns", "tokio", "ecdsa", "noise", "macros", "mplex", "secp256k1", "tcp", "yamux"] }
-lru = "0.10.0"
+lru = "0.10.1"
 parking_lot = "0.12.1"
 primitive-types = "0.12.1"
-serde_yaml = "0.9.21"
-smallvec = "1.10.0"
+serde_yaml = "0.9.22"
+smallvec = "1.11.0"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 tokio = { version = "1.26.0", features = ["full"] }
 tokio-io-timeout = "1.2.0"
