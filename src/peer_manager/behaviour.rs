@@ -6,7 +6,7 @@ use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
     ConnectionHandler, ConnectionId, FromSwarm, IntoConnectionHandler, NetworkBehaviour,
-    PollParameters, THandlerOutEvent, ToSwarm,
+    PollParameters, THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
@@ -103,7 +103,7 @@ impl NetworkBehaviour for PeerManager {
         &mut self,
         cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<ToSwarm<Self::OutEvent, Self::ConnectionHandler>> {
+    ) -> Poll<ToSwarm<Self::OutEvent, THandlerInEvent<Self>>> {
         trace!("poll");
 
         while self.heartbeat.poll_tick(cx).is_ready() {

@@ -6,7 +6,8 @@ use futures::{Future, FutureExt, StreamExt};
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
     ConnectionHandler, ConnectionId, DialFailure, FromSwarm, IntoConnectionHandler,
-    NetworkBehaviour, NetworkBehaviourAction, PollParameters, THandlerOutEvent,
+    NetworkBehaviour, NetworkBehaviourAction, PollParameters, THandlerInEvent, THandlerOutEvent,
+    ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use lru::LruCache;
@@ -177,7 +178,7 @@ impl NetworkBehaviour for Behaviour {
             }) => {
                 // TODO: handle DialFailure
                 // https://github.com/sigp/lighthouse/blob/3b117f4bf68666747b20e39e4333073a7764b1e2/beacon_node/lighthouse_network/src/discovery/mod.rs#L1083
-                warn!("TODO: handle DialFailure. peer_id:{peer_id:?}, error:{error}, connection_id:{connection_id}");
+                warn!("TODO: handle DialFailure. peer_id:{peer_id:?}, error:{error}, connection_id:{connection_id:?}");
             }
             FromSwarm::ConnectionEstablished(_)
             | FromSwarm::ConnectionClosed(_)
@@ -200,7 +201,7 @@ impl NetworkBehaviour for Behaviour {
         &mut self,
         cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
+    ) -> Poll<ToSwarm<Self::OutEvent, THandlerInEvent<Self>>> {
         trace!("poll");
 
         if let Poll::Ready(Some(query_result)) = self.active_queries.poll_next_unpin(cx) {
@@ -224,9 +225,7 @@ impl NetworkBehaviour for Behaviour {
                         self.cached_enrs.put(*p, e.clone());
                     }
 
-                    Poll::Ready(NetworkBehaviourAction::GenerateEvent(
-                        DiscoveryEvent::FoundPeers(peers),
-                    ))
+                    Poll::Ready(ToSwarm::GenerateEvent(DiscoveryEvent::FoundPeers(peers)))
                 }
                 Err(query_error) => {
                     error!("Discovery query failed: {}", query_error);

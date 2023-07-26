@@ -22,7 +22,7 @@ use client::ClientBuilder;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use environment::{EnvironmentBuilder, LoggerConfig};
 use eth2_network_config::Eth2NetworkConfig;
-use libp2p::identity::Keypair;
+// use libp2p::identity::Keypair;
 use parking_lot::RwLock;
 use std::sync::Arc;
 use tracing::info;
@@ -36,15 +36,15 @@ fn main() {
 
     // generate private key
     let enr_key = CombinedKey::generate_secp256k1();
-    let key_pair = {
+    let key_pair: libp2p::identity::Keypair = {
         match enr_key {
             CombinedKey::Secp256k1(ref key) => {
                 let mut key_bytes = key.to_bytes();
-                let secret_key =
-                    libp2p::core::identity::secp256k1::SecretKey::from_bytes(&mut key_bytes)
-                        .expect("valid secp256k1 key");
-                let kp: libp2p::core::identity::secp256k1::Keypair = secret_key.into();
-                Keypair::Secp256k1(kp)
+                let secret_key = libp2p::identity::secp256k1::SecretKey::from_bytes(&mut key_bytes)
+                    .expect("valid secp256k1 key");
+
+                let kp: libp2p::identity::secp256k1::Keypair = secret_key.into();
+                kp.into()
             }
             CombinedKey::Ed25519(_) => unreachable!(), // not implemented as the ENR key is generated with secp256k1
         }
