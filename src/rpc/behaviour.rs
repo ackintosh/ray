@@ -2,14 +2,13 @@ use crate::network::ReqId;
 use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use libp2p::swarm::{
-    ConnectionHandler, ConnectionId, DialError, FromSwarm, IntoConnectionHandler, NetworkBehaviour,
-    NetworkBehaviourAction, NotifyHandler, PollParameters, THandlerInEvent, THandlerOutEvent,
-    ToSwarm,
+    ConnectionId, FromSwarm, NetworkBehaviour, NetworkBehaviourAction, NotifyHandler,
+    PollParameters, THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
 use libp2p::PeerId;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use tracing::{info, trace, warn};
+use tracing::{info, trace};
 use types::{ForkContext, MainnetEthSpec};
 
 // ////////////////////////////////////////////////////////

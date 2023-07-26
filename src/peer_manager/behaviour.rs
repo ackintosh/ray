@@ -5,10 +5,10 @@ use libp2p::core::ConnectedPoint;
 use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
-    ConnectionHandler, ConnectionId, FromSwarm, IntoConnectionHandler, NetworkBehaviour,
-    PollParameters, THandlerInEvent, THandlerOutEvent, ToSwarm,
+    ConnectionId, FromSwarm, NetworkBehaviour, PollParameters, THandlerInEvent, THandlerOutEvent,
+    ToSwarm,
 };
-use libp2p::{Multiaddr, PeerId};
+use libp2p::PeerId;
 use std::task::{Context, Poll};
 use std::time::Instant;
 use tracing::info;

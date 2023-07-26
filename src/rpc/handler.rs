@@ -5,13 +5,9 @@ use crate::rpc::protocol::{
     InboundFramed, OutboundFramed, OutboundRequest, RpcProtocol, RpcRequestProtocol,
 };
 use futures::{FutureExt, SinkExt, StreamExt};
-use libp2p::swarm::handler::{
-    ConnectionEvent, FullyNegotiatedInbound, FullyNegotiatedOutbound, InboundUpgradeSend,
-    OutboundUpgradeSend,
-};
+use libp2p::swarm::handler::{ConnectionEvent, FullyNegotiatedInbound, FullyNegotiatedOutbound};
 use libp2p::swarm::{
-    ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, KeepAlive,
-    NegotiatedSubstream, SubstreamProtocol,
+    ConnectionHandler, ConnectionHandlerEvent, KeepAlive, NegotiatedSubstream, SubstreamProtocol,
 };
 use libp2p::PeerId;
 use lighthouse_network::rpc::methods::RPCCodedResponse;

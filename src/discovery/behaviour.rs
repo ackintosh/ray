@@ -5,9 +5,8 @@ use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
-    ConnectionHandler, ConnectionId, DialFailure, FromSwarm, IntoConnectionHandler,
-    NetworkBehaviour, NetworkBehaviourAction, PollParameters, THandlerInEvent, THandlerOutEvent,
-    ToSwarm,
+    ConnectionId, DialFailure, FromSwarm, NetworkBehaviour, PollParameters, THandlerInEvent,
+    THandlerOutEvent, ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use lru::LruCache;
