@@ -2,8 +2,8 @@ use crate::network::ReqId;
 use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use libp2p::swarm::{
-    ConnectionId, FromSwarm, NetworkBehaviour, NetworkBehaviourAction, NotifyHandler,
-    PollParameters, THandlerInEvent, THandlerOutEvent, ToSwarm,
+    ConnectionId, FromSwarm, NetworkBehaviour, NotifyHandler, PollParameters, THandlerInEvent,
+    THandlerOutEvent, ToSwarm,
 };
 use libp2p::PeerId;
 use std::sync::Arc;
@@ -74,7 +74,7 @@ impl<Id: ReqId> Behaviour<Id> {
         peer_id: PeerId,
         reason: lighthouse_network::rpc::GoodbyeReason,
     ) {
-        self.events.push(NetworkBehaviourAction::NotifyHandler {
+        self.events.push(ToSwarm::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,
             event: InstructionToHandler::Goodbye(request_id, reason, peer_id),
@@ -87,7 +87,7 @@ impl<Id: ReqId> Behaviour<Id> {
         request: lighthouse_network::service::api_types::Request,
         request_id: Id,
     ) {
-        self.events.push(NetworkBehaviourAction::NotifyHandler {
+        self.events.push(ToSwarm::NotifyHandler {
             peer_id,
             handler: NotifyHandler::Any,
             event: InstructionToHandler::Request(request_id, request.into(), peer_id),
@@ -101,7 +101,7 @@ impl<Id: ReqId> Behaviour<Id> {
         substream_id: SubstreamId,
         response: lighthouse_network::Response<MainnetEthSpec>,
     ) {
-        self.events.push(NetworkBehaviourAction::NotifyHandler {
+        self.events.push(ToSwarm::NotifyHandler {
             peer_id,
             handler: NotifyHandler::One(connection_id),
             event: InstructionToHandler::Response(substream_id, response, peer_id),

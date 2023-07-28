@@ -40,8 +40,9 @@ fn main() {
         match enr_key {
             CombinedKey::Secp256k1(ref key) => {
                 let mut key_bytes = key.to_bytes();
-                let secret_key = libp2p::identity::secp256k1::SecretKey::from_bytes(&mut key_bytes)
-                    .expect("valid secp256k1 key");
+                let secret_key =
+                    libp2p::identity::secp256k1::SecretKey::try_from_bytes(&mut key_bytes)
+                        .expect("valid secp256k1 key");
 
                 let kp: libp2p::identity::secp256k1::Keypair = secret_key.into();
                 kp.into()

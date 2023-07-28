@@ -34,14 +34,14 @@ pub(crate) fn peer_id_to_node_id(peer_id: &PeerId) -> Result<discv5::enr::NodeId
     // TODO: matching public_key.key_type() after libp2p upgrading.
     // ref: https://github.com/sigp/lighthouse/blob/8dff926c70b7c7558e7c41316770d22608dbba4c/beacon_node/lighthouse_network/src/discovery/enr_ext.rs#L266-L293
     if let Ok(pk) = public_key.clone().try_into_secp256k1() {
-        let uncompressed_key_bytes = &pk.encode_uncompressed()[1..];
+        let uncompressed_key_bytes = &pk.to_bytes_uncompressed()[1..];
         let mut output = [0_u8; 32];
         let mut hasher = Keccak::v256();
         hasher.update(uncompressed_key_bytes);
         hasher.finalize(&mut output);
         Ok(discv5::enr::NodeId::parse(&output).expect("Must be correct length"))
     } else if let Ok(pk) = public_key.clone().try_into_ed25519() {
-        let uncompressed_key_bytes = pk.encode();
+        let uncompressed_key_bytes = pk.to_bytes();
         let mut output = [0_u8; 32];
         let mut hasher = Keccak::v256();
         hasher.update(&uncompressed_key_bytes);
