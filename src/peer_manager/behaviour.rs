@@ -1,14 +1,14 @@
 use crate::peer_db::ConnectionStatus;
 use crate::peer_manager::{PeerManager, PeerManagerEvent};
 use futures::StreamExt;
-use libp2p::core::ConnectedPoint;
+use libp2p::core::{ConnectedPoint, Endpoint};
 use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
-    ConnectionId, FromSwarm, NetworkBehaviour, PollParameters, THandlerInEvent, THandlerOutEvent,
-    ToSwarm,
+    ConnectionDenied, ConnectionId, FromSwarm, NetworkBehaviour, PollParameters, THandler,
+    THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
-use libp2p::PeerId;
+use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
 use std::time::Instant;
 use tracing::info;
@@ -18,6 +18,26 @@ use tracing::log::{error, trace};
 impl NetworkBehaviour for PeerManager {
     type ConnectionHandler = DummyConnectionHandler;
     type OutEvent = PeerManagerEvent;
+
+    fn handle_established_inbound_connection(
+        &mut self,
+        _connection_id: ConnectionId,
+        _peer: PeerId,
+        _local_addr: &Multiaddr,
+        _remote_addr: &Multiaddr,
+    ) -> Result<THandler<Self>, ConnectionDenied> {
+        Ok(DummyConnectionHandler)
+    }
+
+    fn handle_established_outbound_connection(
+        &mut self,
+        _connection_id: ConnectionId,
+        _peer: PeerId,
+        _addr: &Multiaddr,
+        _role_override: Endpoint,
+    ) -> Result<THandler<Self>, ConnectionDenied> {
+        Ok(DummyConnectionHandler)
+    }
 
     fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
         match event {
