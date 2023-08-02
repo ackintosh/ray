@@ -4,7 +4,7 @@ use beacon_chain::BeaconChainTypes;
 use discv5::Enr;
 use libp2p::core::muxing::StreamMuxerBox;
 use libp2p::identity::Keypair;
-use libp2p::{noise, PeerId, Transport};
+use libp2p::{noise, yamux, PeerId, Transport};
 use parking_lot::RwLock;
 use std::process::exit;
 use std::sync::Arc;
@@ -22,17 +22,13 @@ pub(crate) async fn build_network_transport(
 
     // Ref: Why are we using Noise?
     // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#why-are-we-using-noise
-    let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
-        .into_authentic(&key_pair)
-        .expect("Signing libp2p-noise static DH keypair failed.");
+    let noise_config = noise::Config::new(&key_pair).expect("noise config");
+    let yamux_config = yamux::Config::default();
 
     transport
         .upgrade(libp2p::core::upgrade::Version::V1)
-        .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
-        .multiplex(libp2p::core::upgrade::SelectUpgrade::new(
-            libp2p::yamux::YamuxConfig::default(),
-            libp2p::mplex::MplexConfig::default(),
-        ))
+        .authenticate(noise_config)
+        .multiplex(yamux_config)
         .timeout(std::time::Duration::from_secs(20))
         .boxed()
 }

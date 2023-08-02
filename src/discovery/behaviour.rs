@@ -1,13 +1,13 @@
 use crate::discovery::DiscoveryEvent;
+use crate::identity::peer_id_to_node_id;
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
-use libp2p::core::connection::ConnectionId;
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
-    ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
-    PollParameters,
+    ConnectionId, DialError, DialFailure, FromSwarm, NetworkBehaviour, PollParameters,
+    THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use lru::LruCache;
@@ -16,7 +16,7 @@ use std::num::NonZeroUsize;
 use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
-use tracing::{error, info, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 // ////////////////////////////////////////////////////////
 // Internal message of Discovery module
@@ -98,6 +98,35 @@ impl Behaviour {
         );
         self.active_queries.push(Box::pin(query_future));
     }
+
+    fn on_dial_failure(&self, peer_id: Option<PeerId>, dial_error: &DialError) {
+        if let Some(peer_id) = peer_id {
+            match dial_error {
+                DialError::Banned
+                | DialError::LocalPeerId { .. }
+                | DialError::NoAddresses
+                | DialError::InvalidPeerId(_)
+                | DialError::WrongPeerId { .. }
+                | DialError::Denied { .. }
+                | DialError::Transport(_) => {
+                    debug!("[{peer_id}] Marking peer disconnected in DHT. error: {dial_error}");
+                    match peer_id_to_node_id(&peer_id) {
+                        Ok(node_id) => {
+                            let _ = self.discv5.disconnect_node(&node_id);
+                        }
+                        Err(e) => {
+                            warn!(
+                                "[{peer_id}] Failed to convert from PeerId to NodeId. error: {e}"
+                            );
+                        }
+                    }
+                }
+                DialError::Aborted
+                | DialError::ConnectionLimit(_)
+                | DialError::DialPeerConditionFalse(_) => {}
+            }
+        }
+    }
 }
 
 // ************************************************
@@ -160,14 +189,38 @@ impl NetworkBehaviour for Behaviour {
         }
     }
 
-    fn inject_event(
+    fn on_connection_handler_event(
         &mut self,
         _peer_id: PeerId,
-        _connection: ConnectionId,
-        _event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as ConnectionHandler>::OutEvent,
+        _connection_id: ConnectionId,
+        _event: THandlerOutEvent<Self>,
     ) {
-        trace!("inject_event -> nothing to do");
-        // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L948-L954
+        // Nothing to do.
+    }
+
+    fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
+        match event {
+            FromSwarm::DialFailure(DialFailure {
+                peer_id,
+                error,
+                connection_id: _,
+            }) => {
+                self.on_dial_failure(peer_id, error);
+            }
+            FromSwarm::ConnectionEstablished(_)
+            | FromSwarm::ConnectionClosed(_)
+            | FromSwarm::AddressChange(_)
+            | FromSwarm::ListenFailure(_)
+            | FromSwarm::NewListener(_)
+            | FromSwarm::NewListenAddr(_)
+            | FromSwarm::ExpiredListenAddr(_)
+            | FromSwarm::ListenerError(_)
+            | FromSwarm::ListenerClosed(_)
+            | FromSwarm::NewExternalAddr(_)
+            | FromSwarm::ExpiredExternalAddr(_) => {
+                // Ignore events not relevant to discovery
+            }
+        }
     }
 
     #[allow(clippy::single_match)]
@@ -175,7 +228,7 @@ impl NetworkBehaviour for Behaviour {
         &mut self,
         cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
+    ) -> Poll<ToSwarm<Self::OutEvent, THandlerInEvent<Self>>> {
         trace!("poll");
 
         if let Poll::Ready(Some(query_result)) = self.active_queries.poll_next_unpin(cx) {
@@ -199,9 +252,7 @@ impl NetworkBehaviour for Behaviour {
                         self.cached_enrs.put(*p, e.clone());
                     }
 
-                    Poll::Ready(NetworkBehaviourAction::GenerateEvent(
-                        DiscoveryEvent::FoundPeers(peers),
-                    ))
+                    Poll::Ready(ToSwarm::GenerateEvent(DiscoveryEvent::FoundPeers(peers)))
                 }
                 Err(query_error) => {
                     error!("Discovery query failed: {}", query_error);

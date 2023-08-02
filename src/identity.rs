@@ -1,6 +1,5 @@
 use discv5::enr::CombinedPublicKey;
 use discv5::Enr;
-use libp2p::identity::PublicKey;
 use libp2p::multiaddr::Protocol;
 use libp2p::{Multiaddr, PeerId};
 use tiny_keccak::{Hasher, Keccak};
@@ -10,11 +9,10 @@ pub(crate) fn enr_to_peer_id(enr: &Enr) -> PeerId {
     match enr.public_key() {
         CombinedPublicKey::Secp256k1(pk) => {
             let pk_bytes = pk.to_bytes();
-            let libp2p_pk = libp2p::core::PublicKey::Secp256k1(
-                libp2p::core::identity::secp256k1::PublicKey::decode(&pk_bytes)
-                    .expect("valid public key"),
-            );
-            PeerId::from(libp2p_pk)
+            let libp2p_pk = libp2p::identity::secp256k1::PublicKey::try_from_bytes(&pk_bytes)
+                .expect("valid public key");
+            let public_key: libp2p::identity::PublicKey = libp2p_pk.into();
+            PeerId::from(public_key)
         }
         CombinedPublicKey::Ed25519(_) => unreachable!(), // not implemented as the ENR key is generated with secp256k1
     }
@@ -26,32 +24,34 @@ pub(crate) fn peer_id_to_node_id(peer_id: &PeerId) -> Result<discv5::enr::NodeId
     // if generated from a PublicKey with Identity multihash.
     let pk_bytes = &peer_id.to_bytes()[2..];
 
-    match PublicKey::from_protobuf_encoding(pk_bytes).map_err(|e| {
+    let public_key = libp2p::identity::PublicKey::try_decode_protobuf(pk_bytes).map_err(|e| {
         format!(
             " Cannot parse libp2p public key public key from peer id: {}",
             e
         )
-    })? {
-        PublicKey::Secp256k1(pk) => {
-            let uncompressed_key_bytes = &pk.encode_uncompressed()[1..];
-            let mut output = [0_u8; 32];
-            let mut hasher = Keccak::v256();
-            hasher.update(uncompressed_key_bytes);
-            hasher.finalize(&mut output);
-            Ok(discv5::enr::NodeId::parse(&output).expect("Must be correct length"))
-        }
-        PublicKey::Ed25519(pk) => {
-            let uncompressed_key_bytes = pk.encode();
-            let mut output = [0_u8; 32];
-            let mut hasher = Keccak::v256();
-            hasher.update(&uncompressed_key_bytes);
-            hasher.finalize(&mut output);
-            Ok(discv5::enr::NodeId::parse(&output).expect("Must be correct length"))
-        }
-        PublicKey::Ecdsa(_) => Err(format!(
+    })?;
+
+    // TODO: matching public_key.key_type() after libp2p upgrading.
+    // ref: https://github.com/sigp/lighthouse/blob/8dff926c70b7c7558e7c41316770d22608dbba4c/beacon_node/lighthouse_network/src/discovery/enr_ext.rs#L266-L293
+    if let Ok(pk) = public_key.clone().try_into_secp256k1() {
+        let uncompressed_key_bytes = &pk.to_bytes_uncompressed()[1..];
+        let mut output = [0_u8; 32];
+        let mut hasher = Keccak::v256();
+        hasher.update(uncompressed_key_bytes);
+        hasher.finalize(&mut output);
+        Ok(discv5::enr::NodeId::parse(&output).expect("Must be correct length"))
+    } else if let Ok(pk) = public_key.clone().try_into_ed25519() {
+        let uncompressed_key_bytes = pk.to_bytes();
+        let mut output = [0_u8; 32];
+        let mut hasher = Keccak::v256();
+        hasher.update(&uncompressed_key_bytes);
+        hasher.finalize(&mut output);
+        Ok(discv5::enr::NodeId::parse(&output).expect("Must be correct length"))
+    } else {
+        Err(format!(
             "Unsupported public key (Ecdsa) from peer {}",
             peer_id
-        )),
+        ))
     }
 }
 
