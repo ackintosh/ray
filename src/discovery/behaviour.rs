@@ -1,12 +1,13 @@
 use crate::discovery::DiscoveryEvent;
+use crate::identity::peer_id_to_node_id;
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
-    ConnectionId, DialFailure, FromSwarm, NetworkBehaviour, PollParameters, THandlerInEvent,
-    THandlerOutEvent, ToSwarm,
+    ConnectionId, DialError, DialFailure, FromSwarm, NetworkBehaviour, PollParameters,
+    THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use lru::LruCache;
@@ -15,7 +16,7 @@ use std::num::NonZeroUsize;
 use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
-use tracing::{error, info, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 // ////////////////////////////////////////////////////////
 // Internal message of Discovery module
@@ -97,6 +98,35 @@ impl Behaviour {
         );
         self.active_queries.push(Box::pin(query_future));
     }
+
+    fn on_dial_failure(&self, peer_id: Option<PeerId>, dial_error: &DialError) {
+        if let Some(peer_id) = peer_id {
+            match dial_error {
+                DialError::Banned
+                | DialError::LocalPeerId { .. }
+                | DialError::NoAddresses
+                | DialError::InvalidPeerId(_)
+                | DialError::WrongPeerId { .. }
+                | DialError::Denied { .. }
+                | DialError::Transport(_) => {
+                    debug!("[{peer_id}] Marking peer disconnected in DHT. error: {dial_error}");
+                    match peer_id_to_node_id(&peer_id) {
+                        Ok(node_id) => {
+                            let _ = self.discv5.disconnect_node(&node_id);
+                        }
+                        Err(e) => {
+                            warn!(
+                                "[{peer_id}] Failed to convert from PeerId to NodeId. error: {e}"
+                            );
+                        }
+                    }
+                }
+                DialError::Aborted
+                | DialError::ConnectionLimit(_)
+                | DialError::DialPeerConditionFalse(_) => {}
+            }
+        }
+    }
 }
 
 // ************************************************
@@ -173,11 +203,9 @@ impl NetworkBehaviour for Behaviour {
             FromSwarm::DialFailure(DialFailure {
                 peer_id,
                 error,
-                connection_id,
+                connection_id: _,
             }) => {
-                // TODO: handle DialFailure
-                // https://github.com/sigp/lighthouse/blob/3b117f4bf68666747b20e39e4333073a7764b1e2/beacon_node/lighthouse_network/src/discovery/mod.rs#L1083
-                warn!("TODO: handle DialFailure. peer_id:{peer_id:?}, error:{error}, connection_id:{connection_id:?}");
+                self.on_dial_failure(peer_id, error);
             }
             FromSwarm::ConnectionEstablished(_)
             | FromSwarm::ConnectionClosed(_)
