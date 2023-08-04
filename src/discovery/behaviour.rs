@@ -1,13 +1,13 @@
 use crate::discovery::DiscoveryEvent;
-use crate::identity::peer_id_to_node_id;
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
+use libp2p::core::Endpoint;
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
-    ConnectionId, DialError, DialFailure, FromSwarm, NetworkBehaviour, PollParameters,
-    THandlerInEvent, THandlerOutEvent, ToSwarm,
+    ConnectionDenied, ConnectionId, DialError, DialFailure, FromSwarm, NetworkBehaviour,
+    PollParameters, THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use lru::LruCache;
@@ -110,7 +110,7 @@ impl Behaviour {
                 | DialError::Denied { .. }
                 | DialError::Transport(_) => {
                     debug!("[{peer_id}] Marking peer disconnected in DHT. error: {dial_error}");
-                    match peer_id_to_node_id(&peer_id) {
+                    match crate::identity::peer_id_to_node_id(&peer_id) {
                         Ok(node_id) => {
                             let _ = self.discv5.disconnect_node(&node_id);
                         }
@@ -132,70 +132,71 @@ impl Behaviour {
 // ************************************************
 // *** Discovery is not a real NetworkBehaviour ***
 // ************************************************
-// SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L911
+// A NetworkBehaviour represent a protocol's state across all peers and connections.
+// SEE https://github.com/libp2p/rust-libp2p/releases/tag/libp2p-v0.52.0
 // NetworkBehaviour defines "what" bytes to send on the network.
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
 impl NetworkBehaviour for Behaviour {
     type ConnectionHandler = DummyConnectionHandler;
-    type OutEvent = DiscoveryEvent;
+    type ToSwarm = DiscoveryEvent;
 
-    fn new_handler(&mut self) -> Self::ConnectionHandler {
-        DummyConnectionHandler {}
-    }
-
-    fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
-        trace!("addresses_of_peer: peer_id: {}", peer_id);
-
-        // First search the local cache.
-        if let Some(enr) = self.cached_enrs.get(peer_id) {
-            let multiaddr = crate::identity::enr_to_multiaddrs(enr);
-            trace!(
-                "addresses_of_peer: Found from the cached_enrs. peer_id: {}, multiaddr: {:?}",
-                peer_id,
-                multiaddr,
-            );
-            return multiaddr;
-        }
-
-        // Not in the local cache, look in the routing table.
-        match crate::identity::peer_id_to_node_id(peer_id) {
-            Ok(node_id) => match self.discv5.find_enr(&node_id) {
-                Some(enr) => {
-                    let multiaddr = crate::identity::enr_to_multiaddrs(&enr);
-                    trace!(
-                        "addresses_of_peer: Found from the DHT. peer_id: {}, node_id: {}, multiaddr: {:?}",
-                        peer_id,
-                        node_id,
-                        multiaddr,
-                    );
-                    multiaddr
-                }
-                None => {
-                    warn!(
-                        "addresses_of_peer: No addresses found. peer_id: {}, node_id: {}",
-                        peer_id, node_id,
-                    );
-                    vec![]
-                }
-            },
-            Err(e) => {
-                warn!(
-                    "addresses_of_peer: Failed to derive node_id from peer_id. error: {:?}, peer_id: {}",
-                    e,
-                    peer_id,
-                );
-                vec![]
-            }
-        }
-    }
-
-    fn on_connection_handler_event(
+    fn handle_established_inbound_connection(
         &mut self,
-        _peer_id: PeerId,
         _connection_id: ConnectionId,
-        _event: THandlerOutEvent<Self>,
-    ) {
-        // Nothing to do.
+        _peer: PeerId,
+        _local_addr: &Multiaddr,
+        _remote_addr: &Multiaddr,
+    ) -> Result<THandler<Self>, ConnectionDenied> {
+        Ok(DummyConnectionHandler)
+    }
+
+    fn handle_pending_outbound_connection(
+        &mut self,
+        _connection_id: ConnectionId,
+        maybe_peer: Option<PeerId>,
+        _addresses: &[Multiaddr],
+        _effective_role: Endpoint,
+    ) -> Result<Vec<Multiaddr>, ConnectionDenied> {
+        if let Some(peer_id) = maybe_peer {
+            trace!("[{peer_id}] handle_pending_outbound_connection");
+            // First search the local cache.
+            if let Some(enr) = self.cached_enrs.get(&peer_id) {
+                let multiaddr = crate::identity::enr_to_multiaddrs(enr);
+                trace!("[{peer_id}] handle_pending_outbound_connection: Found from the cached_enrs. multiaddr: {multiaddr:?}");
+                return Ok(multiaddr);
+            }
+
+            // Not in the local cache, look in the routing table.
+            match crate::identity::peer_id_to_node_id(&peer_id) {
+                Ok(node_id) => match self.discv5.find_enr(&node_id) {
+                    Some(enr) => {
+                        let multiaddr = crate::identity::enr_to_multiaddrs(&enr);
+                        trace!("[{peer_id}] handle_pending_outbound_connection: Found from the DHT. node_id: {node_id}, multiaddr: {multiaddr:?}");
+                        Ok(multiaddr)
+                    }
+                    None => {
+                        warn!("[{peer_id}] handle_pending_outbound_connection: No addresses found. node_id: {node_id}");
+                        Ok(vec![])
+                    }
+                },
+                Err(e) => {
+                    warn!("[{peer_id}] handle_pending_outbound_connection: Failed to derive node_id from peer_id. error: {:?}", e);
+                    Ok(vec![])
+                }
+            }
+        } else {
+            Ok(vec![])
+        }
+    }
+
+    fn handle_established_outbound_connection(
+        &mut self,
+        _connection_id: ConnectionId,
+        _peer: PeerId,
+        _addr: &Multiaddr,
+        _role_override: Endpoint,
+    ) -> Result<THandler<Self>, ConnectionDenied> {
+        Ok(DummyConnectionHandler)
     }
 
     fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
@@ -223,12 +224,21 @@ impl NetworkBehaviour for Behaviour {
         }
     }
 
+    fn on_connection_handler_event(
+        &mut self,
+        _peer_id: PeerId,
+        _connection_id: ConnectionId,
+        _event: THandlerOutEvent<Self>,
+    ) {
+        // Nothing to do.
+    }
+
     #[allow(clippy::single_match)]
     fn poll(
         &mut self,
         cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<ToSwarm<Self::OutEvent, THandlerInEvent<Self>>> {
+    ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         trace!("poll");
 
         if let Poll::Ready(Some(query_result)) = self.active_queries.poll_next_unpin(cx) {
