@@ -16,10 +16,10 @@ discv5 = "0.2.2"
 futures = "0.3.28"
 hex = "0.4.3"
 libp2p = { version = "0.52.1", default-features = false, features = ["dns", "tokio", "ecdsa", "noise", "macros", "secp256k1", "tcp", "yamux"] }
-lru = "0.10.1"
+lru = "0.11.0"
 parking_lot = "0.12.1"
 primitive-types = "0.12.1"
-serde_yaml = "0.9.22"
+serde_yaml = "0.9.25"
 smallvec = "1.11.0"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 tokio = { version = "1.26.0", features = ["full"] }
@@ -41,7 +41,7 @@ client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "fe3bec9f4
 environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "fe3bec9f46f4ec360cb4d231c9b0825d00674ef4" }
 eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "fe3bec9f46f4ec360cb4d231c9b0825d00674ef4" }
 ethereum_ssz = "0.5.3"
-ethereum_ssz_derive = "0.5.2"
+ethereum_ssz_derive = "0.5.3"
 slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "fe3bec9f46f4ec360cb4d231c9b0825d00674ef4" }
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "fe3bec9f46f4ec360cb4d231c9b0825d00674ef4" }
 
