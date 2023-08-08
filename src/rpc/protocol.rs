@@ -2,8 +2,7 @@ use ::types::fork_context::ForkContext;
 use futures::future::BoxFuture;
 use futures::prelude::*;
 use libp2p::core::UpgradeInfo;
-use libp2p::swarm::NegotiatedSubstream;
-use libp2p::{InboundUpgrade, OutboundUpgrade, PeerId};
+use libp2p::{InboundUpgrade, OutboundUpgrade, PeerId, Stream};
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::time::Duration;
@@ -178,21 +177,15 @@ impl UpgradeInfo for RpcRequestProtocol {
     }
 }
 
-pub(crate) type OutboundFramed = Framed<
-    Compat<NegotiatedSubstream>,
-    lighthouse_network::rpc::codec::OutboundCodec<MainnetEthSpec>,
->;
+pub(crate) type OutboundFramed =
+    Framed<Compat<Stream>, lighthouse_network::rpc::codec::OutboundCodec<MainnetEthSpec>>;
 
-impl OutboundUpgrade<NegotiatedSubstream> for RpcRequestProtocol {
+impl OutboundUpgrade<Stream> for RpcRequestProtocol {
     type Output = OutboundFramed;
     type Error = lighthouse_network::rpc::RPCError;
     type Future = BoxFuture<'static, Result<Self::Output, Self::Error>>;
 
-    fn upgrade_outbound(
-        self,
-        socket: NegotiatedSubstream,
-        protocol_id: Self::Info,
-    ) -> Self::Future {
+    fn upgrade_outbound(self, socket: Stream, protocol_id: Self::Info) -> Self::Future {
         info!(
             "[{}] RpcRequestProtocol::upgrade_outbound: request: {:?}",
             self.request.peer_id, self.request.request

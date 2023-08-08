@@ -4,7 +4,7 @@ use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::Endpoint;
-use libp2p::swarm::dummy::{ConnectionHandler as DummyConnectionHandler, ConnectionHandler};
+use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
     ConnectionDenied, ConnectionId, DialError, DialFailure, FromSwarm, NetworkBehaviour,
     PollParameters, THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,

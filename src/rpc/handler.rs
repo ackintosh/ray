@@ -6,10 +6,8 @@ use crate::rpc::protocol::{
 };
 use futures::{FutureExt, SinkExt, StreamExt};
 use libp2p::swarm::handler::{ConnectionEvent, FullyNegotiatedInbound, FullyNegotiatedOutbound};
-use libp2p::swarm::{
-    ConnectionHandler, ConnectionHandlerEvent, KeepAlive, NegotiatedSubstream, SubstreamProtocol,
-};
-use libp2p::PeerId;
+use libp2p::swarm::{ConnectionHandler, ConnectionHandlerEvent, KeepAlive, SubstreamProtocol};
+use libp2p::{PeerId, Stream};
 use lighthouse_network::rpc::methods::RPCCodedResponse;
 use smallvec::SmallVec;
 use std::collections::hash_map::Entry;
@@ -48,9 +46,9 @@ pub struct SubstreamId(usize);
 
 enum InboundSubstreamState {
     // The underlying substream is not being used.
-    Idle(InboundFramed<NegotiatedSubstream>),
+    Idle(InboundFramed<Stream>),
     // The underlying substream is processing responses.
-    Busy(Pin<Box<dyn Future<Output = Result<InboundFramed<NegotiatedSubstream>, String>> + Send>>),
+    Busy(Pin<Box<dyn Future<Output = Result<InboundFramed<Stream>, String>> + Send>>),
     // Temporary state during processing
     Poisoned,
 }
@@ -280,8 +278,6 @@ impl<Id> Handler<Id> {
             RpcRequestProtocol,
             lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
         >,
-        // stream: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
-        // info: Self::OutboundOpenInfo,
     ) {
         info!("[{}] on_fully_negotiated_outbound", self.peer_id,);
         let request = outbound.info;
