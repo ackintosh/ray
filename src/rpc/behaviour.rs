@@ -1,11 +1,12 @@
 use crate::network::ReqId;
 use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
+use libp2p::core::Endpoint;
 use libp2p::swarm::{
-    ConnectionId, FromSwarm, NetworkBehaviour, NotifyHandler, PollParameters, THandlerInEvent,
-    THandlerOutEvent, ToSwarm,
+    ConnectionDenied, ConnectionId, FromSwarm, NetworkBehaviour, NotifyHandler, PollParameters,
+    THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
-use libp2p::PeerId;
+use libp2p::{Multiaddr, PeerId};
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use tracing::{info, trace};
@@ -113,16 +114,32 @@ impl<Id: ReqId> Behaviour<Id> {
 // SEE https://docs.rs/libp2p/0.39.1/libp2p/tutorial/index.html#network-behaviour
 impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
     type ConnectionHandler = Handler<Id>;
-    type OutEvent = RpcEvent;
+    type ToSwarm = RpcEvent;
 
-    fn new_handler(&mut self) -> Self::ConnectionHandler {
-        Handler::new(self.fork_context.clone())
+    fn handle_established_inbound_connection(
+        &mut self,
+        _connection_id: ConnectionId,
+        peer_id: PeerId,
+        _local_addr: &Multiaddr,
+        _remote_addr: &Multiaddr,
+    ) -> Result<THandler<Self>, ConnectionDenied> {
+        Ok(Handler::new(peer_id, self.fork_context.clone()))
+    }
+
+    fn handle_established_outbound_connection(
+        &mut self,
+        _connection_id: ConnectionId,
+        peer_id: PeerId,
+        _addr: &Multiaddr,
+        _role_override: Endpoint,
+    ) -> Result<THandler<Self>, ConnectionDenied> {
+        Ok(Handler::new(peer_id, self.fork_context.clone()))
     }
 
     fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
         match event {
-            FromSwarm::ConnectionEstablished(_)
-            | FromSwarm::ConnectionClosed(_)
+            FromSwarm::ConnectionClosed(_)
+            | FromSwarm::ConnectionEstablished(_)
             | FromSwarm::AddressChange(_)
             | FromSwarm::DialFailure(_)
             | FromSwarm::ListenFailure(_)
@@ -131,8 +148,9 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
             | FromSwarm::ExpiredListenAddr(_)
             | FromSwarm::ListenerError(_)
             | FromSwarm::ListenerClosed(_)
-            | FromSwarm::NewExternalAddr(_)
-            | FromSwarm::ExpiredExternalAddr(_) => {
+            | FromSwarm::NewExternalAddrCandidate(_)
+            | FromSwarm::ExternalAddrExpired(_)
+            | FromSwarm::ExternalAddrConfirmed(_) => {
                 // Rpc Behaviour does not act on these swarm events. We use a comprehensive match
                 // statement to ensure future events are dealt with appropriately.
             }
@@ -180,7 +198,7 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
         &mut self,
         _cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<ToSwarm<Self::OutEvent, THandlerInEvent<Self>>> {
+    ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         if !self.events.is_empty() {
             return Poll::Ready(self.events.remove(0));
         }

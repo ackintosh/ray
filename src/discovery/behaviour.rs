@@ -4,7 +4,7 @@ use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::Endpoint;
-use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
+use libp2p::swarm::dummy::{ConnectionHandler as DummyConnectionHandler, ConnectionHandler};
 use libp2p::swarm::{
     ConnectionDenied, ConnectionId, DialError, DialFailure, FromSwarm, NetworkBehaviour,
     PollParameters, THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
@@ -102,10 +102,8 @@ impl Behaviour {
     fn on_dial_failure(&self, peer_id: Option<PeerId>, dial_error: &DialError) {
         if let Some(peer_id) = peer_id {
             match dial_error {
-                DialError::Banned
-                | DialError::LocalPeerId { .. }
+                DialError::LocalPeerId { .. }
                 | DialError::NoAddresses
-                | DialError::InvalidPeerId(_)
                 | DialError::WrongPeerId { .. }
                 | DialError::Denied { .. }
                 | DialError::Transport(_) => {
@@ -121,9 +119,7 @@ impl Behaviour {
                         }
                     }
                 }
-                DialError::Aborted
-                | DialError::ConnectionLimit(_)
-                | DialError::DialPeerConditionFalse(_) => {}
+                DialError::Aborted | DialError::DialPeerConditionFalse(_) => {}
             }
         }
     }
@@ -217,8 +213,9 @@ impl NetworkBehaviour for Behaviour {
             | FromSwarm::ExpiredListenAddr(_)
             | FromSwarm::ListenerError(_)
             | FromSwarm::ListenerClosed(_)
-            | FromSwarm::NewExternalAddr(_)
-            | FromSwarm::ExpiredExternalAddr(_) => {
+            | FromSwarm::NewExternalAddrCandidate(_)
+            | FromSwarm::ExternalAddrExpired(_)
+            | FromSwarm::ExternalAddrConfirmed(_) => {
                 // Ignore events not relevant to discovery
             }
         }
