@@ -8,7 +8,7 @@ use tiny_keccak::{Hasher, Keccak};
 pub(crate) fn enr_to_peer_id(enr: &Enr) -> PeerId {
     match enr.public_key() {
         CombinedPublicKey::Secp256k1(pk) => {
-            let pk_bytes = pk.to_bytes();
+            let pk_bytes = pk.to_sec1_bytes();
             let libp2p_pk = libp2p::identity::secp256k1::PublicKey::try_from_bytes(&pk_bytes)
                 .expect("valid public key");
             let public_key: libp2p::identity::PublicKey = libp2p_pk.into();

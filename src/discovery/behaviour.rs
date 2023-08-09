@@ -1,6 +1,6 @@
 use crate::discovery::DiscoveryEvent;
 use discv5::enr::{CombinedKey, NodeId};
-use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, QueryError};
+use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, ListenConfig, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::Endpoint;
@@ -11,7 +11,7 @@ use libp2p::swarm::{
 };
 use libp2p::{Multiaddr, PeerId};
 use lru::LruCache;
-use std::net::SocketAddr;
+use std::net::Ipv4Addr;
 use std::num::NonZeroUsize;
 use std::task::{Context, Poll};
 use std::time::Duration;
@@ -46,10 +46,12 @@ impl Behaviour {
         local_enr_key: CombinedKey,
         boot_enr: &Vec<Enr>,
     ) -> Self {
-        let config = Discv5ConfigBuilder::new()
-            // For ease to observe the `Discv5Event::SocketUpdated` event, set a short duration here.
-            .ping_interval(Duration::from_secs(10))
-            .build();
+        let config = Discv5ConfigBuilder::new(
+            ListenConfig::default().with_ipv4(Ipv4Addr::UNSPECIFIED, 9000),
+        )
+        // For ease to observe the `Discv5Event::SocketUpdated` event, set a short duration here.
+        .ping_interval(Duration::from_secs(10))
+        .build();
         // construct the discv5 server
         let mut discv5 = Discv5::new(local_enr, local_enr_key, config).unwrap();
 
@@ -61,10 +63,9 @@ impl Behaviour {
         }
 
         // start the discv5 server
-        let listen_addr = "0.0.0.0:9000".parse::<SocketAddr>().unwrap();
         // TODO: error handling
         // SEE https://github.com/sigp/lighthouse/blob/73ec29c267f057e70e89856403060c4c35b5c0c8/beacon_node/eth2_libp2p/src/discovery/mod.rs#L235-L238
-        discv5.start(listen_addr).await.unwrap();
+        discv5.start().await.unwrap();
         info!(
             "Started Discovery v5 server. local_enr: {}",
             discv5.local_enr()
