@@ -6,10 +6,8 @@ use crate::rpc::protocol::{
 };
 use futures::{FutureExt, SinkExt, StreamExt};
 use libp2p::swarm::handler::{ConnectionEvent, FullyNegotiatedInbound, FullyNegotiatedOutbound};
-use libp2p::swarm::{
-    ConnectionHandler, ConnectionHandlerEvent, KeepAlive, NegotiatedSubstream, SubstreamProtocol,
-};
-use libp2p::PeerId;
+use libp2p::swarm::{ConnectionHandler, ConnectionHandlerEvent, KeepAlive, SubstreamProtocol};
+use libp2p::{PeerId, Stream};
 use lighthouse_network::rpc::methods::RPCCodedResponse;
 use smallvec::SmallVec;
 use std::collections::hash_map::Entry;
@@ -48,9 +46,9 @@ pub struct SubstreamId(usize);
 
 enum InboundSubstreamState {
     // The underlying substream is not being used.
-    Idle(InboundFramed<NegotiatedSubstream>),
+    Idle(InboundFramed<Stream>),
     // The underlying substream is processing responses.
-    Busy(Pin<Box<dyn Future<Output = Result<InboundFramed<NegotiatedSubstream>, String>> + Send>>),
+    Busy(Pin<Box<dyn Future<Output = Result<InboundFramed<Stream>, String>> + Send>>),
     // Temporary state during processing
     Poisoned,
 }
@@ -120,11 +118,11 @@ pub(crate) struct Handler<Id> {
     // Sequential ID generator for outbound substreams.
     outbound_substream_id: SubstreamIdGenerator,
     // The PeerId this handler communicate to. Note this is just for debugging.
-    peer_id: Option<PeerId>,
+    peer_id: PeerId,
 }
 
 impl<Id> Handler<Id> {
-    pub(crate) fn new(fork_context: Arc<ForkContext>) -> Self {
+    pub(crate) fn new(peer_id: PeerId, fork_context: Arc<ForkContext>) -> Self {
         // SEE: https://github.com/sigp/lighthouse/blob/fff4dd6311695c1d772a9d6991463915edf223d5/beacon_node/lighthouse_network/src/rpc/protocol.rs#L114
         let max_rpc_size = 10 * 1_048_576; // 10M
         Handler {
@@ -137,14 +135,8 @@ impl<Id> Handler<Id> {
             inbound_substream_id: SubstreamIdGenerator::new(),
             outbound_substreams: HashMap::new(),
             outbound_substream_id: SubstreamIdGenerator::new(),
-            peer_id: None,
+            peer_id,
         }
-    }
-
-    fn peer_id(&self) -> String {
-        self.peer_id
-            .map(|p| p.to_string())
-            .unwrap_or("no_peer_id".to_string())
     }
 
     // Status
@@ -170,8 +162,7 @@ impl<Id> Handler<Id> {
         if !matches!(self.state, HandlerState::Active) {
             warn!(
                 "[{}] [send_goodbye_and_shutdown] the handler state is not Active: {:?}",
-                self.peer_id(),
-                self.state
+                self.peer_id, self.state
             );
             return;
         }
@@ -194,7 +185,7 @@ impl<Id> Handler<Id> {
         // Update the state to start shutdown process.
         info!(
             "[{}] [send_goodbye_and_shutdown] Updated the handler state to `ShuttingDown`",
-            self.peer_id()
+            self.peer_id
         );
         self.state = HandlerState::ShuttingDown(Box::pin(sleep_until(
             Instant::now() + Duration::from_secs(SHUTDOWN_TIMEOUT_SECS),
@@ -243,7 +234,7 @@ impl<Id> Handler<Id> {
         let (request, substream) = inbound.protocol;
         info!(
             "[{}] on_fully_negotiated_inbound. request: {request:?}",
-            self.peer_id()
+            self.peer_id
         );
 
         let inbound_substream_id = self.inbound_substream_id.next();
@@ -258,8 +249,7 @@ impl<Id> Handler<Id> {
         ) {
             error!(
                 "[{}] inbound_substream_id is duplicated. substream_id: {}",
-                self.peer_id(),
-                inbound_substream_id.0
+                self.peer_id, inbound_substream_id.0
             );
         }
 
@@ -288,10 +278,8 @@ impl<Id> Handler<Id> {
             RpcRequestProtocol,
             lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
         >,
-        // stream: <Self::OutboundProtocol as OutboundUpgradeSend>::Output,
-        // info: Self::OutboundOpenInfo,
     ) {
-        info!("[{}] on_fully_negotiated_outbound", self.peer_id(),);
+        info!("[{}] on_fully_negotiated_outbound", self.peer_id,);
         let request = outbound.info;
         let outbound_substream_id = self.outbound_substream_id.next();
 
@@ -311,8 +299,8 @@ impl<Id> Handler<Id> {
 
 // SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
 impl<Id: ReqId> ConnectionHandler for Handler<Id> {
-    type InEvent = InstructionToHandler<Id>;
-    type OutEvent = HandlerReceived;
+    type FromBehaviour = InstructionToHandler<Id>;
+    type ToBehaviour = HandlerReceived;
     type Error = RPCError;
     type InboundProtocol = RpcProtocol;
     type OutboundProtocol = RpcRequestProtocol;
@@ -320,7 +308,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
     type OutboundOpenInfo = lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>;
 
     fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
-        info!("[{}] [ConnectionHandler::listen_protocol]", self.peer_id());
+        info!("[{}] [ConnectionHandler::listen_protocol]", self.peer_id);
 
         SubstreamProtocol::new(
             RpcProtocol::new(self.fork_context.clone(), self.max_rpc_size, self.peer_id),
@@ -344,7 +332,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
         ConnectionHandlerEvent<
             Self::OutboundProtocol,
             Self::OutboundOpenInfo,
-            Self::OutEvent,
+            Self::ToBehaviour,
             Self::Error,
         >,
     > {
@@ -390,7 +378,9 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
         // `crate::rpc::Behaviour::inject_event()` is called with the event returned here.
         // /////////////////////////////////////////////////////////////////////////////////////////////////
         if !self.out_events.is_empty() {
-            return Poll::Ready(ConnectionHandlerEvent::Custom(self.out_events.remove(0)));
+            return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
+                self.out_events.remove(0),
+            ));
         }
 
         // /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -451,12 +441,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
                             // The pending messages have been sent successfully and the stream has
                             // terminated
                             Poll::Ready(Ok(_stream)) => {
-                                trace!(
-                                    "[{}] Sent a response successfully.",
-                                    self.peer_id
-                                        .map(|p| p.to_string())
-                                        .unwrap_or("no_peer_id".to_string())
-                                );
+                                trace!("[{}] Sent a response successfully.", self.peer_id,);
                                 inbound_substreams_to_remove.push(*substream_id);
                                 // There is nothing more to process on this substream as it has
                                 // been closed. Move on to the next one.
@@ -467,10 +452,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
                                 // TODO: Report the error that occurred during the send process
                                 error!(
                                     "[{}] Failed to send a response. error: {}",
-                                    self.peer_id
-                                        .map(|p| p.to_string())
-                                        .unwrap_or("no_peer_id".to_string()),
-                                    error_message
+                                    self.peer_id, error_message,
                                 );
                                 inbound_substreams_to_remove.push(*substream_id);
                                 break;
@@ -496,7 +478,6 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
         // Drive outbound streams that need to be processed
         // /////////////////////////////////////////////////////////////////////////////////////////////////
         for outbound_substream_id in self.outbound_substreams.keys().copied().collect::<Vec<_>>() {
-            let peer_id = self.peer_id();
             let mut entry = match self.outbound_substreams.entry(outbound_substream_id) {
                 Entry::Occupied(entry) => entry,
                 Entry::Vacant(_) => unreachable!(),
@@ -505,8 +486,8 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
             match entry.get_mut().poll_next_unpin(cx) {
                 Poll::Ready(Some(Ok(rpc_coded_response))) => match rpc_coded_response {
                     RPCCodedResponse::Success(response) => {
-                        info!("[{}] received a response: {response:?}", self.peer_id());
-                        return Poll::Ready(ConnectionHandlerEvent::Custom(
+                        info!("[{}] received a response: {response:?}", self.peer_id);
+                        return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
                             HandlerReceived::Response(response),
                         ));
                     }
@@ -520,7 +501,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
                 Poll::Ready(Some(Err(e))) => {
                     error!(
                         "[{}] An error occurred while processing outbound stream. error: {:?}",
-                        peer_id, e,
+                        self.peer_id, e,
                     );
                 }
                 Poll::Ready(None) => {
@@ -529,7 +510,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
                     // ////////////////
                     info!(
                         "[{}] Stream closed by remote. outbound_substream_id: {:?}",
-                        peer_id, outbound_substream_id
+                        self.peer_id, outbound_substream_id
                     );
                     // drop the stream
                     entry.remove_entry();
@@ -545,28 +526,20 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
         Poll::Pending
     }
 
-    fn on_behaviour_event(&mut self, event: Self::InEvent) {
-        info!(
-            "[{}] on_behaviour_event. event: {:?}",
-            self.peer_id(),
-            event
-        );
+    fn on_behaviour_event(&mut self, event: Self::FromBehaviour) {
+        info!("[{}] on_behaviour_event. event: {:?}", self.peer_id, event);
 
         match event {
             InstructionToHandler::Status(request_id, status_message, peer_id) => {
-                self.peer_id = Some(peer_id); // This is just for debugging.
                 self.send_status(request_id, peer_id, status_message);
             }
             InstructionToHandler::Goodbye(request_id, reason, peer_id) => {
-                self.peer_id = Some(peer_id); // This is just for debugging.
                 self.shutdown(Some((request_id, peer_id, reason)));
             }
             InstructionToHandler::Request(request_id, request, peer_id) => {
-                self.peer_id = Some(peer_id); // This is just for debugging.
                 self.send_request(request_id, peer_id, request);
             }
             InstructionToHandler::Response(substream_id, response, peer_id) => {
-                self.peer_id = Some(peer_id); // This is just for debugging.
                 self.send_response(peer_id, substream_id, response)
             }
         };
@@ -588,19 +561,28 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
             ConnectionEvent::FullyNegotiatedOutbound(fully_negotiated_outbound) => {
                 self.on_fully_negotiated_outbound(fully_negotiated_outbound);
             }
-            ConnectionEvent::AddressChange(_) => {}
+            ConnectionEvent::AddressChange(_) => {
+                // We dont care about these changes as they have no bearing on our RPC internal
+                // logic.
+            }
             ConnectionEvent::DialUpgradeError(dial_upgrade_error) => {
                 warn!(
                     "[{}] dial_upgrade_error. info: {}, error: {}",
-                    self.peer_id(),
-                    dial_upgrade_error.info,
-                    dial_upgrade_error.error,
+                    self.peer_id, dial_upgrade_error.info, dial_upgrade_error.error,
                 );
 
                 // TODO
                 // ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L453
             }
             ConnectionEvent::ListenUpgradeError(_) => {}
+            ConnectionEvent::LocalProtocolsChange(_) => {
+                // This shouldn't effect this handler, we will still negotiate streams if we support
+                // the protocol as usual.
+            }
+            ConnectionEvent::RemoteProtocolsChange(_) => {
+                // This shouldn't effect this handler, we will still negotiate streams if we support
+                // the protocol as usual.
+            }
         }
     }
 }

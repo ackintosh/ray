@@ -17,7 +17,7 @@ use tracing::log::{error, trace};
 // SEE https://github.com/sigp/lighthouse/blob/eee0260a68696db58e92385ebd11a9a08e4c4665/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L21
 impl NetworkBehaviour for PeerManager {
     type ConnectionHandler = DummyConnectionHandler;
-    type OutEvent = PeerManagerEvent;
+    type ToSwarm = PeerManagerEvent;
 
     fn handle_established_inbound_connection(
         &mut self,
@@ -97,16 +97,24 @@ impl NetworkBehaviour for PeerManager {
                     connection_closed.peer_id, connection_closed.endpoint
                 );
             }
-            FromSwarm::AddressChange(_) => {}
-            FromSwarm::DialFailure(_) => {}
-            FromSwarm::ListenFailure(_) => {}
-            FromSwarm::NewListener(_) => {}
-            FromSwarm::NewListenAddr(_) => {}
-            FromSwarm::ExpiredListenAddr(_) => {}
-            FromSwarm::ListenerError(_) => {}
-            FromSwarm::ListenerClosed(_) => {}
-            FromSwarm::NewExternalAddr(_) => {}
-            FromSwarm::ExpiredExternalAddr(_) => {}
+            FromSwarm::DialFailure(_) => {
+                // TODO: https://github.com/sigp/lighthouse/blob/ff9b09d9646b712b2fd9fe26feeed5758daa0aa6/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L130
+            }
+            FromSwarm::ExternalAddrConfirmed(_) => {
+                // TODO:https://github.com/sigp/lighthouse/blob/ff9b09d9646b712b2fd9fe26feeed5758daa0aa6/beacon_node/lighthouse_network/src/peer_manager/network_behaviour.rs#L138
+            }
+            FromSwarm::AddressChange(_)
+            | FromSwarm::ListenFailure(_)
+            | FromSwarm::NewListener(_)
+            | FromSwarm::NewListenAddr(_)
+            | FromSwarm::ExpiredListenAddr(_)
+            | FromSwarm::ListenerError(_)
+            | FromSwarm::ListenerClosed(_)
+            | FromSwarm::NewExternalAddrCandidate(_)
+            | FromSwarm::ExternalAddrExpired(_) => {
+                // The rest of the events we ignore since they are handled in their associated
+                // `SwarmEvent`
+            }
         }
     }
 
@@ -123,7 +131,7 @@ impl NetworkBehaviour for PeerManager {
         &mut self,
         cx: &mut Context<'_>,
         _params: &mut impl PollParameters,
-    ) -> Poll<ToSwarm<Self::OutEvent, THandlerInEvent<Self>>> {
+    ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         trace!("poll");
 
         while self.heartbeat.poll_tick(cx).is_ready() {
