@@ -6205,7 +6205,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tokio-io-timeout",
- "tokio-util 0.6.10",
+ "tokio-util 0.7.8",
  "tracing",
  "tracing-subscriber",
  "types",
