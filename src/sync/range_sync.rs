@@ -40,6 +40,7 @@ where
         match RangeSyncType::new(local_sync_info, remote_sync_info, is_block_known) {
             RangeSyncType::Finalized => {
                 self.chains.add_peer_or_create_chain(
+                    network_context,
                     peer_id,
                     local_sync_info.finalized_epoch,
                     remote_sync_info.finalized_root,
