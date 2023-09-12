@@ -1,7 +1,7 @@
 use crate::sync::network_context::SyncNetworkContext;
 use libp2p::PeerId;
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::Sub;
 use tracing::{debug, error, info, trace, warn};
@@ -9,6 +9,7 @@ use types::{Epoch, EthSpec, Hash256, MainnetEthSpec, Slot};
 
 /// A chain identifier
 pub type ChainId = u64;
+pub type BatchId = Epoch;
 
 /// Blocks are downloaded in batches from peers. This constant specifies how many epochs worth of
 /// blocks per batch are requested.
@@ -28,13 +29,14 @@ pub(crate) struct SyncingChain {
     /// The start of the chain segment. Any epoch previous to this one has been validated.
     start_epoch: Epoch,
     /// The target head slot.
-    target_head_slot: Slot,
+    pub(crate) target_head_slot: Slot,
     /// The target head root.
-    target_head_root: Hash256,
+    pub(crate) target_head_root: Hash256,
     /// The peers that agree on the `target_head_slot` and `target_head_root` as a canonical chain
     /// and thus available to download this chain from, as well as the batches we are currently
     /// requesting.
-    peers: Vec<PeerId>,
+    // peers: Vec<PeerId>,
+    peers: HashMap<PeerId, HashSet<BatchId>>,
     /// Starting epoch of the next batch that needs to be downloaded.
     to_be_downloaded: Epoch,
     /// Map of batches undergoing some kind of processing.
@@ -85,6 +87,8 @@ impl SyncingChain {
         peer_id: PeerId,
     ) -> Self {
         let id = id(&target_head_root, &target_head_slot);
+        let mut peers = HashMap::new();
+        peers.insert(peer_id, HashSet::new());
 
         SyncingChain {
             id,
@@ -92,7 +96,7 @@ impl SyncingChain {
             start_epoch,
             target_head_slot,
             target_head_root,
-            peers: vec![peer_id],
+            peers,
             to_be_downloaded: start_epoch,
             batches: HashMap::new(),
         }
@@ -100,6 +104,15 @@ impl SyncingChain {
 
     pub(crate) fn available_peers(&self) -> usize {
         self.peers.len()
+    }
+
+    /// Add a peer to the chain.
+    ///
+    /// If the chain is active, this starts requesting batches from this peer.
+    pub(crate) fn add_peer(&mut self, network: &mut SyncNetworkContext, peer_id: PeerId) {
+        if self.peers.entry(peer_id).or_default().is_empty() {
+            self.request_batches(network);
+        }
     }
 
     pub(crate) fn start_syncing(
@@ -145,9 +158,9 @@ impl SyncingChain {
         // NOTE: The peer pool should be shuffled before sending request for load balancing.
         // https://github.com/sigp/lighthouse/blob/8c69d57c2ce0d5f1a3cd44c215b2d52844043150/beacon_node/network/src/sync/range_sync/chain.rs#L985
 
-        for peer in self.peers.clone().iter() {
+        for (peer_id, _batches) in self.peers.clone().iter() {
             if let Some(epoch) = self.next_batch() {
-                self.send_batch(network_context, peer, epoch);
+                self.send_batch(network_context, peer_id, epoch);
             } else {
                 // No more batches, simply stop
                 return;

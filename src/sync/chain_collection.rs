@@ -30,6 +30,7 @@ impl ChainCollection {
 
     pub(crate) fn add_peer_or_create_chain(
         &mut self,
+        network_context: &mut SyncNetworkContext,
         peer_id: PeerId,
         start_epoch: Epoch,
         target_head_root: Hash256,
@@ -38,7 +39,13 @@ impl ChainCollection {
         let chain_id = crate::sync::syncing_chain::id(&target_head_root, &target_head_slot);
 
         match self.finalized_chains.entry(chain_id) {
-            Entry::Occupied(_) => todo!("Entry::Occupied"),
+            Entry::Occupied(mut entry) => {
+                info!(chain_id = %chain_id, "[{peer_id}] Adding peer to known chain.");
+                let chain = entry.get_mut();
+                assert_eq!(chain.target_head_root, target_head_root);
+                assert_eq!(chain.target_head_slot, target_head_slot);
+                chain.add_peer(network_context, peer_id);
+            }
             Entry::Vacant(entry) => {
                 info!("[{peer_id}] A new finalized chain is added to sync. chain_id: {chain_id}");
 
