@@ -26,7 +26,7 @@ pub(crate) enum BehaviourComposerEvent {
 
 /// The core behaviour that combines the sub-behaviours.
 #[derive(NetworkBehaviour)]
-#[behaviour(out_event = "BehaviourComposerEvent")]
+#[behaviour(to_swarm = "BehaviourComposerEvent")]
 pub(crate) struct BehaviourComposer<AppReqId: ReqId> {
     /* Sub-Behaviours */
     pub(crate) discovery: crate::discovery::behaviour::Behaviour,
