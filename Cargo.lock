@@ -619,7 +619,7 @@ dependencies = [
  "slog",
  "sloggers",
  "slot_clock",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "ssz_types",
  "state_processing",
  "store",
@@ -850,7 +850,7 @@ dependencies = [
  "ethereum_hashing",
  "ethereum_ssz",
  "ethereum_ssz_derive",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "ssz_types",
  "tree_hash",
 ]
@@ -1638,7 +1638,7 @@ dependencies = [
  "parking_lot 0.11.2",
  "rand 0.8.5",
  "rlp",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "socket2 0.4.9",
  "tokio",
  "tokio-stream",
@@ -1671,7 +1671,7 @@ dependencies = [
  "parking_lot 0.11.2",
  "rand 0.8.5",
  "rlp",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "socket2 0.4.9",
  "tokio",
  "tracing",
@@ -2247,7 +2247,7 @@ checksum = "e61ffea29f26e8249d35128a82ec8d3bd4fbc80179ea5f5e5e3daafef6a80fcb"
 dependencies = [
  "ethereum-types 0.14.1",
  "itertools",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
 ]
 
 [[package]]
@@ -3592,7 +3592,7 @@ dependencies = [
  "multiaddr 0.16.0",
  "parking_lot 0.12.1",
  "pin-project",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
 ]
 
 [[package]]
@@ -3672,7 +3672,7 @@ dependencies = [
  "rand 0.8.5",
  "rw-stream-sink 0.3.0",
  "sha2 0.10.7",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "thiserror",
  "unsigned-varint 0.7.1",
  "void",
@@ -3708,7 +3708,7 @@ dependencies = [
  "rw-stream-sink 0.3.0",
  "sec1 0.3.0",
  "sha2 0.10.7",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "thiserror",
  "unsigned-varint 0.7.1",
  "void",
@@ -3737,7 +3737,7 @@ dependencies = [
  "quick-protobuf",
  "rand 0.8.5",
  "rw-stream-sink 0.3.0",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "thiserror",
  "unsigned-varint 0.7.1",
  "void",
@@ -3765,7 +3765,7 @@ dependencies = [
  "quick-protobuf",
  "rand 0.8.5",
  "rw-stream-sink 0.4.0",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "thiserror",
  "unsigned-varint 0.7.1",
  "void",
@@ -3781,7 +3781,7 @@ dependencies = [
  "libp2p-core 0.38.0",
  "log",
  "parking_lot 0.12.1",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "trust-dns-resolver",
 ]
 
@@ -3796,7 +3796,7 @@ dependencies = [
  "libp2p-identity 0.2.2",
  "log",
  "parking_lot 0.12.1",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "trust-dns-resolver",
 ]
 
@@ -3824,7 +3824,7 @@ dependencies = [
  "rand 0.8.5",
  "regex",
  "sha2 0.10.7",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "thiserror",
  "unsigned-varint 0.7.1",
  "wasm-timer",
@@ -3846,7 +3846,7 @@ dependencies = [
  "prost",
  "prost-build",
  "prost-codec",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "thiserror",
  "void",
 ]
@@ -3904,7 +3904,7 @@ dependencies = [
  "libp2p-swarm 0.41.1",
  "log",
  "rand 0.8.5",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "socket2 0.4.9",
  "tokio",
  "trust-dns-proto",
@@ -3925,7 +3925,7 @@ dependencies = [
  "libp2p-swarm 0.43.3",
  "log",
  "rand 0.8.5",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "socket2 0.5.3",
  "tokio",
  "trust-dns-proto",
@@ -3959,7 +3959,7 @@ dependencies = [
  "nohash-hasher",
  "parking_lot 0.12.1",
  "rand 0.8.5",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "unsigned-varint 0.7.1",
 ]
 
@@ -4089,7 +4089,7 @@ dependencies = [
  "log",
  "pin-project",
  "rand 0.8.5",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "thiserror",
  "tokio",
  "void",
@@ -4113,7 +4113,7 @@ dependencies = [
  "multistream-select 0.13.0",
  "once_cell",
  "rand 0.8.5",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "tokio",
  "void",
 ]
@@ -4379,7 +4379,7 @@ dependencies = [
  "serde_derive",
  "sha2 0.10.7",
  "slog",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "snap",
  "ssz_types",
  "strum",
@@ -4633,7 +4633,7 @@ dependencies = [
  "itertools",
  "proc-macro2",
  "quote",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "syn 1.0.109",
 ]
 
@@ -4892,7 +4892,7 @@ dependencies = [
  "futures",
  "log",
  "pin-project",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "unsigned-varint 0.7.1",
 ]
 
@@ -4906,7 +4906,7 @@ dependencies = [
  "futures",
  "log",
  "pin-project",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "unsigned-varint 0.7.1",
 ]
 
@@ -4920,7 +4920,7 @@ dependencies = [
  "futures",
  "log",
  "pin-project",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "unsigned-varint 0.7.1",
 ]
 
@@ -5036,7 +5036,7 @@ dependencies = [
  "rlp",
  "slog",
  "slot_clock",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "ssz_types",
  "store",
  "strum",
@@ -5157,7 +5157,7 @@ dependencies = [
  "num-traits",
  "rand 0.7.3",
  "serde",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "zeroize",
 ]
 
@@ -5497,7 +5497,7 @@ dependencies = [
  "instant",
  "libc",
  "redox_syscall 0.2.16",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "winapi",
 ]
 
@@ -5510,7 +5510,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "redox_syscall 0.3.5",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "windows-targets",
 ]
 
@@ -6201,7 +6201,7 @@ dependencies = [
  "primitive-types 0.12.2",
  "serde_yaml 0.9.27",
  "slot_clock",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "tiny-keccak",
  "tokio",
  "tokio-io-timeout",
@@ -6506,7 +6506,7 @@ dependencies = [
  "fallible-streaming-iterator",
  "hashlink 0.8.3",
  "libsqlite3-sys",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
 ]
 
 [[package]]
@@ -7273,9 +7273,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.11.1"
+version = "1.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "942b4a808e05215192e39f4ab80813e599068285906cc91aa64f923db842bd5a"
+checksum = "4dccd0940a2dcdf68d092b8cbab7dc0ad8fa938bf95787e1b916b0e3d0e8e970"
 
 [[package]]
 name = "snap"
@@ -7399,7 +7399,7 @@ dependencies = [
  "itertools",
  "serde",
  "serde_derive",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "tree_hash",
  "typenum",
 ]
@@ -7422,7 +7422,7 @@ dependencies = [
  "merkle_proof",
  "rayon",
  "safe_arith",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "ssz_types",
  "tree_hash",
  "types",
@@ -7536,7 +7536,7 @@ dependencies = [
  "itertools",
  "proc-macro2",
  "quote",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "syn 1.0.109",
 ]
 
@@ -7550,7 +7550,7 @@ dependencies = [
  "itertools",
  "proc-macro2",
  "quote",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "syn 1.0.109",
 ]
 
@@ -8100,7 +8100,7 @@ dependencies = [
  "once_cell",
  "regex",
  "sharded-slab",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "thread_local",
  "tracing",
  "tracing-core",
@@ -8134,7 +8134,7 @@ checksum = "5c998ac5fe2b07c025444bdd522e6258110b63861c6698eedc610c071980238d"
 dependencies = [
  "ethereum-types 0.14.1",
  "ethereum_hashing",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
 ]
 
 [[package]]
@@ -8175,7 +8175,7 @@ dependencies = [
  "ipnet",
  "lazy_static",
  "rand 0.8.5",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "socket2 0.4.9",
  "thiserror",
  "tinyvec",
@@ -8197,7 +8197,7 @@ dependencies = [
  "lru-cache",
  "parking_lot 0.12.1",
  "resolv-conf",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "thiserror",
  "tokio",
  "tracing",
@@ -8301,7 +8301,7 @@ dependencies = [
  "serde_with",
  "serde_yaml 0.8.26",
  "slog",
- "smallvec 1.11.1",
+ "smallvec 1.11.2",
  "ssz_types",
  "superstruct 0.6.0",
  "swap_or_not_shuffle",
