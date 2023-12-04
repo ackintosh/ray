@@ -7,3 +7,5 @@ pub(crate) type Root = Hash256;
 pub(crate) fn default_finalized_root() -> Root {
     Root::from_low_u64_le(0)
 }
+
+pub(crate) type Enr = discv5::enr::Enr<discv5::enr::CombinedKey>;

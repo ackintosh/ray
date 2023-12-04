@@ -1,6 +1,8 @@
+use crate::discovery::enr::Eth2Enr;
 use crate::discovery::DiscoveryEvent;
+use crate::types::Enr;
 use discv5::enr::{CombinedKey, NodeId};
-use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, ListenConfig, QueryError};
+use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, ListenConfig, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::Endpoint;
@@ -17,6 +19,11 @@ use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
 use tracing::{debug, error, info, trace, warn};
+
+// The number of closest peers to search for when doing a regular peer search.
+// We could reduce this constant to speed up queries however at the cost of security. It will
+// make it easier to peers to eclipse this node. Kademlia suggests a value of 16.
+const FIND_NODE_QUERY_CLOSEST_PEERS: usize = 16;
 
 // ////////////////////////////////////////////////////////
 // Internal message of Discovery module
@@ -88,9 +95,27 @@ impl Behaviour {
 
     pub(crate) fn discover_peers(&mut self) {
         let target_node = NodeId::random();
+        let local_enr_fork_id = match self.discv5.local_enr().eth2() {
+            Ok(enr_fork_id) => enr_fork_id,
+            Err(e) => {
+                error!("Local ENR has no EnrForkId: {e}");
+                return;
+            }
+        };
+
+        // predicate for finding nodes with a matching fork and valid tcp port
+        let predicate = move |enr: &Enr| {
+            enr.eth2().map(|enr_fork_id| enr_fork_id.fork_digest)
+                == Ok(local_enr_fork_id.fork_digest)
+                && (enr.tcp4().is_some() || enr.tcp6().is_some())
+        };
         let query_future = self
             .discv5
-            .find_node(target_node)
+            .find_node_predicate(
+                target_node,
+                Box::new(predicate),
+                FIND_NODE_QUERY_CLOSEST_PEERS,
+            )
             .map(|result: Result<Vec<Enr>, QueryError>| QueryResult { result });
 
         info!(
