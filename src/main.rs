@@ -131,6 +131,8 @@ fn main() {
     );
 
     // construct a local ENR
+    // TODO: update local ENR on a new fork
+    // https://github.com/sigp/lighthouse/blob/878027654f0ebc498168c7d9f0646fc1d7f5d710/beacon_node/network/src/service.rs#L483
     let enr_fork_id = lh_beacon_chain.enr_fork_id();
     let enr = EnrBuilder::new("v4")
         .add_value("eth2", &enr_fork_id.as_ssz_bytes())
