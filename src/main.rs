@@ -24,6 +24,7 @@ use environment::{EnvironmentBuilder, LoggerConfig};
 use eth2_network_config::Eth2NetworkConfig;
 // use libp2p::identity::Keypair;
 use parking_lot::RwLock;
+use ssz::Encode;
 use std::sync::Arc;
 use tracing::info;
 
@@ -50,10 +51,6 @@ fn main() {
             CombinedKey::Ed25519(_) => unreachable!(), // not implemented as the ENR key is generated with secp256k1
         }
     };
-
-    // construct a local ENR
-    let enr = EnrBuilder::new("v4").build(&enr_key).unwrap();
-    info!("Local ENR: {}", enr);
 
     // Load network configs
     // Ref: https://github.com/sigp/lighthouse/blob/b6493d5e2400234ce7148e3a400d6663c3f0af89/common/clap_utils/src/lib.rs#L20
@@ -132,6 +129,16 @@ fn main() {
         lh_beacon_chain.clone(),
         network_sender,
     );
+
+    // construct a local ENR
+    // TODO: update local ENR on a new fork
+    // https://github.com/sigp/lighthouse/blob/878027654f0ebc498168c7d9f0646fc1d7f5d710/beacon_node/network/src/service.rs#L483
+    let enr_fork_id = lh_beacon_chain.enr_fork_id();
+    let enr = EnrBuilder::new("v4")
+        .add_value("eth2", &enr_fork_id.as_ssz_bytes())
+        .build(&enr_key)
+        .unwrap();
+    info!("Local ENR: {}", enr);
 
     // Network
     let network = runtime.block_on(Network::new(

@@ -1,4 +1,5 @@
 pub(crate) mod behaviour;
+mod enr;
 
 use libp2p::PeerId;
 
