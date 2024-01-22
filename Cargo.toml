@@ -20,7 +20,7 @@ lru = "0.12.1"
 parking_lot = "0.12.1"
 primitive-types = "0.12.2"
 serde_yaml = "0.9.30"
-smallvec = "1.11.2"
+smallvec = "1.13.1"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 tokio = { version = "1.35.1", features = ["full"] }
 tokio-io-timeout = "1.2.0"
