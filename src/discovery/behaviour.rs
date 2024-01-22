@@ -2,7 +2,7 @@ use crate::discovery::enr::Eth2Enr;
 use crate::discovery::DiscoveryEvent;
 use crate::types::Enr;
 use discv5::enr::{CombinedKey, NodeId};
-use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, ListenConfig, QueryError};
+use discv5::{ConfigBuilder, Discv5, ListenConfig, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::Endpoint;
@@ -40,7 +40,7 @@ struct QueryResult {
 
 pub(crate) struct Behaviour {
     discv5: Discv5,
-    event_stream: Receiver<Discv5Event>,
+    event_stream: Receiver<discv5::Event>,
     // Active discovery queries.
     active_queries: FuturesUnordered<std::pin::Pin<Box<dyn Future<Output = QueryResult> + Send>>>,
     // A collection of seen live ENRs for quick lookup and to map peer-id's to ENRs.
@@ -53,12 +53,11 @@ impl Behaviour {
         local_enr_key: CombinedKey,
         boot_enr: &Vec<Enr>,
     ) -> Self {
-        let config = Discv5ConfigBuilder::new(
-            ListenConfig::default().with_ipv4(Ipv4Addr::UNSPECIFIED, 9000),
-        )
-        // For ease to observe the `Discv5Event::SocketUpdated` event, set a short duration here.
-        .ping_interval(Duration::from_secs(10))
-        .build();
+        let config =
+            ConfigBuilder::new(ListenConfig::default().with_ipv4(Ipv4Addr::UNSPECIFIED, 9000))
+                // For ease to observe the `discv5::Event::SocketUpdated` event, set a short duration here.
+                .ping_interval(Duration::from_secs(10))
+                .build();
         // construct the discv5 server
         let mut discv5 = Discv5::new(local_enr, local_enr_key, config).unwrap();
 
@@ -264,6 +263,8 @@ impl NetworkBehaviour for Behaviour {
     ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         trace!("poll");
 
+        debug!("Active discovery query: {}", self.active_queries.len());
+
         if let Poll::Ready(Some(query_result)) = self.active_queries.poll_next_unpin(cx) {
             trace!("poll -> self.active_queries");
             return match query_result.result {
@@ -296,8 +297,8 @@ impl NetworkBehaviour for Behaviour {
 
         while let Poll::Ready(Some(event)) = self.event_stream.poll_recv(cx) {
             match event {
-                Discv5Event::SocketUpdated(socket_addr) => {
-                    info!("Discv5Event::SocketUpdated. {:?}", socket_addr);
+                discv5::Event::SocketUpdated(socket_addr) => {
+                    info!("discv5::Event::SocketUpdated. {:?}", socket_addr);
                 }
                 _ => {} // Discv5Event::Discovered(_) => {}
                         // Discv5Event::NodeInserted { .. } => {}

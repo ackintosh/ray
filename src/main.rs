@@ -19,10 +19,11 @@ use crate::peer_db::PeerDB;
 use ::types::MainnetEthSpec;
 use client::config::{ClientGenesis, Config};
 use client::ClientBuilder;
-use discv5::enr::{CombinedKey, EnrBuilder};
+use discv5::enr::CombinedKey;
 use environment::{EnvironmentBuilder, LoggerConfig};
 use eth2_network_config::Eth2NetworkConfig;
 // use libp2p::identity::Keypair;
+use discv5::Enr;
 use parking_lot::RwLock;
 use ssz::Encode;
 use std::sync::Arc;
@@ -134,7 +135,7 @@ fn main() {
     // TODO: update local ENR on a new fork
     // https://github.com/sigp/lighthouse/blob/878027654f0ebc498168c7d9f0646fc1d7f5d710/beacon_node/network/src/service.rs#L483
     let enr_fork_id = lh_beacon_chain.enr_fork_id();
-    let enr = EnrBuilder::new("v4")
+    let enr = Enr::builder()
         .add_value("eth2", &enr_fork_id.as_ssz_bytes())
         .build(&enr_key)
         .unwrap();
