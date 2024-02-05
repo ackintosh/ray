@@ -64,10 +64,10 @@ impl BatchInfo {
 
     /// Returns a BlocksByRange request associated with the batch.
     fn to_blocks_by_range_request(&self) -> lighthouse_network::rpc::BlocksByRangeRequest {
-        lighthouse_network::rpc::BlocksByRangeRequest {
-            start_slot: self.start_slot.into(),
-            count: self.end_slot.sub(self.start_slot).into(),
-        }
+        lighthouse_network::rpc::BlocksByRangeRequest::new(
+            self.start_slot.into(),
+            self.end_slot.sub(self.start_slot).into(),
+        )
     }
 }
 

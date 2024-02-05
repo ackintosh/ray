@@ -239,6 +239,8 @@ where
                 },
                 lighthouse_network::rpc::protocol::InboundRequest::BlocksByRange(blocks_by_range_request) => warn!("[{}] Received `InboundRequest::BlocksByRange` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_range_request),
                 lighthouse_network::rpc::protocol::InboundRequest::BlocksByRoot(blocks_by_root_request) => warn!("[{}] Received `InboundRequest::BlocksByRoot` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_root_request),
+                lighthouse_network::rpc::protocol::InboundRequest::BlobsByRange(_) => todo!(),
+                lighthouse_network::rpc::protocol::InboundRequest::BlobsByRoot(_) => todo!(),
                 lighthouse_network::rpc::protocol::InboundRequest::Ping(ping) => warn!("[{}] Received `InboundRequest::Ping` (ping: {:?}) but it was not handled.", request.peer_id, ping),
                 lighthouse_network::rpc::protocol::InboundRequest::MetaData(_) => warn!("[{}] Received `InboundRequest::MetaData` but it was not handled.", request.peer_id),
                 lighthouse_network::rpc::protocol::InboundRequest::LightClientBootstrap(_) => todo!(),
@@ -254,6 +256,8 @@ where
                 }
                 lighthouse_network::rpc::methods::RPCResponse::BlocksByRange(_) => {}
                 lighthouse_network::rpc::methods::RPCResponse::BlocksByRoot(_) => {}
+                lighthouse_network::rpc::methods::RPCResponse::BlobsByRange(_) => todo!(),
+                lighthouse_network::rpc::methods::RPCResponse::BlobsByRoot(_) => todo!(),
                 lighthouse_network::rpc::methods::RPCResponse::Pong(_) => {}
                 lighthouse_network::rpc::methods::RPCResponse::MetaData(_) => {}
                 lighthouse_network::rpc::methods::RPCResponse::LightClientBootstrap(_) => todo!(),
