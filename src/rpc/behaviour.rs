@@ -169,7 +169,6 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
                     "[{}] [on_connection_handler_event] Received request: {:?}",
                     peer_id, inbound_request
                 );
-
                 self.events
                     .push(ToSwarm::GenerateEvent(RpcEvent::ReceivedRequest(
                         ReceivedRequest {
@@ -185,13 +184,16 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
                     "[{}] [on_connection_handler_event] Received response: {:?}",
                     peer_id, response
                 );
-
                 self.events
                     .push(ToSwarm::GenerateEvent(RpcEvent::ReceivedResponse(
                         ReceivedResponse { peer_id, response },
                     )));
             }
             HandlerReceived::CloseConnection(rpc_error) => {
+                info!(
+                    "[{}] [on_connection_handler_event] Close connection: {:?}",
+                    peer_id, rpc_error
+                );
                 self.events.push(ToSwarm::CloseConnection {
                     peer_id,
                     connection: CloseConnection::All,
