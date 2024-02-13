@@ -66,11 +66,11 @@ struct InboundSubstreamInfo {
 
 // RPC internal message sent from handler to the behaviour
 #[derive(Debug)]
-pub(crate) enum HandlerReceived {
+pub(crate) enum ToBehaviour {
     // A request received from the outside.
-    Request(InboundRequest),
+    RequestReceived(InboundRequest),
     // A response received from the outside.
-    Response(lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>),
+    ResponseReceived(lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>),
     CloseConnection(RPCError),
 }
 
@@ -109,7 +109,7 @@ pub(crate) struct Handler<Id> {
     fork_context: Arc<ForkContext>,
     max_rpc_size: usize,
     // Queue of events to produce in `poll()`.
-    out_events: SmallVec<[HandlerReceived; 4]>,
+    out_events: SmallVec<[ToBehaviour; 4]>,
     // Current inbound substreams awaiting processing.
     inbound_substreams: HashMap<SubstreamId, InboundSubstreamInfo>,
     // Sequential ID generator for inbound substreams.
@@ -265,7 +265,7 @@ impl<Id> Handler<Id> {
 
         // Inform the received request to the behaviour
         self.out_events
-            .push(HandlerReceived::Request(InboundRequest {
+            .push(ToBehaviour::RequestReceived(InboundRequest {
                 substream_id: inbound_substream_id,
                 request,
             }));
@@ -301,7 +301,7 @@ impl<Id> Handler<Id> {
 // SEE https://github.com/sigp/lighthouse/blob/4af6fcfafd2c29bca82474ee378cda9ac254783a/beacon_node/eth2_libp2p/src/rpc/handler.rs#L311
 impl<Id: ReqId> ConnectionHandler for Handler<Id> {
     type FromBehaviour = InstructionToHandler<Id>;
-    type ToBehaviour = HandlerReceived;
+    type ToBehaviour = ToBehaviour;
     type Error = RPCError;
     type InboundProtocol = RpcProtocol;
     type OutboundProtocol = RpcRequestProtocol;
@@ -348,7 +348,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
                     self.state = HandlerState::Deactivated;
                     info!("poll: Updated the handler state to Deactivated");
                     return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
-                        HandlerReceived::CloseConnection(RPCError::Disconnected),
+                        ToBehaviour::CloseConnection(RPCError::Disconnected),
                     ));
                 }
                 Poll::Pending => {}
@@ -491,7 +491,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
                     RPCCodedResponse::Success(response) => {
                         info!("[{}] received a response: {response:?}", self.peer_id);
                         return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
-                            HandlerReceived::Response(response),
+                            ToBehaviour::ResponseReceived(response),
                         ));
                     }
                     RPCCodedResponse::Error(_, _) => {
@@ -521,7 +521,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
                     // TODO: Return an error
                     // ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L884-L898
                     return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
-                        HandlerReceived::CloseConnection(RPCError::Disconnected),
+                        ToBehaviour::CloseConnection(RPCError::Disconnected),
                     ));
                 }
                 Poll::Pending => {}

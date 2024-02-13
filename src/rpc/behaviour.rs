@@ -1,5 +1,5 @@
 use crate::network::ReqId;
-use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
+use crate::rpc::handler::{Handler, SubstreamId, ToBehaviour};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use libp2p::core::Endpoint;
 use libp2p::swarm::{
@@ -164,7 +164,7 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
         event: THandlerOutEvent<Self>,
     ) {
         match event {
-            HandlerReceived::Request(inbound_request) => {
+            ToBehaviour::RequestReceived(inbound_request) => {
                 info!(
                     "[{}] [on_connection_handler_event] Received request: {:?}",
                     peer_id, inbound_request
@@ -179,7 +179,7 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
                         },
                     )));
             }
-            HandlerReceived::Response(response) => {
+            ToBehaviour::ResponseReceived(response) => {
                 info!(
                     "[{}] [on_connection_handler_event] Received response: {:?}",
                     peer_id, response
@@ -189,7 +189,7 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
                         ReceivedResponse { peer_id, response },
                     )));
             }
-            HandlerReceived::CloseConnection(rpc_error) => {
+            ToBehaviour::CloseConnection(rpc_error) => {
                 info!(
                     "[{}] [on_connection_handler_event] Close connection: {:?}",
                     peer_id, rpc_error
