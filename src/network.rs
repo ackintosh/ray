@@ -63,10 +63,7 @@ where
         peer_db: Arc<RwLock<PeerDB>>,
         runtime: Arc<Runtime>,
     ) -> Self {
-        let transport = build_network_transport(key_pair).await;
-
-        let local_peer_id = crate::identity::enr_to_peer_id(&enr);
-
+        let transport = build_network_transport(key_pair.clone()).await;
         let behaviour = build_network_behaviour(
             enr,
             enr_key,
@@ -75,14 +72,16 @@ where
             lh_beacon_chain.clone(),
         )
         .await;
-
-        let swarm = SwarmBuilder::with_executor(
-            transport,
-            behaviour,
-            local_peer_id,
-            Executor(Arc::downgrade(&runtime)),
-        )
-        .build();
+        let swarm = SwarmBuilder::with_existing_identity(key_pair)
+            .with_tokio()
+            .with_other_transport(|_| transport)
+            .expect("infallible")
+            .with_behaviour(|_| behaviour)
+            .expect("infallible")
+            .with_swarm_config(|_| {
+                libp2p::swarm::Config::with_executor(Executor(Arc::downgrade(&runtime)))
+            })
+            .build();
 
         Network {
             swarm,

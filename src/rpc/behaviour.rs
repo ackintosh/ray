@@ -3,8 +3,8 @@ use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use libp2p::core::Endpoint;
 use libp2p::swarm::{
-    ConnectionDenied, ConnectionId, FromSwarm, NetworkBehaviour, NotifyHandler, PollParameters,
-    THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
+    CloseConnection, ConnectionDenied, ConnectionId, FromSwarm, NetworkBehaviour, NotifyHandler,
+    PollParameters, THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use std::sync::Arc;
@@ -166,7 +166,7 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
         match event {
             HandlerReceived::Request(inbound_request) => {
                 info!(
-                    "[{}] [inject_event] Received request: {:?}",
+                    "[{}] [on_connection_handler_event] Received request: {:?}",
                     peer_id, inbound_request
                 );
 
@@ -182,7 +182,7 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
             }
             HandlerReceived::Response(response) => {
                 info!(
-                    "[{}] [inject_event] Received response: {:?}",
+                    "[{}] [on_connection_handler_event] Received response: {:?}",
                     peer_id, response
                 );
 
@@ -190,6 +190,12 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
                     .push(ToSwarm::GenerateEvent(RpcEvent::ReceivedResponse(
                         ReceivedResponse { peer_id, response },
                     )));
+            }
+            HandlerReceived::CloseConnection(rpc_error) => {
+                self.events.push(ToSwarm::CloseConnection {
+                    peer_id,
+                    connection: CloseConnection::All,
+                });
             }
         }
     }

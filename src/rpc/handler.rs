@@ -71,6 +71,7 @@ pub(crate) enum HandlerReceived {
     Request(InboundRequest),
     // A response received from the outside.
     Response(lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>),
+    CloseConnection(RPCError),
 }
 
 // A request received from the outside.
@@ -346,7 +347,9 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
                 Poll::Ready(_) => {
                     self.state = HandlerState::Deactivated;
                     info!("poll: Updated the handler state to Deactivated");
-                    return Poll::Ready(ConnectionHandlerEvent::Close(RPCError::Disconnected));
+                    return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
+                        HandlerReceived::CloseConnection(RPCError::Disconnected),
+                    ));
                 }
                 Poll::Pending => {}
             }
@@ -517,7 +520,9 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
 
                     // TODO: Return an error
                     // ref: https://github.com/sigp/lighthouse/blob/3dd50bda11cefb3c17d851cbb8811610385c20aa/beacon_node/lighthouse_network/src/rpc/handler.rs#L884-L898
-                    return Poll::Ready(ConnectionHandlerEvent::Close(RPCError::Disconnected));
+                    return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
+                        HandlerReceived::CloseConnection(RPCError::Disconnected),
+                    ));
                 }
                 Poll::Pending => {}
             }
