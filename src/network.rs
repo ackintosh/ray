@@ -13,8 +13,8 @@ use discv5::enr::CombinedKey;
 use discv5::Enr;
 use futures::StreamExt;
 use libp2p::identity::Keypair;
-use libp2p::swarm::{SwarmBuilder, SwarmEvent};
-use libp2p::{PeerId, Swarm};
+use libp2p::swarm::SwarmEvent;
+use libp2p::{PeerId, Swarm, SwarmBuilder};
 use parking_lot::RwLock;
 use std::future::Future;
 use std::pin::Pin;
@@ -63,10 +63,7 @@ where
         peer_db: Arc<RwLock<PeerDB>>,
         runtime: Arc<Runtime>,
     ) -> Self {
-        let transport = build_network_transport(key_pair).await;
-
-        let local_peer_id = crate::identity::enr_to_peer_id(&enr);
-
+        let transport = build_network_transport(key_pair.clone()).await;
         let behaviour = build_network_behaviour(
             enr,
             enr_key,
@@ -75,14 +72,16 @@ where
             lh_beacon_chain.clone(),
         )
         .await;
-
-        let swarm = SwarmBuilder::with_executor(
-            transport,
-            behaviour,
-            local_peer_id,
-            Executor(Arc::downgrade(&runtime)),
-        )
-        .build();
+        let swarm = SwarmBuilder::with_existing_identity(key_pair)
+            .with_tokio()
+            .with_other_transport(|_| transport)
+            .expect("infallible")
+            .with_behaviour(|_| behaviour)
+            .expect("infallible")
+            .with_swarm_config(|_| {
+                libp2p::swarm::Config::with_executor(Executor(Arc::downgrade(&runtime)))
+            })
+            .build();
 
         Network {
             swarm,
@@ -239,6 +238,8 @@ where
                 },
                 lighthouse_network::rpc::protocol::InboundRequest::BlocksByRange(blocks_by_range_request) => warn!("[{}] Received `InboundRequest::BlocksByRange` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_range_request),
                 lighthouse_network::rpc::protocol::InboundRequest::BlocksByRoot(blocks_by_root_request) => warn!("[{}] Received `InboundRequest::BlocksByRoot` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_root_request),
+                lighthouse_network::rpc::protocol::InboundRequest::BlobsByRange(_) => todo!(),
+                lighthouse_network::rpc::protocol::InboundRequest::BlobsByRoot(_) => todo!(),
                 lighthouse_network::rpc::protocol::InboundRequest::Ping(ping) => warn!("[{}] Received `InboundRequest::Ping` (ping: {:?}) but it was not handled.", request.peer_id, ping),
                 lighthouse_network::rpc::protocol::InboundRequest::MetaData(_) => warn!("[{}] Received `InboundRequest::MetaData` but it was not handled.", request.peer_id),
                 lighthouse_network::rpc::protocol::InboundRequest::LightClientBootstrap(_) => todo!(),
@@ -254,6 +255,8 @@ where
                 }
                 lighthouse_network::rpc::methods::RPCResponse::BlocksByRange(_) => {}
                 lighthouse_network::rpc::methods::RPCResponse::BlocksByRoot(_) => {}
+                lighthouse_network::rpc::methods::RPCResponse::BlobsByRange(_) => todo!(),
+                lighthouse_network::rpc::methods::RPCResponse::BlobsByRoot(_) => todo!(),
                 lighthouse_network::rpc::methods::RPCResponse::Pong(_) => {}
                 lighthouse_network::rpc::methods::RPCResponse::MetaData(_) => {}
                 lighthouse_network::rpc::methods::RPCResponse::LightClientBootstrap(_) => todo!(),

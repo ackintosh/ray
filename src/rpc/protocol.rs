@@ -30,11 +30,15 @@ enum Protocol {
 }
 
 impl Protocol {
-    fn to_lighthouse_protocol(&self) -> lighthouse_network::rpc::protocol::Protocol {
+    fn to_lighthouse_supported_protocol(
+        &self,
+    ) -> lighthouse_network::rpc::protocol::SupportedProtocol {
         match self {
-            Protocol::Status => lighthouse_network::rpc::protocol::Protocol::Status,
-            Protocol::Goodbye => lighthouse_network::rpc::protocol::Protocol::Goodbye,
-            Protocol::BlocksByRange => lighthouse_network::rpc::protocol::Protocol::BlocksByRange,
+            Protocol::Status => lighthouse_network::rpc::protocol::SupportedProtocol::StatusV1,
+            Protocol::Goodbye => lighthouse_network::rpc::protocol::SupportedProtocol::GoodbyeV1,
+            Protocol::BlocksByRange => {
+                lighthouse_network::rpc::protocol::SupportedProtocol::BlocksByRangeV2
+            }
         }
     }
 }
@@ -56,15 +60,6 @@ enum SchemaVersion {
     V2,
 }
 
-impl SchemaVersion {
-    fn to_lighthouse_version(&self) -> lighthouse_network::rpc::protocol::Version {
-        match self {
-            SchemaVersion::V1 => lighthouse_network::rpc::protocol::Version::V1,
-            SchemaVersion::V2 => lighthouse_network::rpc::protocol::Version::V2,
-        }
-    }
-}
-
 impl Display for SchemaVersion {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let version = match self {
@@ -79,14 +74,6 @@ impl Display for SchemaVersion {
 enum Encoding {
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#encoding-strategies
     SSZSnappy,
-}
-
-impl Encoding {
-    fn to_lighthouse_encoding(&self) -> lighthouse_network::rpc::protocol::Encoding {
-        match self {
-            Encoding::SSZSnappy => lighthouse_network::rpc::protocol::Encoding::SSZSnappy,
-        }
-    }
 }
 
 impl Display for Encoding {
@@ -132,9 +119,8 @@ impl ProtocolId {
 
     fn lighthouse_protocol_id(&self) -> lighthouse_network::rpc::protocol::ProtocolId {
         lighthouse_network::rpc::protocol::ProtocolId::new(
-            self.protocol.to_lighthouse_protocol(),
-            self.schema_version.to_lighthouse_version(),
-            self.encoding.to_lighthouse_encoding(),
+            self.protocol.to_lighthouse_supported_protocol(),
+            lighthouse_network::rpc::protocol::Encoding::SSZSnappy,
         )
     }
 }

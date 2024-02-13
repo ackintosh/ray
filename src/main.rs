@@ -79,7 +79,7 @@ fn main() {
         .expect("initialize_logger")
         .multi_threaded_tokio_runtime()
         .expect("multi_threaded_tokio_runtime")
-        .optional_eth2_network_config(Some(eth2_network_config))
+        .eth2_network_config(eth2_network_config)
         .expect("optional_eth2_network_config")
         .build()
         .expect("environment builder");
@@ -90,6 +90,7 @@ fn main() {
         let freezer_db_path = client_config
             .create_freezer_db_path()
             .expect("freezer_db_path");
+        let blobs_db_path = client_config.create_blobs_db_path().expect("blob_db_path");
 
         let runtime_context = environment.core_context();
 
@@ -99,14 +100,13 @@ fn main() {
             .disk_store(
                 &db_path,
                 &freezer_db_path,
+                &blobs_db_path,
                 client_config.store.clone(),
                 runtime_context.log().clone(),
             )
             .expect("disk_store")
             .beacon_chain_builder(
-                ClientGenesis::SszBytes {
-                    genesis_state_bytes: network_config.genesis_state_bytes.clone(),
-                },
+                ClientGenesis::DepositContract, // TODO: Set eth1 endpoint?
                 client_config,
             )
             .await

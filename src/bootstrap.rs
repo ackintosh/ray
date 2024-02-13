@@ -15,7 +15,7 @@ pub(crate) async fn build_network_transport(
     key_pair: Keypair,
 ) -> libp2p::core::transport::Boxed<(PeerId, StreamMuxerBox)> {
     let tcp = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default().nodelay(true));
-    let transport = libp2p::dns::TokioDnsConfig::system(tcp).unwrap_or_else(|e| {
+    let transport = libp2p::dns::tokio::Transport::system(tcp).unwrap_or_else(|e| {
         error!("Failed to configure DNS: {}", e);
         exit(1);
     });

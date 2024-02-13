@@ -1,10 +1,10 @@
 use crate::network::ReqId;
-use crate::rpc::handler::{Handler, HandlerReceived, SubstreamId};
+use crate::rpc::handler::{Handler, SubstreamId, ToBehaviour};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use libp2p::core::Endpoint;
 use libp2p::swarm::{
-    ConnectionDenied, ConnectionId, FromSwarm, NetworkBehaviour, NotifyHandler, PollParameters,
-    THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
+    CloseConnection, ConnectionDenied, ConnectionId, FromSwarm, NetworkBehaviour, NotifyHandler,
+    PollParameters, THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use std::sync::Arc;
@@ -164,12 +164,11 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
         event: THandlerOutEvent<Self>,
     ) {
         match event {
-            HandlerReceived::Request(inbound_request) => {
+            ToBehaviour::RequestReceived(inbound_request) => {
                 info!(
-                    "[{}] [inject_event] Received request: {:?}",
+                    "[{}] [on_connection_handler_event] Received request: {:?}",
                     peer_id, inbound_request
                 );
-
                 self.events
                     .push(ToSwarm::GenerateEvent(RpcEvent::ReceivedRequest(
                         ReceivedRequest {
@@ -180,16 +179,25 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
                         },
                     )));
             }
-            HandlerReceived::Response(response) => {
+            ToBehaviour::ResponseReceived(response) => {
                 info!(
-                    "[{}] [inject_event] Received response: {:?}",
+                    "[{}] [on_connection_handler_event] Received response: {:?}",
                     peer_id, response
                 );
-
                 self.events
                     .push(ToSwarm::GenerateEvent(RpcEvent::ReceivedResponse(
                         ReceivedResponse { peer_id, response },
                     )));
+            }
+            ToBehaviour::CloseConnection(rpc_error) => {
+                info!(
+                    "[{}] [on_connection_handler_event] Close connection: {:?}",
+                    peer_id, rpc_error
+                );
+                self.events.push(ToSwarm::CloseConnection {
+                    peer_id,
+                    connection: CloseConnection::All,
+                });
             }
         }
     }
