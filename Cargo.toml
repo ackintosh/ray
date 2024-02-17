@@ -19,7 +19,7 @@ libp2p = { version = "0.52.3", default-features = false, features = ["dns", "tok
 lru = "0.12.2"
 parking_lot = "0.12.1"
 primitive-types = "0.12.2"
-serde_yaml = "0.9.30"
+serde_yaml = "0.9.31"
 smallvec = "1.13.1"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 tokio = { version = "1.35.1", features = ["full"] }
