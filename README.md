@@ -59,6 +59,7 @@ Here are the specifications / documentations that Consensus Layer Implementers s
 
 - https://github.com/ethereum/consensus-specs
 - https://github.com/ethereum/devp2p
+- https://github.com/ethereum/beacon-metrics
 
 ### Documents
 
