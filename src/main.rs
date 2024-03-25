@@ -148,6 +148,7 @@ fn main() {
 
         client_builder.beacon_chain.expect("beacon_chain")
     });
+    // TODO: logs for db dirs.
     info!("Built BeaconChain.");
 
     let (network_sender, network_receiver) = tokio::sync::mpsc::unbounded_channel();
