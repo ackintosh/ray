@@ -27,7 +27,7 @@ use discv5::Enr;
 use parking_lot::RwLock;
 use ssz::Encode;
 use std::sync::Arc;
-use tracing::info;
+use tracing::{info, warn};
 
 // Target number of peers to connect to.
 const TARGET_PEERS_COUNT: usize = 50;
@@ -98,7 +98,14 @@ fn main() {
     // BeaconChain
     info!("Building BeaconChain...");
     let lh_beacon_chain = runtime.block_on(async {
-        let client_config = Config::default();
+        warn!(
+            "Loading the genesis state from the genesis state in the `Eth2NetworkConfig`. \
+        Syncing from genesis is insecure and incompatible with data availability checks. \
+        You should instead perform a checkpoint sync from a trusted node"
+        );
+        let mut client_config = Config::default();
+        client_config.allow_insecure_genesis_sync = true;
+
         let db_path = client_config.create_db_path().expect("db_path");
         let freezer_db_path = client_config
             .create_freezer_db_path()
@@ -119,7 +126,15 @@ fn main() {
             )
             .expect("disk_store")
             .beacon_chain_builder(
-                ClientGenesis::DepositContract, // TODO: Set eth1 endpoint?
+                // Loads the genesis state from the genesis state in the `Eth2NetworkConfig`.
+                ClientGenesis::GenesisState,
+                // Ethereum Beacon Chain checkpoint sync endpoints
+                // https://eth-clients.github.io/checkpoint-sync-endpoints/
+                // ClientGenesis::CheckpointSyncUrl {
+                //     url: "https://sync-goerli.beaconcha.in/"
+                //         .parse()
+                //         .expect("checkpoint sync url should be parsed correctly."),
+                // },
                 client_config,
             )
             .await
