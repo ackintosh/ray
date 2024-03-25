@@ -98,13 +98,7 @@ fn main() {
     // BeaconChain
     info!("Building BeaconChain...");
     let lh_beacon_chain = runtime.block_on(async {
-        warn!(
-            "Loading the genesis state from the genesis state in the `Eth2NetworkConfig`. \
-        Syncing from genesis is insecure and incompatible with data availability checks. \
-        You should instead perform a checkpoint sync from a trusted node"
-        );
-        let mut client_config = Config::default();
-        client_config.allow_insecure_genesis_sync = true;
+        let client_config = Config::default();
 
         let db_path = client_config.create_db_path().expect("db_path");
         let freezer_db_path = client_config
@@ -126,15 +120,13 @@ fn main() {
             )
             .expect("disk_store")
             .beacon_chain_builder(
-                // Loads the genesis state from the genesis state in the `Eth2NetworkConfig`.
-                ClientGenesis::GenesisState,
                 // Ethereum Beacon Chain checkpoint sync endpoints
                 // https://eth-clients.github.io/checkpoint-sync-endpoints/
-                // ClientGenesis::CheckpointSyncUrl {
-                //     url: "https://sync-goerli.beaconcha.in/"
-                //         .parse()
-                //         .expect("checkpoint sync url should be parsed correctly."),
-                // },
+                ClientGenesis::CheckpointSyncUrl {
+                    url: "http://unstable.prater.beacon-api.nimbus.team"
+                        .parse()
+                        .expect("checkpoint sync url should be parsed correctly."),
+                },
                 client_config,
             )
             .await
