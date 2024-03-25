@@ -27,16 +27,17 @@ use discv5::Enr;
 use parking_lot::RwLock;
 use ssz::Encode;
 use std::sync::Arc;
-use tracing::info;
+use tracing::{info, warn};
 
 // Target number of peers to connect to.
 const TARGET_PEERS_COUNT: usize = 50;
 
 fn main() {
     tracing_subscriber::fmt::init();
-    info!("Ray v{}", env!("CARGO_PKG_VERSION"));
+    info!("Starting Ray v{}", env!("CARGO_PKG_VERSION"));
 
-    // generate private key
+    // Keys
+    info!("Generating keys...");
     let enr_key = CombinedKey::generate_secp256k1();
     let key_pair: libp2p::identity::Keypair = {
         match enr_key {
@@ -52,12 +53,16 @@ fn main() {
             CombinedKey::Ed25519(_) => unreachable!(), // not implemented as the ENR key is generated with secp256k1
         }
     };
+    info!("Generated ENR keys.");
 
-    // Load network configs
+    // NetworkConfig
     // Ref: https://github.com/sigp/lighthouse/blob/b6493d5e2400234ce7148e3a400d6663c3f0af89/common/clap_utils/src/lib.rs#L20
-    let network_config = NetworkConfig::new().expect("should load network configs");
+    info!("Loading NetworkConfig...");
+    let network_config = NetworkConfig::new().expect("should load network config");
+    info!("Loaded NetworkConfig.");
 
-    // build the tokio executor
+    // tokio Runtime
+    info!("Building tokio runtime...");
     let runtime = Arc::new(
         tokio::runtime::Builder::new_multi_thread()
             .thread_name("ray")
@@ -65,15 +70,20 @@ fn main() {
             .build()
             .unwrap(),
     );
+    info!("Built tokio runtime.");
 
     // PeerDB
     let peer_db = Arc::new(RwLock::new(PeerDB::new()));
 
-    // BeaconChain from lighthouse
+    // Eth2NetworkConfig
+    info!("Initializing Eth2NetworkConfig...");
     let eth2_network_config = Eth2NetworkConfig::constant("prater")
         .expect("Initiating the network config never fail")
         .expect("wrong network name");
+    info!(network = "prater", "Initialized Eth2NetworkConfig.");
 
+    // Environment
+    info!("Building Environment...");
     let environment = EnvironmentBuilder::mainnet()
         .initialize_logger(LoggerConfig::default())
         .expect("initialize_logger")
@@ -83,9 +93,19 @@ fn main() {
         .expect("optional_eth2_network_config")
         .build()
         .expect("environment builder");
+    info!(spec = "mainnet", "Built Environment.");
 
+    // BeaconChain
+    info!("Building BeaconChain...");
     let lh_beacon_chain = runtime.block_on(async {
-        let client_config = Config::default();
+        warn!(
+            "Loading the genesis state from the genesis state in the `Eth2NetworkConfig`. \
+        Syncing from genesis is insecure and incompatible with data availability checks. \
+        You should instead perform a checkpoint sync from a trusted node"
+        );
+        let mut client_config = Config::default();
+        client_config.allow_insecure_genesis_sync = true;
+
         let db_path = client_config.create_db_path().expect("db_path");
         let freezer_db_path = client_config
             .create_freezer_db_path()
@@ -106,7 +126,15 @@ fn main() {
             )
             .expect("disk_store")
             .beacon_chain_builder(
-                ClientGenesis::DepositContract, // TODO: Set eth1 endpoint?
+                // Loads the genesis state from the genesis state in the `Eth2NetworkConfig`.
+                ClientGenesis::GenesisState,
+                // Ethereum Beacon Chain checkpoint sync endpoints
+                // https://eth-clients.github.io/checkpoint-sync-endpoints/
+                // ClientGenesis::CheckpointSyncUrl {
+                //     url: "https://sync-goerli.beaconcha.in/"
+                //         .parse()
+                //         .expect("checkpoint sync url should be parsed correctly."),
+                // },
                 client_config,
             )
             .await
@@ -120,16 +148,20 @@ fn main() {
 
         client_builder.beacon_chain.expect("beacon_chain")
     });
+    // TODO: logs for db dirs.
+    info!("Built BeaconChain.");
 
     let (network_sender, network_receiver) = tokio::sync::mpsc::unbounded_channel();
 
     // SyncManager
+    info!("Building SyncManager...");
     let sync_sender = sync::spawn(
         runtime.clone(),
         peer_db.clone(),
         lh_beacon_chain.clone(),
         network_sender,
     );
+    info!("Built and spawned SyncManager.");
 
     // construct a local ENR
     // TODO: update local ENR on a new fork
@@ -142,6 +174,7 @@ fn main() {
     info!("Local ENR: {}", enr);
 
     // Network
+    info!("Building Network...");
     let network = runtime.block_on(Network::new(
         network_receiver,
         lh_beacon_chain,
@@ -153,8 +186,8 @@ fn main() {
         peer_db,
         runtime.clone(),
     ));
-
     runtime.block_on(network.spawn(runtime.clone()));
+    info!("Built and spawned Network");
 
     // block until shutdown requested
     let message = crate::signal::block_until_shutdown_requested(runtime);

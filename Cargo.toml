@@ -34,31 +34,16 @@ void = "1.0.2"
 
 # Switched to the forked version so use the codec implemented in lighthouse.
 # SEE: https://github.com/ackintosh/lighthouse/compare/stable...ackintosh:lighthouse:publish-codec
-lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7b7cdf1976dc0791c695a7cb05089fbf446d7686" }
-network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7b7cdf1976dc0791c695a7cb05089fbf446d7686" }
-beacon_chain = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7b7cdf1976dc0791c695a7cb05089fbf446d7686" }
-client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7b7cdf1976dc0791c695a7cb05089fbf446d7686" }
-environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7b7cdf1976dc0791c695a7cb05089fbf446d7686" }
-eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7b7cdf1976dc0791c695a7cb05089fbf446d7686" }
+lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
+network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
+beacon_chain = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
+client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
+environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
+eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 ethereum_ssz = "0.5.3"
 ethereum_ssz_derive = "0.5.3"
-slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "7b7cdf1976dc0791c695a7cb05089fbf446d7686" }
-types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "7b7cdf1976dc0791c695a7cb05089fbf446d7686" }
+slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
+types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 
 [build-dependencies]
 zip = "0.6.6"
-
-#[patch]
-#[patch.crates-io]
-# SEE: https://github.com/sigp/lighthouse/blob/230168deffc0adcae90e53256d42942b3ae97d93/Cargo.toml#L95
-#warp = { git = "https://github.com/macladson/warp", rev="7e75acc368229a46a236a8c991bf251fe7fe50ef" }
-
-# https://github.com/sigp/lighthouse/blob/c11638c36c25f3af910eecd33a6e45d1caa99f1f/Cargo.toml#L93-L98
-#[patch."https://github.com/ralexstokes/mev-rs"]
-#mev-rs = { git = "https://github.com/ralexstokes//mev-rs", rev = "7813d4a4a564e0754e9aaab2d95520ba437c3889" }
-#[patch."https://github.com/ralexstokes/ethereum-consensus"]
-#ethereum-consensus = { git = "https://github.com/ralexstokes//ethereum-consensus", rev = "9b0ee0a8a45b968c8df5e7e64ea1c094e16f053d" }
-#[patch."https://github.com/ralexstokes/ssz-rs"]
-#ssz-rs = { git = "https://github.com/ralexstokes//ssz-rs", rev = "adf1a0b14cef90b9536f28ef89da1fab316465e1" }
-#[patch."https://github.com/ralexstokes/beacon-api-client"]
-#beacon-api-client = { git = "https://github.com/ralexstokes//beacon-api-client", rev = "30679e9e25d61731cde54e14cd8a3688a39d8e5b" }
