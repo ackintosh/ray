@@ -20,14 +20,13 @@ use ::types::MainnetEthSpec;
 use client::config::{ClientGenesis, Config};
 use client::ClientBuilder;
 use discv5::enr::CombinedKey;
+use discv5::Enr;
 use environment::{EnvironmentBuilder, LoggerConfig};
 use eth2_network_config::Eth2NetworkConfig;
-// use libp2p::identity::Keypair;
-use discv5::Enr;
 use parking_lot::RwLock;
 use ssz::Encode;
 use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::info;
 
 // Target number of peers to connect to.
 const TARGET_PEERS_COUNT: usize = 50;
@@ -98,7 +97,14 @@ fn main() {
     // BeaconChain
     info!("Building BeaconChain...");
     let lh_beacon_chain = runtime.block_on(async {
-        let client_config = Config::default();
+        let client_config = {
+            let mut data_dir = home::home_dir().expect("home dir");
+            data_dir.push(".ray");
+            info!(data_dir = ?data_dir.display(), "Building the core configuration of a beacon node.");
+            let mut client_config = Config::default();
+            client_config.set_data_dir(data_dir);
+            client_config
+        };
 
         let db_path = client_config.create_db_path().expect("db_path");
         let freezer_db_path = client_config
@@ -140,7 +146,6 @@ fn main() {
 
         client_builder.beacon_chain.expect("beacon_chain")
     });
-    // TODO: logs for db dirs.
     info!("Built BeaconChain.");
 
     let (network_sender, network_receiver) = tokio::sync::mpsc::unbounded_channel();
