@@ -1,6 +1,6 @@
 # Ray
 
-An Ethereum Beacon Node implementation _for learning opportunities for to-be-implementers_. Ray would be a good starting point If you are interested to implement Beacon Node.
+_Ray_ is an open-source Ethereum Beacon Node implementation crafted for educational purposes. It offers a hands-on learning experience for those looking to understand the intricacies of Beacon Node implementation.
 
 [![CI](https://github.com/ackintosh/ray/actions/workflows/ci.yml/badge.svg)](https://github.com/ackintosh/ray/actions/workflows/ci.yml)
 
@@ -67,8 +67,8 @@ Here are the specifications / documentations that Consensus Layer Implementers s
 
 ### Videos
 
-[Whiteboard Series with NEAR | Ep: 44 Adrian Manning from Sigma Prime](https://www.youtube.com/watch?v=XvWf6QMBO6k)  
-> We'll explore how the nodes communicate and for what reason. This will include Discovery v5, libp2p, Gossipsub, and the Eth2 RPC.
+- [Whiteboard Series with NEAR | Ep: 44 Adrian Manning from Sigma Prime](https://www.youtube.com/watch?v=XvWf6QMBO6k)  
+  - > We'll explore how the nodes communicate and for what reason. This will include Discovery v5, libp2p, Gossipsub, and the Eth2 RPC.
 
 ## Author
 
