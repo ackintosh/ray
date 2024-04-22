@@ -5,8 +5,8 @@ use libp2p::core::{ConnectedPoint, Endpoint};
 use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
-    ConnectionDenied, ConnectionId, FromSwarm, NetworkBehaviour, PollParameters, THandler,
-    THandlerInEvent, THandlerOutEvent, ToSwarm,
+    ConnectionDenied, ConnectionId, FromSwarm, NetworkBehaviour, THandler, THandlerInEvent,
+    THandlerOutEvent, ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use std::task::{Context, Poll};
@@ -39,7 +39,7 @@ impl NetworkBehaviour for PeerManager {
         Ok(DummyConnectionHandler)
     }
 
-    fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
+    fn on_swarm_event(&mut self, event: FromSwarm) {
         match event {
             FromSwarm::ConnectionEstablished(connection_established) => {
                 trace!(
@@ -115,6 +115,7 @@ impl NetworkBehaviour for PeerManager {
                 // The rest of the events we ignore since they are handled in their associated
                 // `SwarmEvent`
             }
+            _ => todo!(),
         }
     }
 
@@ -130,7 +131,6 @@ impl NetworkBehaviour for PeerManager {
     fn poll(
         &mut self,
         cx: &mut Context<'_>,
-        _params: &mut impl PollParameters,
     ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         trace!("poll");
 

@@ -6,7 +6,7 @@ use crate::rpc::protocol::{
 };
 use futures::{FutureExt, SinkExt, StreamExt};
 use libp2p::swarm::handler::{ConnectionEvent, FullyNegotiatedInbound, FullyNegotiatedOutbound};
-use libp2p::swarm::{ConnectionHandler, ConnectionHandlerEvent, KeepAlive, SubstreamProtocol};
+use libp2p::swarm::{ConnectionHandler, ConnectionHandlerEvent, SubstreamProtocol};
 use libp2p::{PeerId, Stream};
 use lighthouse_network::rpc::methods::RPCCodedResponse;
 use smallvec::SmallVec;
@@ -302,7 +302,6 @@ impl<Id> Handler<Id> {
 impl<Id: ReqId> ConnectionHandler for Handler<Id> {
     type FromBehaviour = InstructionToHandler<Id>;
     type ToBehaviour = ToBehaviour;
-    type Error = RPCError;
     type InboundProtocol = RpcProtocol;
     type OutboundProtocol = RpcRequestProtocol;
     type InboundOpenInfo = ();
@@ -317,12 +316,11 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
         )
     }
 
-    fn connection_keep_alive(&self) -> KeepAlive {
+    fn connection_keep_alive(&self) -> bool {
         if matches!(self.state, HandlerState::Deactivated) {
-            // The timeout has expired. Force the disconnect.
-            KeepAlive::No
+            false
         } else {
-            KeepAlive::Yes
+            true
         }
     }
 
@@ -330,12 +328,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
         &mut self,
         cx: &mut Context<'_>,
     ) -> Poll<
-        ConnectionHandlerEvent<
-            Self::OutboundProtocol,
-            Self::OutboundOpenInfo,
-            Self::ToBehaviour,
-            Self::Error,
-        >,
+        ConnectionHandlerEvent<Self::OutboundProtocol, Self::OutboundOpenInfo, Self::ToBehaviour>,
     > {
         // trace!("poll");
 
@@ -588,6 +581,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
                 // This shouldn't effect this handler, we will still negotiate streams if we support
                 // the protocol as usual.
             }
+            _ => todo!(),
         }
     }
 }
