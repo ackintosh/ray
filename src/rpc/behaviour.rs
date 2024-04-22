@@ -4,7 +4,7 @@ use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
 use libp2p::core::Endpoint;
 use libp2p::swarm::{
     CloseConnection, ConnectionDenied, ConnectionId, FromSwarm, NetworkBehaviour, NotifyHandler,
-    PollParameters, THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
+    THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use std::sync::Arc;
@@ -136,7 +136,7 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
         Ok(Handler::new(peer_id, self.fork_context.clone()))
     }
 
-    fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
+    fn on_swarm_event(&mut self, event: FromSwarm) {
         match event {
             FromSwarm::ConnectionClosed(_)
             | FromSwarm::ConnectionEstablished(_)
@@ -154,6 +154,7 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
                 // Rpc Behaviour does not act on these swarm events. We use a comprehensive match
                 // statement to ensure future events are dealt with appropriately.
             }
+            _ => todo!(),
         };
     }
 
@@ -205,7 +206,6 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
     fn poll(
         &mut self,
         _cx: &mut Context<'_>,
-        _params: &mut impl PollParameters,
     ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         if !self.events.is_empty() {
             return Poll::Ready(self.events.remove(0));

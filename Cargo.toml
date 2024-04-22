@@ -16,7 +16,7 @@ discv5 = "0.5.0"
 futures = "0.3.30"
 hex = "0.4.3"
 home = "0.5.9"
-libp2p = { version = "0.52.3", default-features = false, features = ["dns", "tokio", "ecdsa", "noise", "macros", "secp256k1", "tcp", "yamux"] }
+libp2p = { version = "0.53.2", default-features = false, features = ["dns", "tokio", "ecdsa", "noise", "macros", "secp256k1", "tcp", "yamux"] }
 lru = "0.12.3"
 parking_lot = "0.12.1"
 primitive-types = "0.12.2"

@@ -8,8 +8,8 @@ use futures::{Future, FutureExt, StreamExt};
 use libp2p::core::Endpoint;
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
-    ConnectionDenied, ConnectionId, DialError, DialFailure, FromSwarm, NetworkBehaviour,
-    PollParameters, THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
+    ConnectionDenied, ConnectionId, DialError, DialFailure, FromSwarm, NetworkBehaviour, THandler,
+    THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
 use libp2p::{Multiaddr, PeerId};
 use lru::LruCache;
@@ -220,7 +220,7 @@ impl NetworkBehaviour for Behaviour {
         Ok(DummyConnectionHandler)
     }
 
-    fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
+    fn on_swarm_event(&mut self, event: FromSwarm) {
         match event {
             FromSwarm::DialFailure(DialFailure {
                 peer_id,
@@ -243,6 +243,7 @@ impl NetworkBehaviour for Behaviour {
             | FromSwarm::ExternalAddrConfirmed(_) => {
                 // Ignore events not relevant to discovery
             }
+            _ => todo!(),
         }
     }
 
@@ -259,7 +260,6 @@ impl NetworkBehaviour for Behaviour {
     fn poll(
         &mut self,
         cx: &mut Context<'_>,
-        _params: &mut impl PollParameters,
     ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         trace!("poll");
 
