@@ -655,7 +655,7 @@ dependencies = [
  "merkle_proof",
  "oneshot_broadcast",
  "operation_pool",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "proto_array",
  "rand",
  "rayon",
@@ -700,7 +700,7 @@ dependencies = [
  "lighthouse_network",
  "logging",
  "num_cpus",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "serde",
  "slog",
  "slot_clock",
@@ -1116,7 +1116,7 @@ dependencies = [
  "monitoring_api",
  "network",
  "num_cpus",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "sensitive_url",
  "serde",
  "slasher",
@@ -1978,7 +1978,7 @@ dependencies = [
  "lazy_static",
  "lighthouse_metrics",
  "merkle_proof",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "reqwest",
  "sensitive_url",
  "serde",
@@ -2338,7 +2338,7 @@ dependencies = [
  "lazy_static",
  "lighthouse_metrics",
  "lru",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "pretty_reqwest_error",
  "rand",
  "reqwest",
@@ -2956,7 +2956,7 @@ dependencies = [
  "ipconfig",
  "lru-cache",
  "once_cell",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "rand",
  "resolv-conf",
  "smallvec",
@@ -3081,7 +3081,7 @@ dependencies = [
  "lru",
  "network",
  "operation_pool",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "safe_arith",
  "sensitive_url",
  "serde",
@@ -3671,7 +3671,7 @@ dependencies = [
  "multihash",
  "multistream-select",
  "once_cell",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "pin-project",
  "quick-protobuf",
  "rand",
@@ -3694,7 +3694,7 @@ dependencies = [
  "hickory-resolver",
  "libp2p-core",
  "libp2p-identity",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "smallvec",
  "tracing",
 ]
@@ -3794,7 +3794,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-identity",
  "nohash-hasher",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "rand",
  "smallvec",
  "tracing",
@@ -3856,7 +3856,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-identity",
  "libp2p-tls",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "quinn",
  "rand",
  "ring 0.16.20",
@@ -4081,7 +4081,7 @@ dependencies = [
  "lighthouse_version",
  "lru",
  "lru_cache",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "prometheus-client",
  "quick-protobuf",
  "quick-protobuf-codec 0.3.1",
@@ -4189,7 +4189,7 @@ dependencies = [
  "chrono",
  "lazy_static",
  "lighthouse_metrics",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "serde",
  "serde_json",
  "slog",
@@ -4248,7 +4248,7 @@ dependencies = [
  "lazy_static",
  "libc",
  "lighthouse_metrics",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
 ]
 
 [[package]]
@@ -4562,7 +4562,7 @@ dependencies = [
  "lru_cache",
  "num_cpus",
  "operation_pool",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "rand",
  "rlp",
  "slog",
@@ -4744,7 +4744,7 @@ name = "oneshot_broadcast"
 version = "0.1.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=b668e5883dd03e6667bd5976d60e12b8580fab7f#b668e5883dd03e6667bd5976d60e12b8580fab7f"
 dependencies = [
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
 ]
 
 [[package]]
@@ -4844,7 +4844,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "lighthouse_metrics",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "rand",
  "rayon",
  "serde",
@@ -4942,9 +4942,9 @@ dependencies = [
 
 [[package]]
 name = "parking_lot"
-version = "0.12.2"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e4af0ca4f6caed20e900d564c242b8e5d4903fdacf31d3daf527b66fe6f42fb"
+checksum = "f1bf18183cf54e8d6059647fc3063646a1801cf30896933ec2311622cc4b9a27"
 dependencies = [
  "lock_api",
  "parking_lot_core 0.9.8",
@@ -5320,7 +5320,7 @@ dependencies = [
  "fnv",
  "lazy_static",
  "memchr",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "protobuf",
  "thiserror",
 ]
@@ -5333,7 +5333,7 @@ checksum = "6f87c10af16e0af74010d2a123d202e8363c04db5acfa91d8747f64a8524da3a"
 dependencies = [
  "dtoa",
  "itoa",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "prometheus-client-derive-encode",
 ]
 
@@ -5512,7 +5512,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51de85fb3fb6524929c8a2eb85e6b6d363de4e8c48f9e2c2eac4944abc181c93"
 dependencies = [
  "log",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "scheduled-thread-pool",
 ]
 
@@ -5596,7 +5596,7 @@ dependencies = [
  "lighthouse_network",
  "lru",
  "network",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "primitive-types 0.12.2",
  "serde_yaml",
  "slot_clock",
@@ -6110,7 +6110,7 @@ version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3cbc66816425a074528352f5789333ecff06ca41b36b0b0efdfbb29edc391a19"
 dependencies = [
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
 ]
 
 [[package]]
@@ -6456,7 +6456,7 @@ dependencies = [
  "lmdb-rkv",
  "lmdb-rkv-sys",
  "lru",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "rand",
  "safe_arith",
  "serde",
@@ -6612,7 +6612,7 @@ source = "git+https://github.com/ackintosh/lighthouse.git?rev=b668e5883dd03e6667
 dependencies = [
  "lazy_static",
  "lighthouse_metrics",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "types",
 ]
 
@@ -6760,7 +6760,7 @@ dependencies = [
  "leveldb",
  "lighthouse_metrics",
  "lru",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "serde",
  "slog",
  "sloggers",
@@ -6908,7 +6908,7 @@ version = "0.1.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=b668e5883dd03e6667bd5976d60e12b8580fab7f#b668e5883dd03e6667bd5976d60e12b8580fab7f"
 dependencies = [
  "lighthouse_network",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "serde",
  "serde_json",
  "sysinfo",
@@ -7134,7 +7134,7 @@ dependencies = [
  "libc",
  "mio",
  "num_cpus",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2 0.5.5",
@@ -7404,7 +7404,7 @@ dependencies = [
  "maplit",
  "merkle_proof",
  "metastruct",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "rand",
  "rand_xorshift",
  "rayon",
@@ -7570,7 +7570,7 @@ source = "git+https://github.com/ackintosh/lighthouse.git?rev=b668e5883dd03e6667
 dependencies = [
  "lazy_static",
  "lru_cache",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
 ]
 
 [[package]]
@@ -8201,7 +8201,7 @@ dependencies = [
  "futures",
  "log",
  "nohash-hasher",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "pin-project",
  "rand",
  "static_assertions",
@@ -8217,7 +8217,7 @@ dependencies = [
  "instant",
  "log",
  "nohash-hasher",
- "parking_lot 0.12.2",
+ "parking_lot 0.12.3",
  "pin-project",
  "rand",
  "static_assertions",
