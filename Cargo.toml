@@ -42,7 +42,7 @@ client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883
 environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 ethereum_ssz = "0.5.3"
-ethereum_ssz_derive = "0.5.3"
+ethereum_ssz_derive = "0.5.4"
 slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 
