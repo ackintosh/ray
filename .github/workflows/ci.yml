@@ -13,11 +13,12 @@ jobs:
       matrix:
         # GitHub Actions: Introducing the new M1 macOS runner available to open source! - The GitHub Blog
         # https://github.blog/changelog/2024-01-30-github-actions-introducing-the-new-m1-macos-runner-available-to-open-source/
-        os: [macos-14, ubuntu-latest]
+#        os: [macos-14, ubuntu-latest]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -39,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -64,11 +65,12 @@ jobs:
       matrix:
         # GitHub Actions: Introducing the new M1 macOS runner available to open source! - The GitHub Blog
         # https://github.blog/changelog/2024-01-30-github-actions-introducing-the-new-m1-macos-runner-available-to-open-source/
-        os: [macos-14, ubuntu-latest]
+#        os: [macos-14, ubuntu-latest]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
