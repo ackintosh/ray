@@ -1,4 +1,4 @@
-use std::net::Ipv4Addr;
+use std::net::{IpAddr, Ipv4Addr};
 use etherparse::{NetSlice, SlicedPacket, TransportSlice};
 use pcap::{Direction, Linktype, Packet};
 
@@ -9,7 +9,7 @@ struct Addr {
 }
 
 #[derive(Debug)]
-struct TcpData {
+struct TcpDataInfo {
     src: Addr,
     dest: Addr,
     data_offset: usize,
@@ -22,7 +22,9 @@ fn main() {
     let device = pcap::Device::lookup()
         .expect("device lookup failed")
         .expect("no device available");
-    println!("Using device {}", device.name);
+    let local_addresses = device.addresses.iter().map(|addr| addr.addr).collect::<Vec<_>>();
+    println!("Using device {:?}", device);
+    println!("Local addresses {:?}", local_addresses);
 
     // Setup Capture
     let mut cap = pcap::Capture::from_device(device)
@@ -32,7 +34,7 @@ fn main() {
         .unwrap();
 
     cap.filter("tcp",  true).unwrap();
-    cap.direction(Direction::In).unwrap();
+    // cap.direction(Direction::In).unwrap();
 
     let link_type = cap.get_datalink();
     if !matches!(link_type, Linktype::ETHERNET) {
@@ -42,12 +44,19 @@ fn main() {
     let mut count = 0;
     loop {
         let packet = cap.next_packet().unwrap();
-        println!("Got {:?}", packet.header);
+        // println!("Got {:?}", packet.header);
 
-        let Some(tcp_data) = parse_tcp(&packet) else {
+        let Some(tcp_data_info) = parse_tcp(&packet) else {
             continue;
         };
-        println!("tcp data: {tcp_data:?}");
+
+        let data = &packet.data[tcp_data_info.data_offset..];
+        if data.len() > 0 {
+            print_tcp(tcp_data_info, data, &local_addresses);
+        } else {
+            println!("empty data.");
+            continue;
+        }
 
         if count > 10 {
             break;
@@ -56,7 +65,7 @@ fn main() {
     }
 }
 
-fn parse_tcp(packet: &Packet) -> Option<TcpData> {
+fn parse_tcp(packet: &Packet) -> Option<TcpDataInfo> {
     if packet.header.caplen < 32 {
         return None;
     }
@@ -85,7 +94,7 @@ fn parse_tcp(packet: &Packet) -> Option<TcpData> {
     let link_bytes_len = 4;
     let data_offset = link_bytes_len + ((ipv4_slice.header().ihl() * 4) + (tcp_slice.data_offset() * 4)) as usize;
 
-    Some(TcpData {
+    Some(TcpDataInfo {
         src: Addr {
             ip: src_addr,
             port: src_port,
@@ -103,4 +112,17 @@ fn skip_ethernet_header(data: &[u8]) -> Result<&[u8], String> {
         return Err("Packet too short".to_string());
     }
     Ok(&data[14..])
+}
+
+
+fn print_tcp(tcp_data_info: TcpDataInfo, data: &[u8], local_addresses: &Vec<IpAddr>) {
+    let is_sent = local_addresses.contains(&IpAddr::V4(tcp_data_info.src.ip));
+    println!(
+        "{} {}:{} -> {}:{}",
+        if is_sent { "sent" } else { "recv"},
+        tcp_data_info.src.ip,
+        tcp_data_info.src.port,
+        tcp_data_info.dest.ip,
+        tcp_data_info.dest.port,
+    );
 }
