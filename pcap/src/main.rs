@@ -17,6 +17,10 @@ struct TcpDataInfo {
     // ts: SystemTime,
 }
 
+// TODO: load private key
+// TODO: Noise decryption
+// https://github.com/sigp/lighthouse/blob/bcff4aa825c4d70a215e1f229a0d1798d697fb5b/beacon_node/lighthouse_network/src/service/utils.rs#L58
+// TODO: Use lighthouse codec
 fn main() {
     // get the default Device
     let device = pcap::Device::lookup()
