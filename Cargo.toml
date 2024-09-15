@@ -17,7 +17,7 @@ futures = "0.3.30"
 hex = "0.4.3"
 home = "0.5.9"
 libp2p = { version = "0.53.2", default-features = false, features = ["dns", "tokio", "ecdsa", "noise", "macros", "secp256k1", "tcp", "yamux"] }
-lru = "0.12.3"
+lru = "0.12.4"
 parking_lot = "0.12.3"
 primitive-types = "0.12.2"
 serde_yaml = "0.9.34"
