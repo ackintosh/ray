@@ -1502,7 +1502,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4355c25cbf99edcb6b4a0e906f6bdc6956eda149e84455bea49696429b2f8e8"
 dependencies = [
  "futures",
- "tokio-util 0.7.8",
+ "tokio-util 0.7.12",
+]
+
+[[package]]
+name = "delay_map"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df941644b671f05f59433e481ba0d31ac10e3667de725236a4c0d587c496fba1"
+dependencies = [
+ "futures",
+ "tokio",
+ "tokio-util 0.7.12",
 ]
 
 [[package]]
@@ -1680,7 +1691,7 @@ dependencies = [
  "aes 0.7.5",
  "aes-gcm 0.9.2",
  "arrayvec",
- "delay_map",
+ "delay_map 0.3.0",
  "enr 0.10.0",
  "fnv",
  "futures",
@@ -1712,7 +1723,7 @@ dependencies = [
  "aes-gcm 0.9.2",
  "alloy-rlp",
  "arrayvec",
- "delay_map",
+ "delay_map 0.3.0",
  "enr 0.12.0",
  "fnv",
  "futures",
@@ -2822,7 +2833,7 @@ dependencies = [
  "indexmap",
  "slab",
  "tokio",
- "tokio-util 0.7.8",
+ "tokio-util 0.7.12",
  "tracing",
 ]
 
@@ -4075,7 +4086,7 @@ dependencies = [
  "base64 0.21.7",
  "byteorder",
  "bytes",
- "delay_map",
+ "delay_map 0.3.0",
  "directory",
  "dirs",
  "discv5 0.4.1",
@@ -4560,7 +4571,7 @@ dependencies = [
  "async-channel",
  "beacon_chain",
  "beacon_processor",
- "delay_map",
+ "delay_map 0.3.0",
  "derivative",
  "environment",
  "error-chain",
@@ -5618,7 +5629,7 @@ version = "0.1.0"
 dependencies = [
  "beacon_chain",
  "client",
- "delay_map",
+ "delay_map 0.4.0",
  "discv5 0.6.0",
  "environment",
  "eth2_network_config",
@@ -5787,7 +5798,7 @@ dependencies = [
  "tokio",
  "tokio-native-tls",
  "tokio-rustls",
- "tokio-util 0.7.8",
+ "tokio-util 0.7.12",
  "tower-service",
  "url",
  "wasm-bindgen",
@@ -7230,7 +7241,7 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
- "tokio-util 0.7.8",
+ "tokio-util 0.7.12",
 ]
 
 [[package]]
@@ -7251,9 +7262,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.8"
+version = "0.7.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "806fe8c2c87eccc8b3267cbae29ed3ab2d0bd37fca70ab622e46aaa9375ddb7d"
+checksum = "61e7c3654c13bcd040d4a03abee2c75b1d14a37b423cf5a813ceae1cc903ec6a"
 dependencies = [
  "bytes",
  "futures-core",
@@ -7261,7 +7272,6 @@ dependencies = [
  "pin-project-lite",
  "slab",
  "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -7735,7 +7745,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tokio-stream",
- "tokio-util 0.7.8",
+ "tokio-util 0.7.12",
  "tower-service",
  "tracing",
 ]
