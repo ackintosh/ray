@@ -11,19 +11,19 @@ rust-version = "1.61"
 # see https://github.com/ackintosh/lighthouse/pull/4
 
 [dependencies]
-delay_map = "0.3.0"
-discv5 = "0.5.0"
-futures = "0.3.30"
+delay_map = "0.4.0"
+discv5 = "0.6.0"
+futures = "0.3.31"
 hex = "0.4.3"
 home = "0.5.9"
 libp2p = { version = "0.53.2", default-features = false, features = ["dns", "tokio", "ecdsa", "noise", "macros", "secp256k1", "tcp", "yamux"] }
-lru = "0.12.3"
+lru = "0.12.5"
 parking_lot = "0.12.3"
-primitive-types = "0.12.2"
+primitive-types = "0.13.1"
 serde_yaml = "0.9.34"
 smallvec = "1.13.2"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
-tokio = { version = "1.37.0", features = ["full"] }
+tokio = { version = "1.41.0", features = ["full"] }
 tokio-io-timeout = "1.2.0"
 # NOTE: Build fails if we upadte tokio-util >= 0.7.0.
 # -> RpcProtocol::upgrade_inbound()
@@ -42,7 +42,7 @@ client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883
 environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 ethereum_ssz = "0.5.4"
-ethereum_ssz_derive = "0.5.3"
+ethereum_ssz_derive = "0.5.4"
 slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 

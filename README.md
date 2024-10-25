@@ -1,4 +1,4 @@
-# Ray
+<h1 align="center">Ray</h1>
 
 _Ray_ is an open-source Ethereum Beacon Node implementation crafted for educational purposes. It offers a hands-on learning experience for those looking to understand the intricacies of Beacon Node implementation.
 
@@ -42,16 +42,18 @@ We aim for a simple implementation, by narrowing down the functions.
 You need a recent Rust toolchain to get started. If you don't have one already, check out [Install Rust](https://www.rust-lang.org/tools/install). Once you do that, you can just use `cargo` as specified below.
 
 ```shell
-$ git clone https://github.com/ackintosh/ray.git
-$ cd ray
-$ RUST_LOG=ray=info cargo run
+git clone https://github.com/ackintosh/ray.git
+cd ray
+RUST_LOG=ray=info cargo run
 ```
 
 ### Architecture
 
+The following diagram shows the modules and how they work. This should help you get a brief understanding of Ray and assist with code reading.
+
 ![Architecture](https://raw.githubusercontent.com/ackintosh/ray/main/diagrams/architecture.png)
 
-## Resources for Beacon Node implementers
+## References for Beacon Node implementers
 
 Here are the specifications / documentations that Consensus Layer Implementers should refer to.
 
@@ -69,6 +71,11 @@ Here are the specifications / documentations that Consensus Layer Implementers s
 
 - [Whiteboard Series with NEAR | Ep: 44 Adrian Manning from Sigma Prime](https://www.youtube.com/watch?v=XvWf6QMBO6k)  
   - > We'll explore how the nodes communicate and for what reason. This will include Discovery v5, libp2p, Gossipsub, and the Eth2 RPC.
+
+### YouTube channels
+
+- [Infinite Jungle](https://www.youtube.com/playlist?list=PLz3vbkrzRoXR_XIWVqnZcX11REeC6acN2) by Galaxy is a podcast about the evolution of Ethereum. Hosted weekly by Galaxy Research’s Christine Kim, the show dives into the ways Ethereum as an ecosystem is changing, covering broad trends and narratives that are shaping the way people use Ethereum and think about the value of Ethereum.
+
 
 ## Author
 
