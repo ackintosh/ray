@@ -70,6 +70,11 @@ Here are the specifications / documentations that Consensus Layer Implementers s
 - [Whiteboard Series with NEAR | Ep: 44 Adrian Manning from Sigma Prime](https://www.youtube.com/watch?v=XvWf6QMBO6k)  
   - > We'll explore how the nodes communicate and for what reason. This will include Discovery v5, libp2p, Gossipsub, and the Eth2 RPC.
 
+### YouTube channels
+
+- [Infinite Jungle](https://www.youtube.com/playlist?list=PLz3vbkrzRoXR_XIWVqnZcX11REeC6acN2) by Galaxy is a podcast about the evolution of Ethereum. Hosted weekly by Galaxy Research’s Christine Kim, the show dives into the ways Ethereum as an ecosystem is changing, covering broad trends and narratives that are shaping the way people use Ethereum and think about the value of Ethereum.
+
+
 ## Author
 
 Authored and maintained by ackintosh.
