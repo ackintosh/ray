@@ -1,4 +1,4 @@
-# Ray
+<h1 align="center">Ray</h1>
 
 _Ray_ is an open-source Ethereum Beacon Node implementation crafted for educational purposes. It offers a hands-on learning experience for those looking to understand the intricacies of Beacon Node implementation.
 
