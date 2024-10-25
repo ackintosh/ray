@@ -2,6 +2,7 @@ use discv5::Enr;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
+use tracing::info;
 use types::Config;
 
 // Ref: kiln-testnet config
@@ -40,24 +41,22 @@ impl NetworkConfig {
 }
 
 fn load_config(network_config_dir: &Path) -> Result<Config, String> {
-    let path_to_config = network_config_dir.join("config.yaml");
+    let path = network_config_dir.join("config.yaml");
+    info!("Loading network config from {}", path.display());
 
-    File::open(path_to_config.clone())
-        .map_err(|e| format!("Unable to open {}: {:?}", path_to_config.display(), e))
+    File::open(path.clone())
+        .map_err(|e| format!("Unable to open {}: {:?}", path.display(), e))
         .and_then(|file| {
-            serde_yaml::from_reader(file).map_err(|e| {
-                format!(
-                    "Unable to parse config {}: {:?}",
-                    path_to_config.display(),
-                    e
-                )
-            })
+            serde_yaml::from_reader(file)
+                .map_err(|e| format!("Unable to parse config {}: {:?}", path.display(), e))
         })
 }
 
 fn load_genesis_state(network_config_dir: &Path) -> Result<Vec<u8>, String> {
-    let file = File::open(network_config_dir.join("genesis.ssz"))
-        .map_err(|e| format!("Failed to open genesis.ssz: {}", e))?;
+    let path = network_config_dir.join("genesis.ssz");
+    info!("Loading genesis state from {}", path.display());
+
+    let file = File::open(path).map_err(|e| format!("Failed to open genesis.ssz: {}", e))?;
     let mut reader = BufReader::new(file);
     let mut buf = vec![];
     reader
@@ -67,7 +66,10 @@ fn load_genesis_state(network_config_dir: &Path) -> Result<Vec<u8>, String> {
 }
 
 fn load_boot_enr(network_config_dir: &Path) -> Result<Vec<Enr>, String> {
-    File::open(network_config_dir.join("boot_enr.yaml"))
+    let path = network_config_dir.join("boot_enr.yaml");
+    info!("Loading boot-enr from {}", path.display());
+
+    File::open(path)
         .map_err(|e| format!("Failed to open boot_enr.yaml: {}", e))
         .and_then(|file| {
             serde_yaml::from_reader(file).map_err(|e| format!("Unable to parse boot enr: {}", e))
