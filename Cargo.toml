@@ -19,7 +19,6 @@ home = "0.5.9"
 libp2p = { version = "0.53.2", default-features = false, features = ["dns", "tokio", "ecdsa", "noise", "macros", "secp256k1", "tcp", "yamux"] }
 lru = "0.12.5"
 parking_lot = "0.12.3"
-primitive-types = "0.13.1"
 serde_yaml = "0.9.34"
 smallvec = "1.13.2"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
@@ -31,19 +30,15 @@ tokio-io-timeout = "1.2.0"
 tokio-util = { version = "=0.6.10", features = ["codec", "compat"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
-void = "1.0.2"
 
 # Switched to the forked version so use the codec implemented in lighthouse.
 # SEE: https://github.com/ackintosh/lighthouse/compare/stable...ackintosh:lighthouse:publish-codec
 lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
-network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 beacon_chain = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 ethereum_ssz = "0.5.4"
-ethereum_ssz_derive = "0.5.4"
-slot_clock = { git = "https://github.com/ackintosh/lighthouse", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
 
 [build-dependencies]
