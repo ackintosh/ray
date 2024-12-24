@@ -1,5 +1,7 @@
+# GitHub ActionsでのDependabotの自動化 - GitHub Docs
+# https://docs.github.com/ja/code-security/dependabot/working-with-dependabot/automating-dependabot-with-github-actions#pull-request%E3%81%AE%E8%87%AA%E5%8B%95%E3%83%9E%E3%83%BC%E3%82%B8%E3%82%92%E6%9C%89%E5%8A%B9%E5%8C%96%E3%81%99%E3%82%8B
 name: Dependabot auto-merge
-on: pull_request_target
+on: pull_request
 
 permissions:
   pull-requests: write
@@ -7,7 +9,8 @@ permissions:
 
 jobs:
   dependabot-auto-merge:
-    if: ${{ github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'ackintosh/ray'
     steps:
       - name: Dependabot metadata
         id: metadata
@@ -19,4 +22,4 @@ jobs:
         run: gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
