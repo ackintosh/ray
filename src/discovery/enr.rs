@@ -14,7 +14,7 @@ impl Eth2Enr for Enr {
         let eth2_bytes: Bytes = self
             .get_decodable(ETH2_ENR_KEY)
             .ok_or("ENR has no eth2 field")?
-            .map_err(|e| format!("Failed to decode eth2 field: {}", e.to_string()))?;
+            .map_err(|e| format!("Failed to decode eth2 field: {}", e))?;
 
         EnrForkId::from_ssz_bytes(&eth2_bytes)
             .map_err(|e| format!("Could not decode EnrForkId: {e:?}"))
