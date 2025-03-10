@@ -22,7 +22,7 @@ parking_lot = "0.12.3"
 serde_yaml = "0.9.34"
 smallvec = "1.13.2"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
-tokio = { version = "1.43.0", features = ["full"] }
+tokio = { version = "1.44.0", features = ["full"] }
 tokio-io-timeout = "1.2.0"
 # NOTE: Build fails if we upadte tokio-util >= 0.7.0.
 # -> RpcProtocol::upgrade_inbound()
