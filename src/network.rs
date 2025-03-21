@@ -215,7 +215,7 @@ where
     fn handle_rpc_event(&mut self, event: RpcEvent) {
         match event {
             RpcEvent::ReceivedRequest(request) => match &request.request {
-                lighthouse_network::rpc::protocol::InboundRequest::Status(message) => {
+                lighthouse_network::rpc::protocol::RequestType::Status(message) => {
                     if self.validate_status_message(&request.peer_id, message) {
                         let behaviour = self.swarm.behaviour_mut();
                         behaviour.peer_manager.statusd_peer(request.peer_id);
@@ -229,37 +229,50 @@ where
                         );
                     }
                 }
-                lighthouse_network::rpc::protocol::InboundRequest::Goodbye(reason) => {
+                lighthouse_network::rpc::protocol::RequestType::Goodbye(reason) => {
                     // NOTE: We currently do not inform the application that we are
                     // disconnecting here. The RPC handler will automatically
                     // disconnect for us.
                     // The actual disconnection event will be relayed from `PeerManager` to the application.
                     debug!("[{}] Peer sent goodbye. reason: {}", request.peer_id, reason);
                 },
-                lighthouse_network::rpc::protocol::InboundRequest::BlocksByRange(blocks_by_range_request) => warn!("[{}] Received `InboundRequest::BlocksByRange` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_range_request),
-                lighthouse_network::rpc::protocol::InboundRequest::BlocksByRoot(blocks_by_root_request) => warn!("[{}] Received `InboundRequest::BlocksByRoot` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_root_request),
-                lighthouse_network::rpc::protocol::InboundRequest::BlobsByRange(_) => todo!(),
-                lighthouse_network::rpc::protocol::InboundRequest::BlobsByRoot(_) => todo!(),
-                lighthouse_network::rpc::protocol::InboundRequest::Ping(ping) => warn!("[{}] Received `InboundRequest::Ping` (ping: {:?}) but it was not handled.", request.peer_id, ping),
-                lighthouse_network::rpc::protocol::InboundRequest::MetaData(_) => warn!("[{}] Received `InboundRequest::MetaData` but it was not handled.", request.peer_id),
-                lighthouse_network::rpc::protocol::InboundRequest::LightClientBootstrap(_) => todo!(),
+                lighthouse_network::rpc::protocol::RequestType::BlocksByRange(blocks_by_range_request) => warn!("[{}] Received `InboundRequest::BlocksByRange` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_range_request),
+                lighthouse_network::rpc::protocol::RequestType::BlocksByRoot(blocks_by_root_request) => warn!("[{}] Received `InboundRequest::BlocksByRoot` (request: {:?}) but it was not handled.", request.peer_id, blocks_by_root_request),
+                lighthouse_network::rpc::protocol::RequestType::BlobsByRange(_) => todo!(),
+                lighthouse_network::rpc::protocol::RequestType::BlobsByRoot(_) => todo!(),
+                lighthouse_network::rpc::protocol::RequestType::Ping(ping) => warn!("[{}] Received `InboundRequest::Ping` (ping: {:?}) but it was not handled.", request.peer_id, ping),
+                lighthouse_network::rpc::protocol::RequestType::MetaData(_) => warn!("[{}] Received `InboundRequest::MetaData` but it was not handled.", request.peer_id),
+                lighthouse_network::rpc::protocol::RequestType::LightClientBootstrap(_) => todo!(),
+                lighthouse_network::rpc::protocol::RequestType::DataColumnsByRoot(_) => {}
+                lighthouse_network::rpc::protocol::RequestType::DataColumnsByRange(_) => {}
+                lighthouse_network::rpc::protocol::RequestType::LightClientOptimisticUpdate => {}
+                lighthouse_network::rpc::protocol::RequestType::LightClientFinalityUpdate => {}
+                lighthouse_network::rpc::protocol::RequestType::LightClientUpdatesByRange(_) => {}
             },
             RpcEvent::ReceivedResponse(response) => match &response.response {
-                lighthouse_network::rpc::methods::RPCResponse::Status(message) => {
-                    if self.validate_status_message(&response.peer_id, message) {
-                        self.swarm
-                            .behaviour_mut()
-                            .peer_manager
-                            .statusd_peer(response.peer_id);
+                lighthouse_network::rpc::methods::RpcResponse::Success(success_response) => match success_response {
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::Status(message) => {
+                        if self.validate_status_message(&response.peer_id, message) {
+                            self.swarm
+                                .behaviour_mut()
+                                .peer_manager
+                                .statusd_peer(response.peer_id);
+                        }
                     }
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::BlocksByRange(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::BlocksByRoot(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::BlobsByRange(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::LightClientBootstrap(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::LightClientOptimisticUpdate(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::LightClientFinalityUpdate(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::LightClientUpdatesByRange(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::BlobsByRoot(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::DataColumnsByRoot(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::DataColumnsByRange(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::Pong(_) => {}
+                    lighthouse_network::rpc::methods::RpcSuccessResponse::MetaData(_) => {}
                 }
-                lighthouse_network::rpc::methods::RPCResponse::BlocksByRange(_) => {}
-                lighthouse_network::rpc::methods::RPCResponse::BlocksByRoot(_) => {}
-                lighthouse_network::rpc::methods::RPCResponse::BlobsByRange(_) => todo!(),
-                lighthouse_network::rpc::methods::RPCResponse::BlobsByRoot(_) => todo!(),
-                lighthouse_network::rpc::methods::RPCResponse::Pong(_) => {}
-                lighthouse_network::rpc::methods::RPCResponse::MetaData(_) => {}
-                lighthouse_network::rpc::methods::RPCResponse::LightClientBootstrap(_) => todo!(),
+                _ => {}
             },
         }
     }

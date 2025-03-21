@@ -139,7 +139,7 @@ impl AsRef<str> for ProtocolId {
 #[derive(Clone)]
 pub(super) struct OutboundRequest {
     pub(super) peer_id: PeerId, // Only for debugging
-    pub(super) request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+    pub(super) request: lighthouse_network::rpc::RequestType<MainnetEthSpec>,
 }
 
 pub(crate) struct RpcRequestProtocol {
@@ -164,7 +164,7 @@ impl UpgradeInfo for RpcRequestProtocol {
 }
 
 pub(crate) type OutboundFramed =
-    Framed<Compat<Stream>, lighthouse_network::rpc::codec::OutboundCodec<MainnetEthSpec>>;
+    Framed<Compat<Stream>, lighthouse_network::rpc::codec::SSZSnappyOutboundCodec<MainnetEthSpec>>;
 
 impl OutboundUpgrade<Stream> for RpcRequestProtocol {
     type Output = OutboundFramed;
@@ -179,21 +179,16 @@ impl OutboundUpgrade<Stream> for RpcRequestProtocol {
         // convert to a tokio compatible socket
         let socket = socket.compat();
         let codec = match protocol_id.encoding {
-            Encoding::SSZSnappy => {
-                let ssz_snappy_codec = lighthouse_network::rpc::codec::base::BaseOutboundCodec::new(
-                    lighthouse_network::rpc::codec::ssz_snappy::SSZSnappyOutboundCodec::new(
-                        protocol_id.lighthouse_protocol_id(),
-                        self.max_rpc_size,
-                        self.fork_context.clone(),
-                    ),
-                );
-                lighthouse_network::rpc::codec::OutboundCodec::SSZSnappy(ssz_snappy_codec)
-            }
+            Encoding::SSZSnappy => lighthouse_network::rpc::codec::SSZSnappyOutboundCodec::new(
+                protocol_id.lighthouse_protocol_id(),
+                self.max_rpc_size,
+                self.fork_context.clone(),
+            ),
         };
 
         let mut socket = Framed::new(socket, codec);
 
-        async move {
+        async {
             match socket.send(self.request.request.clone()).await {
                 Ok(_) => {
                     info!("[{}] [RpcRequestProtocol::upgrade_outbound] sent outbound rpc: {:?}", self.request.peer_id, self.request.request);

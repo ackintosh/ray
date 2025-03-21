@@ -43,7 +43,7 @@ impl NetworkConfig {
 // fn load_config(network_config_dir: &Path) -> Result<Config, String> {
 //     let path = network_config_dir.join("config.yaml");
 //     info!("Loading network config from {}", path.display());
-// 
+//
 //     File::open(path.clone())
 //         .map_err(|e| format!("Unable to open {}: {:?}", path.display(), e))
 //         .and_then(|file| {
@@ -55,7 +55,7 @@ impl NetworkConfig {
 // fn load_genesis_state(network_config_dir: &Path) -> Result<Vec<u8>, String> {
 //     let path = network_config_dir.join("genesis.ssz");
 //     info!("Loading genesis state from {}", path.display());
-// 
+//
 //     let file = File::open(path).map_err(|e| format!("Failed to open genesis.ssz: {}", e))?;
 //     let mut reader = BufReader::new(file);
 //     let mut buf = vec![];

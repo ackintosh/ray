@@ -28,7 +28,7 @@ impl SyncNetworkContext {
     ) -> Result<u32, String> {
         trace!("[{peer_id}] [SyncNetworkContext::blocks_by_range_request] Sending `BlocksByRange` request to the network component. request: {request:?}");
 
-        let request = lighthouse_network::service::api_types::Request::BlocksByRange(request);
+        let request = lighthouse_network::rpc::RequestType::BlocksByRange(request.into());
         let id = self.next_id();
         let request_id = ApplicationRequestId::Sync(RangeSync { id });
         // network::service::RequestId::Sync(network::sync::manager::RequestId::RangeSync { id });

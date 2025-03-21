@@ -16,28 +16,28 @@ fn main() {
 //         .parse::<PathBuf>()
 //         .map_err(|e| format!("Failed to parse manifest dir: {}", e))?
 //         .join("network_config");
-// 
+//
 //     let path_to_genesis_ssz = network_config_dir.join("genesis.ssz");
-// 
+//
 //     if path_to_genesis_ssz.exists() {
 //         return Ok(());
 //     }
-// 
+//
 //     let mut archive = ZipArchive::new(
 //         File::open(network_config_dir.join("genesis.ssz.zip"))
 //             .map_err(|e| format!("should open genesis.ssz.zip: {}", e))?,
 //     )
 //     .map_err(|e| format!("Failed to read zip file: {}", e))?;
-// 
+//
 //     let mut genesis_ssz_file = archive
 //         .by_name("genesis.ssz")
 //         .map_err(|e| format!("should retrieve genesis.ssz: {}", e))?;
-// 
+//
 //     let mut dest = File::create(path_to_genesis_ssz)
 //         .map_err(|e| format!("Failed to create genesis.ssz: {}", e))?;
-// 
+//
 //     std::io::copy(&mut genesis_ssz_file, &mut dest)
 //         .map_err(|e| format!("Failed to copy genesis.ssz: {}", e))?;
-// 
+//
 //     Ok(())
 // }
