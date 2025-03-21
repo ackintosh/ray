@@ -76,10 +76,10 @@ fn main() {
 
     // Eth2NetworkConfig
     info!("Initializing Eth2NetworkConfig...");
-    let eth2_network_config = Eth2NetworkConfig::constant("prater")
+    let eth2_network_config = Eth2NetworkConfig::constant("holesky")
         .expect("Initiating the network config never fail")
         .expect("wrong network name");
-    info!(network = "prater", "Initialized Eth2NetworkConfig.");
+    info!(network = "holesky", "Initialized Eth2NetworkConfig.");
 
     // Environment
     info!("Building Environment...");
@@ -129,7 +129,7 @@ fn main() {
                 // Ethereum Beacon Chain checkpoint sync endpoints
                 // https://eth-clients.github.io/checkpoint-sync-endpoints/
                 ClientGenesis::CheckpointSyncUrl {
-                    url: "http://unstable.prater.beacon-api.nimbus.team"
+                    url: "https://checkpoint-sync.holesky.ethpandaops.io/"
                         .parse()
                         .expect("checkpoint sync url should be parsed correctly."),
                 },
