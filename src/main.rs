@@ -83,15 +83,18 @@ fn main() {
 
     // Environment
     info!("Building Environment...");
-    let environment = EnvironmentBuilder::mainnet()
-        .initialize_logger(LoggerConfig::default())
-        .expect("initialize_logger")
-        .multi_threaded_tokio_runtime()
-        .expect("multi_threaded_tokio_runtime")
-        .eth2_network_config(eth2_network_config)
-        .expect("optional_eth2_network_config")
-        .build()
-        .expect("environment builder");
+    let environment = {
+        let (builder, _file_logging_layer, _stdout_logging_layer, _sse_logging_layer_opt) =
+            EnvironmentBuilder::mainnet().init_tracing(LoggerConfig::default(), "beacon_node");
+
+        builder
+            .multi_threaded_tokio_runtime()
+            .expect("multi_threaded_tokio_runtime")
+            .eth2_network_config(eth2_network_config)
+            .expect("optional_eth2_network_config")
+            .build()
+            .expect("environment builder")
+    };
     info!(spec = "mainnet", "Built Environment.");
 
     // BeaconChain
@@ -122,7 +125,6 @@ fn main() {
                 &freezer_db_path,
                 &blobs_db_path,
                 client_config.store.clone(),
-                runtime_context.log().clone(),
             )
             .expect("disk_store")
             .beacon_chain_builder(

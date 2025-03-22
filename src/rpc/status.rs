@@ -12,7 +12,7 @@ pub(crate) fn status_message<T: BeaconChainTypes>(chain: &BeaconChain<T>) -> Sta
     let spec = &chain.spec;
     let genesis_epoch = spec.genesis_slot.epoch(MainnetEthSpec::slots_per_epoch());
     if finalized_checkpoint.epoch == genesis_epoch {
-        finalized_checkpoint.root = Hash256::zero();
+        finalized_checkpoint.root = Hash256::ZERO;
     }
 
     StatusMessage {

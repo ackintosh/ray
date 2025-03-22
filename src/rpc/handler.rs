@@ -478,20 +478,25 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
             };
 
             match entry.get_mut().poll_next_unpin(cx) {
-                Poll::Ready(Some(Ok(rpc_coded_response))) => match rpc_coded_response {
-                    RPCCodedResponse::Success(response) => {
-                        info!("[{}] received a response: {response:?}", self.peer_id);
-                        return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
-                            ToBehaviour::ResponseReceived(response),
-                        ));
-                    }
-                    RPCCodedResponse::Error(_, _) => {
-                        todo!()
-                    }
-                    RPCCodedResponse::StreamTermination(_) => {
-                        todo!()
-                    }
-                },
+                Poll::Ready(Some(Ok(rpc_response))) => {
+                    return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
+                        ToBehaviour::ResponseReceived(rpc_response),
+                    ));
+                    // match rpc_response {
+                    //     lighthouse_network::rpc::methods::RpcResponse::Success(response) => {
+                    //         info!("[{}] received a response: {response:?}", self.peer_id);
+                    //         return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
+                    //             ToBehaviour::ResponseReceived(response),
+                    //         ));
+                    //     }
+                    //     lighthouse_network::rpc::methods::RpcResponse::Error(_, _) => {
+                    //         todo!()
+                    //     }
+                    //     lighthouse_network::rpc::methods::RpcResponse::StreamTermination(_) => {
+                    //         todo!()
+                    //     }
+                    // }
+                }
                 Poll::Ready(Some(Err(e))) => {
                     error!(
                         "[{}] An error occurred while processing outbound stream. error: {:?}",

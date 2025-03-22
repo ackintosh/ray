@@ -1,6 +1,7 @@
 use crate::network::ReqId;
 use crate::rpc::handler::{Handler, SubstreamId, ToBehaviour};
 use crate::rpc::{ReceivedRequest, ReceivedResponse, RpcEvent};
+use libp2p::core::transport::PortUse;
 use libp2p::core::Endpoint;
 use libp2p::swarm::{
     CloseConnection, ConnectionDenied, ConnectionId, FromSwarm, NetworkBehaviour, NotifyHandler,
@@ -23,7 +24,7 @@ pub(crate) enum InstructionToHandler<Id> {
     Goodbye(Id, lighthouse_network::rpc::GoodbyeReason, PeerId),
     Request(
         Id,
-        lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+        lighthouse_network::rpc::protocol::RequestType<MainnetEthSpec>,
         PeerId,
     ),
     Response(
@@ -85,7 +86,7 @@ impl<Id: ReqId> Behaviour<Id> {
     pub(crate) fn send_request(
         &mut self,
         peer_id: PeerId,
-        request: lighthouse_network::service::api_types::Request,
+        request: lighthouse_network::rpc::protocol::RequestType<MainnetEthSpec>,
         request_id: Id,
     ) {
         self.events.push(ToSwarm::NotifyHandler {
@@ -132,6 +133,7 @@ impl<Id: ReqId> NetworkBehaviour for Behaviour<Id> {
         peer_id: PeerId,
         _addr: &Multiaddr,
         _role_override: Endpoint,
+        _port_use: PortUse,
     ) -> Result<THandler<Self>, ConnectionDenied> {
         Ok(Handler::new(peer_id, self.fork_context.clone()))
     }

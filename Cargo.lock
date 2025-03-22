@@ -143,9 +143,9 @@ dependencies = [
 
 [[package]]
 name = "alloy-primitives"
-version = "0.8.23"
+version = "0.8.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eacedba97e65cdc7ab592f2b22ef5d3ab8d60b2056bc3a6e6363577e8270ec6f"
+checksum = "7283185baefbe66136649dc316c9dcc6f0e9f1d635ae19783615919f83bc298a"
 dependencies = [
  "alloy-rlp",
  "arbitrary",
@@ -657,7 +657,7 @@ dependencies = [
  "eth2_network_config",
  "ethereum_hashing",
  "ethereum_serde_utils",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "execution_layer",
  "fork_choice",
@@ -718,7 +718,7 @@ dependencies = [
  "strum",
  "task_executor",
  "tokio",
- "tokio-util 0.7.14",
+ "tokio-util",
  "tracing",
  "types",
 ]
@@ -831,7 +831,7 @@ dependencies = [
  "blst",
  "ethereum_hashing",
  "ethereum_serde_utils",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "fixed_bytes",
  "hex",
  "rand 0.8.5",
@@ -890,7 +890,7 @@ version = "0.1.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=a0595c4204d73bb02c43dbf23b706f7acf6e39fd#a0595c4204d73bb02c43dbf23b706f7acf6e39fd"
 dependencies = [
  "eth2",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "lighthouse_version",
  "reqwest",
  "sensitive_url",
@@ -962,9 +962,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.16"
+version = "1.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be714c154be609ec7f5dad223a33bf1482fff90472de28f7362806e6d4832b8c"
+checksum = "1fcb57c740ae1daf453ae85f16e37396f672b039e00d9d866e07ddb24e328e3a"
 dependencies = [
  "jobserver",
  "libc",
@@ -1111,7 +1111,7 @@ dependencies = [
  "clap",
  "dirs",
  "eth2_network_config",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "hex",
  "serde",
  "serde_json",
@@ -1132,7 +1132,7 @@ dependencies = [
  "eth1",
  "eth2",
  "eth2_config",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "execution_layer",
  "futures",
  "genesis",
@@ -1621,7 +1621,7 @@ checksum = "88e365f083a5cb5972d50ce8b1b2c9f125dc5ec0f50c0248cfb568ae59efcf0b"
 dependencies = [
  "futures",
  "tokio",
- "tokio-util 0.7.14",
+ "tokio-util",
 ]
 
 [[package]]
@@ -2056,7 +2056,7 @@ version = "0.2.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=a0595c4204d73bb02c43dbf23b706f7acf6e39fd#a0595c4204d73bb02c43dbf23b706f7acf6e39fd"
 dependencies = [
  "eth2",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "execution_layer",
  "futures",
@@ -2085,7 +2085,7 @@ dependencies = [
  "enr",
  "eth2_keystore",
  "ethereum_serde_utils",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "futures",
  "futures-util",
@@ -2255,17 +2255,6 @@ dependencies = [
 
 [[package]]
 name = "ethereum_ssz"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d3627f83d8b87b432a5fad9934b4565260722a141a2c40f371f8080adec9425"
-dependencies = [
- "ethereum-types",
- "itertools 0.10.5",
- "smallvec",
-]
-
-[[package]]
-name = "ethereum_ssz"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "86da3096d1304f5f28476ce383005385459afeaf0eea08592b65ddbc9b258d16"
@@ -2369,7 +2358,7 @@ dependencies = [
  "bytes",
  "eth2",
  "ethereum_serde_utils",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethers-core",
  "fixed_bytes",
  "fork_choice",
@@ -2565,7 +2554,7 @@ name = "fork_choice"
 version = "0.1.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=a0595c4204d73bb02c43dbf23b706f7acf6e39fd#a0595c4204d73bb02c43dbf23b706f7acf6e39fd"
 dependencies = [
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "logging",
  "metrics",
@@ -2749,7 +2738,7 @@ dependencies = [
  "environment",
  "eth1",
  "ethereum_hashing",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "futures",
  "int_to_bytes",
  "merkle_proof",
@@ -2869,7 +2858,7 @@ dependencies = [
  "indexmap",
  "slab",
  "tokio",
- "tokio-util 0.7.14",
+ "tokio-util",
  "tracing",
 ]
 
@@ -2888,7 +2877,7 @@ dependencies = [
  "indexmap",
  "slab",
  "tokio",
- "tokio-util 0.7.14",
+ "tokio-util",
  "tracing",
 ]
 
@@ -3207,7 +3196,7 @@ dependencies = [
  "eth1",
  "eth2",
  "ethereum_serde_utils",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "execution_layer",
  "futures",
  "health_metrics",
@@ -3849,7 +3838,7 @@ dependencies = [
  "derivative",
  "ethereum_hashing",
  "ethereum_serde_utils",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "hex",
  "rust_eth_kzg",
@@ -4397,7 +4386,7 @@ dependencies = [
  "discv5",
  "either",
  "eth2",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "fnv",
  "futures",
@@ -4427,7 +4416,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tokio-io-timeout",
- "tokio-util 0.7.14",
+ "tokio-util",
  "tracing",
  "tracing-subscriber",
  "types",
@@ -4665,7 +4654,7 @@ dependencies = [
  "arbitrary",
  "educe",
  "ethereum_hashing",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "itertools 0.13.0",
  "parking_lot",
@@ -4938,7 +4927,7 @@ dependencies = [
  "beacon_processor",
  "delay_map",
  "derivative",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "execution_layer",
  "fnv",
  "futures",
@@ -5232,7 +5221,7 @@ source = "git+https://github.com/ackintosh/lighthouse.git?rev=a0595c4204d73bb02c
 dependencies = [
  "bitvec",
  "derivative",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "itertools 0.10.5",
  "metrics",
@@ -5523,7 +5512,7 @@ version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85eae3c4ed2f50dcfe72643da4befc30deadb458a9b590d720cde2f2b1e97da9"
 dependencies = [
- "zerocopy 0.8.23",
+ "zerocopy 0.8.24",
 ]
 
 [[package]]
@@ -5675,7 +5664,7 @@ name = "proto_array"
 version = "0.2.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=a0595c4204d73bb02c43dbf23b706f7acf6e39fd#a0595c4204d73bb02c43dbf23b706f7acf6e39fd"
 dependencies = [
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "safe_arith",
  "serde",
@@ -5854,7 +5843,7 @@ checksum = "3779b94aeb87e8bd4e834cee3650289ee9e0d5677f976ecdb6d219e5f4f6cd94"
 dependencies = [
  "rand_chacha 0.9.0",
  "rand_core 0.9.3",
- "zerocopy 0.8.23",
+ "zerocopy 0.8.24",
 ]
 
 [[package]]
@@ -5914,7 +5903,7 @@ dependencies = [
  "discv5",
  "environment",
  "eth2_network_config",
- "ethereum_ssz 0.5.4",
+ "ethereum_ssz",
  "futures",
  "hex",
  "home",
@@ -5927,7 +5916,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tokio-io-timeout",
- "tokio-util 0.6.10",
+ "tokio-util",
  "tracing",
  "tracing-subscriber",
  "types",
@@ -6066,7 +6055,7 @@ dependencies = [
  "tokio",
  "tokio-native-tls",
  "tokio-rustls 0.24.1",
- "tokio-util 0.7.14",
+ "tokio-util",
  "tower-service",
  "url",
  "wasm-bindgen",
@@ -6866,7 +6855,7 @@ dependencies = [
  "bincode",
  "byteorder",
  "derivative",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "filesystem",
  "flate2",
@@ -7012,7 +7001,7 @@ checksum = "dad0fa7e9a85c06d0a6ba5100d733fff72e231eb6db2d86078225cf716fd2d95"
 dependencies = [
  "arbitrary",
  "ethereum_serde_utils",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "itertools 0.13.0",
  "serde",
  "serde_derive",
@@ -7036,7 +7025,7 @@ dependencies = [
  "bls",
  "derivative",
  "ethereum_hashing",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "int_to_bytes",
  "integer-sqrt",
@@ -7067,7 +7056,7 @@ dependencies = [
  "bls",
  "db-key",
  "directory",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "itertools 0.10.5",
  "leveldb",
@@ -7537,22 +7526,7 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
- "tokio-util 0.7.14",
-]
-
-[[package]]
-name = "tokio-util"
-version = "0.6.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36943ee01a6d67977dd3f84a5a1d2efeb4ada3a1ae771cadfaa535d9d9fc6507"
-dependencies = [
- "bytes",
- "futures-core",
- "futures-io",
- "futures-sink",
- "log",
- "pin-project-lite",
- "tokio",
+ "tokio-util",
 ]
 
 [[package]]
@@ -7688,7 +7662,7 @@ checksum = "6c58eb0f518840670270d90d97ffee702d8662d9c5494870c9e1e9e0fa00f668"
 dependencies = [
  "alloy-primitives",
  "ethereum_hashing",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "smallvec",
  "typenum",
 ]
@@ -7752,7 +7726,7 @@ dependencies = [
  "eth2_interop_keypairs",
  "ethereum_hashing",
  "ethereum_serde_utils",
- "ethereum_ssz 0.8.3",
+ "ethereum_ssz",
  "ethereum_ssz_derive",
  "fixed_bytes",
  "hex",
@@ -7884,7 +7858,7 @@ checksum = "eb066959b24b5196ae73cb057f45598450d2c5f71460e98c49b738086eff9c06"
 dependencies = [
  "asynchronous-codec",
  "bytes",
- "tokio-util 0.7.14",
+ "tokio-util",
 ]
 
 [[package]]
@@ -8022,7 +7996,7 @@ dependencies = [
  "serde_urlencoded",
  "tokio",
  "tokio-rustls 0.25.0",
- "tokio-util 0.7.14",
+ "tokio-util",
  "tower-service",
  "tracing",
 ]
@@ -8741,11 +8715,11 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.8.23"
+version = "0.8.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd97444d05a4328b90e75e503a34bad781f14e28a823ad3557f0750df1ebcbc6"
+checksum = "2586fea28e186957ef732a5f8b3be2da217d65c5969d4b1e17f973ebbe876879"
 dependencies = [
- "zerocopy-derive 0.8.23",
+ "zerocopy-derive 0.8.24",
 ]
 
 [[package]]
@@ -8761,9 +8735,9 @@ dependencies = [
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.8.23"
+version = "0.8.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6352c01d0edd5db859a63e2605f4ea3183ddbd15e2c4a9e7d32184df75e4f154"
+checksum = "a996a8f63c5c4448cd959ac1bab0aaa3306ccfd060472f85943ee0750f0169be"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -27,7 +27,7 @@ tokio-io-timeout = "1.2.0"
 # NOTE: Build fails if we upadte tokio-util >= 0.7.0.
 # -> RpcProtocol::upgrade_inbound()
 # https://github.com/tokio-rs/tokio/blob/master/tokio-util/CHANGELOG.md
-tokio-util = { version = "=0.6.10", features = ["codec", "compat"] }
+tokio-util = { version = "0.7.14", features = ["codec", "compat"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 
@@ -38,7 +38,7 @@ beacon_chain = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a05
 client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
 environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
 eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
-ethereum_ssz = "0.5.4"
+ethereum_ssz = "0.8.3"
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
 
 [build-dependencies]

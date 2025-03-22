@@ -5,6 +5,7 @@ use discv5::enr::{CombinedKey, NodeId};
 use discv5::{ConfigBuilder, Discv5, ListenConfig, QueryError};
 use futures::stream::FuturesUnordered;
 use futures::{Future, FutureExt, StreamExt};
+use libp2p::core::transport::PortUse;
 use libp2p::core::Endpoint;
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
 use libp2p::swarm::{
@@ -216,6 +217,7 @@ impl NetworkBehaviour for Behaviour {
         _peer: PeerId,
         _addr: &Multiaddr,
         _role_override: Endpoint,
+        _port_use: PortUse,
     ) -> Result<THandler<Self>, ConnectionDenied> {
         Ok(DummyConnectionHandler)
     }

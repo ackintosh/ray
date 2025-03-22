@@ -22,6 +22,7 @@ use std::sync::{Arc, Weak};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tracing::{debug, error, info, trace, warn};
+use types::MainnetEthSpec;
 
 /// The executor for libp2p
 struct Executor(Weak<Runtime>);
@@ -350,7 +351,7 @@ where
     fn send_request(
         &mut self,
         peer_id: PeerId,
-        request: lighthouse_network::Request,
+        request: lighthouse_network::rpc::protocol::RequestType<MainnetEthSpec>,
         request_id: ApplicationRequestId,
     ) {
         self.swarm.behaviour_mut().rpc.send_request(
@@ -373,7 +374,7 @@ pub(crate) enum ApplicationRequestId {
 pub(crate) enum NetworkMessage {
     SendRequest {
         peer_id: PeerId,
-        request: lighthouse_network::Request,
+        request: lighthouse_network::rpc::protocol::RequestType<MainnetEthSpec>,
         request_id: ApplicationRequestId,
     },
 }
