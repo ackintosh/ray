@@ -16,7 +16,7 @@ discv5 = "0.9.1"
 futures = "0.3.31"
 hex = "0.4.3"
 home = "0.5.11"
-libp2p = { version = "0.53.2", default-features = false, features = ["dns", "tokio", "ecdsa", "noise", "macros", "secp256k1", "tcp", "yamux"] }
+libp2p = { version = "0.55.0", default-features = false, features = ["dns", "tokio", "ecdsa", "noise", "macros", "secp256k1", "tcp", "yamux"] }
 lru = "0.12.5"
 parking_lot = "0.12.3"
 serde_yaml = "0.9.34"
@@ -27,19 +27,19 @@ tokio-io-timeout = "1.2.0"
 # NOTE: Build fails if we upadte tokio-util >= 0.7.0.
 # -> RpcProtocol::upgrade_inbound()
 # https://github.com/tokio-rs/tokio/blob/master/tokio-util/CHANGELOG.md
-tokio-util = { version = "=0.6.10", features = ["codec", "compat"] }
+tokio-util = { version = "0.7.14", features = ["codec", "compat"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 
 # Switched to the forked version so use the codec implemented in lighthouse.
 # SEE: https://github.com/ackintosh/lighthouse/compare/stable...ackintosh:lighthouse:publish-codec
-lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
-beacon_chain = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
-client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
-environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
-eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
-ethereum_ssz = "0.5.4"
-types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "b668e5883dd03e6667bd5976d60e12b8580fab7f" }
+lighthouse_network = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
+beacon_chain = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
+client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
+environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
+eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
+ethereum_ssz = "0.8.3"
+types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
 
 [build-dependencies]
 zip = "0.6.6"

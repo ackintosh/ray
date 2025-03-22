@@ -1,6 +1,7 @@
 use crate::peer_db::ConnectionStatus;
 use crate::peer_manager::{PeerManager, PeerManagerEvent};
 use futures::StreamExt;
+use libp2p::core::transport::PortUse;
 use libp2p::core::{ConnectedPoint, Endpoint};
 use libp2p::swarm::dial_opts::{DialOpts, PeerCondition};
 use libp2p::swarm::dummy::ConnectionHandler as DummyConnectionHandler;
@@ -35,6 +36,7 @@ impl NetworkBehaviour for PeerManager {
         _peer: PeerId,
         _addr: &Multiaddr,
         _role_override: Endpoint,
+        _port_use: PortUse,
     ) -> Result<THandler<Self>, ConnectionDenied> {
         Ok(DummyConnectionHandler)
     }
@@ -55,6 +57,7 @@ impl NetworkBehaviour for PeerManager {
                     ConnectedPoint::Dialer {
                         address,
                         role_override: _,
+                        port_use: _,
                     } => {
                         self.peer_db
                             .write()

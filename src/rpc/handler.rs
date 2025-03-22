@@ -8,7 +8,6 @@ use futures::{FutureExt, SinkExt, StreamExt};
 use libp2p::swarm::handler::{ConnectionEvent, FullyNegotiatedInbound, FullyNegotiatedOutbound};
 use libp2p::swarm::{ConnectionHandler, ConnectionHandlerEvent, SubstreamProtocol};
 use libp2p::{PeerId, Stream};
-use lighthouse_network::rpc::methods::RPCCodedResponse;
 use smallvec::SmallVec;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
@@ -70,7 +69,7 @@ pub(crate) enum ToBehaviour {
     // A request received from the outside.
     RequestReceived(InboundRequest),
     // A response received from the outside.
-    ResponseReceived(lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>),
+    ResponseReceived(lighthouse_network::rpc::methods::RpcResponse<MainnetEthSpec>),
     CloseConnection(RPCError),
 }
 
@@ -78,7 +77,7 @@ pub(crate) enum ToBehaviour {
 #[derive(Debug)]
 pub struct InboundRequest {
     pub(crate) substream_id: SubstreamId,
-    pub(crate) request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
+    pub(crate) request: lighthouse_network::rpc::protocol::RequestType<MainnetEthSpec>,
 }
 
 // ////////////////////////////////////////////////////////
@@ -152,7 +151,7 @@ impl<Id> Handler<Id> {
             request_id,
             OutboundRequest {
                 peer_id,
-                request: lighthouse_network::rpc::outbound::OutboundRequest::Status(status_message),
+                request: lighthouse_network::rpc::RequestType::Status(status_message),
             },
         ));
     }
@@ -178,7 +177,7 @@ impl<Id> Handler<Id> {
                 request_id,
                 OutboundRequest {
                     peer_id,
-                    request: lighthouse_network::rpc::outbound::OutboundRequest::Goodbye(reason),
+                    request: lighthouse_network::rpc::RequestType::Goodbye(reason),
                 },
             ));
         }
@@ -197,7 +196,7 @@ impl<Id> Handler<Id> {
         &mut self,
         request_id: Id,
         peer_id: PeerId,
-        request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+        request: lighthouse_network::rpc::RequestType<MainnetEthSpec>,
     ) {
         match self.state {
             HandlerState::Active => {
@@ -258,7 +257,7 @@ impl<Id> Handler<Id> {
         // spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#goodbye
         if matches!(
             request,
-            lighthouse_network::rpc::protocol::InboundRequest::Goodbye(_)
+            lighthouse_network::rpc::protocol::RequestType::Goodbye(_)
         ) {
             self.shutdown(None);
         }
@@ -275,19 +274,17 @@ impl<Id> Handler<Id> {
     // The second argument is the information that was previously passed to ConnectionHandlerEvent::OutboundSubstreamRequest.
     fn on_fully_negotiated_outbound(
         &mut self,
-        outbound: FullyNegotiatedOutbound<
-            RpcRequestProtocol,
-            lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
-        >,
+        substream: OutboundFramed,
+        info: lighthouse_network::rpc::protocol::RequestType<MainnetEthSpec>,
     ) {
         info!("[{}] on_fully_negotiated_outbound", self.peer_id,);
-        let request = outbound.info;
+        let request = info;
         let outbound_substream_id = self.outbound_substream_id.next();
 
-        if request.expected_responses() > 0
+        if request.max_responses(self.fork_context.current_fork(), &self.fork_context.spec) > 0
             && self
                 .outbound_substreams
-                .insert(outbound_substream_id, outbound.protocol)
+                .insert(outbound_substream_id, substream)
                 .is_some()
         {
             error!(
@@ -305,7 +302,7 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
     type InboundProtocol = RpcProtocol;
     type OutboundProtocol = RpcRequestProtocol;
     type InboundOpenInfo = ();
-    type OutboundOpenInfo = lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>;
+    type OutboundOpenInfo = lighthouse_network::rpc::protocol::RequestType<MainnetEthSpec>;
 
     fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
         info!("[{}] [ConnectionHandler::listen_protocol]", self.peer_id);
@@ -394,10 +391,11 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
                             inbound_substream_info.responses_to_send.pop_front()
                         {
                             let boxed_future = async move {
-                                let rpc_coded_response: RPCCodedResponse<MainnetEthSpec> =
-                                    response_to_send.into();
+                                let rpc_response: lighthouse_network::rpc::methods::RpcResponse<
+                                    MainnetEthSpec,
+                                > = response_to_send.into();
 
-                                match substream.send(rpc_coded_response).await {
+                                match substream.send(rpc_response).await {
                                     Ok(_) => match substream.close().await {
                                         Ok(_) => Ok(substream),
                                         Err(rpc_error) => Err(format!(
@@ -480,20 +478,25 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
             };
 
             match entry.get_mut().poll_next_unpin(cx) {
-                Poll::Ready(Some(Ok(rpc_coded_response))) => match rpc_coded_response {
-                    RPCCodedResponse::Success(response) => {
-                        info!("[{}] received a response: {response:?}", self.peer_id);
-                        return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
-                            ToBehaviour::ResponseReceived(response),
-                        ));
-                    }
-                    RPCCodedResponse::Error(_, _) => {
-                        todo!()
-                    }
-                    RPCCodedResponse::StreamTermination(_) => {
-                        todo!()
-                    }
-                },
+                Poll::Ready(Some(Ok(rpc_response))) => {
+                    return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
+                        ToBehaviour::ResponseReceived(rpc_response),
+                    ));
+                    // match rpc_response {
+                    //     lighthouse_network::rpc::methods::RpcResponse::Success(response) => {
+                    //         info!("[{}] received a response: {response:?}", self.peer_id);
+                    //         return Poll::Ready(ConnectionHandlerEvent::NotifyBehaviour(
+                    //             ToBehaviour::ResponseReceived(response),
+                    //         ));
+                    //     }
+                    //     lighthouse_network::rpc::methods::RpcResponse::Error(_, _) => {
+                    //         todo!()
+                    //     }
+                    //     lighthouse_network::rpc::methods::RpcResponse::StreamTermination(_) => {
+                    //         todo!()
+                    //     }
+                    // }
+                }
                 Poll::Ready(Some(Err(e))) => {
                     error!(
                         "[{}] An error occurred while processing outbound stream. error: {:?}",
@@ -556,8 +559,11 @@ impl<Id: ReqId> ConnectionHandler for Handler<Id> {
             ConnectionEvent::FullyNegotiatedInbound(fully_negotiated_inbound) => {
                 self.on_fully_negotiated_inbound(fully_negotiated_inbound);
             }
-            ConnectionEvent::FullyNegotiatedOutbound(fully_negotiated_outbound) => {
-                self.on_fully_negotiated_outbound(fully_negotiated_outbound);
+            ConnectionEvent::FullyNegotiatedOutbound(FullyNegotiatedOutbound {
+                protocol,
+                info,
+            }) => {
+                self.on_fully_negotiated_outbound(protocol, info);
             }
             ConnectionEvent::AddressChange(_) => {
                 // We dont care about these changes as they have no bearing on our RPC internal

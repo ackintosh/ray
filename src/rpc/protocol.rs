@@ -139,7 +139,7 @@ impl AsRef<str> for ProtocolId {
 #[derive(Clone)]
 pub(super) struct OutboundRequest {
     pub(super) peer_id: PeerId, // Only for debugging
-    pub(super) request: lighthouse_network::rpc::outbound::OutboundRequest<MainnetEthSpec>,
+    pub(super) request: lighthouse_network::rpc::RequestType<MainnetEthSpec>,
 }
 
 pub(crate) struct RpcRequestProtocol {
@@ -164,7 +164,7 @@ impl UpgradeInfo for RpcRequestProtocol {
 }
 
 pub(crate) type OutboundFramed =
-    Framed<Compat<Stream>, lighthouse_network::rpc::codec::OutboundCodec<MainnetEthSpec>>;
+    Framed<Compat<Stream>, lighthouse_network::rpc::codec::SSZSnappyOutboundCodec<MainnetEthSpec>>;
 
 impl OutboundUpgrade<Stream> for RpcRequestProtocol {
     type Output = OutboundFramed;
@@ -179,27 +179,24 @@ impl OutboundUpgrade<Stream> for RpcRequestProtocol {
         // convert to a tokio compatible socket
         let socket = socket.compat();
         let codec = match protocol_id.encoding {
-            Encoding::SSZSnappy => {
-                let ssz_snappy_codec = lighthouse_network::rpc::codec::base::BaseOutboundCodec::new(
-                    lighthouse_network::rpc::codec::ssz_snappy::SSZSnappyOutboundCodec::new(
-                        protocol_id.lighthouse_protocol_id(),
-                        self.max_rpc_size,
-                        self.fork_context.clone(),
-                    ),
-                );
-                lighthouse_network::rpc::codec::OutboundCodec::SSZSnappy(ssz_snappy_codec)
-            }
+            Encoding::SSZSnappy => lighthouse_network::rpc::codec::SSZSnappyOutboundCodec::new(
+                protocol_id.lighthouse_protocol_id(),
+                self.max_rpc_size,
+                self.fork_context.clone(),
+            ),
         };
 
         let mut socket = Framed::new(socket, codec);
 
+        let request = self.request.request;
+        let peer_id = self.request.peer_id;
         async move {
-            match socket.send(self.request.request.clone()).await {
+            match socket.send(request.clone()).await {
                 Ok(_) => {
-                    info!("[{}] [RpcRequestProtocol::upgrade_outbound] sent outbound rpc: {:?}", self.request.peer_id, self.request.request);
+                    info!("[{}] [RpcRequestProtocol::upgrade_outbound] sent outbound rpc: {:?}", peer_id, request);
                 }
                 Err(rpc_error) => {
-                    error!("[{}] [RpcRequestProtocol::upgrade_outbound] RPCError: {rpc_error}, request: {:?}", self.request.peer_id, self.request.request);
+                    error!("[{}] [RpcRequestProtocol::upgrade_outbound] RPCError: {rpc_error}, request: {:?}", peer_id, request);
                     return Err(rpc_error);
                 }
             }
@@ -261,12 +258,12 @@ impl UpgradeInfo for RpcProtocol {
 }
 
 pub type InboundOutput<TSocket> = (
-    lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
+    lighthouse_network::rpc::protocol::RequestType<MainnetEthSpec>,
     InboundFramed<TSocket>,
 );
 pub type InboundFramed<TSocket> = Framed<
     std::pin::Pin<Box<TimeoutStream<Compat<TSocket>>>>,
-    lighthouse_network::rpc::codec::InboundCodec<MainnetEthSpec>,
+    lighthouse_network::rpc::codec::SSZSnappyInboundCodec<MainnetEthSpec>,
 >;
 
 impl<TSocket> InboundUpgrade<TSocket> for RpcProtocol
@@ -284,23 +281,17 @@ where
         );
 
         async move {
-            let codec: lighthouse_network::rpc::codec::InboundCodec<MainnetEthSpec> =
-                match protocol_id.encoding {
-                    Encoding::SSZSnappy => {
-                        let ssz_snappy_codec =
-                        lighthouse_network::rpc::codec::base::BaseInboundCodec::new(
-                            lighthouse_network::rpc::codec::ssz_snappy::SSZSnappyInboundCodec::new(
-                                protocol_id.lighthouse_protocol_id(),
-                                self.max_rpc_size,
-                                self.fork_context.clone(),
-                            ),
-                        );
-                        lighthouse_network::rpc::codec::InboundCodec::SSZSnappy(ssz_snappy_codec)
-                    }
-                };
-
             // convert the socket to tokio compatible socket
             let socket = socket.compat();
+            let codec = match protocol_id.encoding {
+                Encoding::SSZSnappy => {
+                    lighthouse_network::rpc::codec::SSZSnappyInboundCodec::new(
+                        protocol_id.lighthouse_protocol_id(),
+                        self.max_rpc_size,
+                        self.fork_context.clone(),
+                    )
+                }
+            };
             let mut timed_socket = TimeoutStream::new(socket);
             timed_socket.set_read_timeout(Some(Duration::from_secs(5)));
             let socket = Framed::new(Box::pin(timed_socket), codec);

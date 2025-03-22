@@ -8,8 +8,8 @@ use types::Config;
 // Ref: kiln-testnet config
 // https://github.com/eth-clients/merge-testnets/tree/main/kiln
 pub(crate) struct NetworkConfig {
-    pub(crate) config: Config,
-    pub(crate) genesis_state_bytes: Vec<u8>,
+    // pub(crate) config: Config,
+    // pub(crate) genesis_state_bytes: Vec<u8>,
     pub(crate) boot_enr: Vec<Enr>,
 }
 
@@ -21,8 +21,8 @@ impl NetworkConfig {
             .join("network_config");
 
         Ok(NetworkConfig {
-            config: load_config(&network_config_dir)?,
-            genesis_state_bytes: load_genesis_state(&network_config_dir)?,
+            // config: load_config(&network_config_dir)?,
+            // genesis_state_bytes: load_genesis_state(&network_config_dir)?,
             boot_enr: load_boot_enr(&network_config_dir)?,
         })
     }
@@ -40,30 +40,30 @@ impl NetworkConfig {
     // }
 }
 
-fn load_config(network_config_dir: &Path) -> Result<Config, String> {
-    let path = network_config_dir.join("config.yaml");
-    info!("Loading network config from {}", path.display());
+// fn load_config(network_config_dir: &Path) -> Result<Config, String> {
+//     let path = network_config_dir.join("config.yaml");
+//     info!("Loading network config from {}", path.display());
+//
+//     File::open(path.clone())
+//         .map_err(|e| format!("Unable to open {}: {:?}", path.display(), e))
+//         .and_then(|file| {
+//             serde_yaml::from_reader(file)
+//                 .map_err(|e| format!("Unable to parse config {}: {:?}", path.display(), e))
+//         })
+// }
 
-    File::open(path.clone())
-        .map_err(|e| format!("Unable to open {}: {:?}", path.display(), e))
-        .and_then(|file| {
-            serde_yaml::from_reader(file)
-                .map_err(|e| format!("Unable to parse config {}: {:?}", path.display(), e))
-        })
-}
-
-fn load_genesis_state(network_config_dir: &Path) -> Result<Vec<u8>, String> {
-    let path = network_config_dir.join("genesis.ssz");
-    info!("Loading genesis state from {}", path.display());
-
-    let file = File::open(path).map_err(|e| format!("Failed to open genesis.ssz: {}", e))?;
-    let mut reader = BufReader::new(file);
-    let mut buf = vec![];
-    reader
-        .read_to_end(&mut buf)
-        .map_err(|e| format!("Failed to read genesis.ssz: {}", e))?;
-    Ok(buf)
-}
+// fn load_genesis_state(network_config_dir: &Path) -> Result<Vec<u8>, String> {
+//     let path = network_config_dir.join("genesis.ssz");
+//     info!("Loading genesis state from {}", path.display());
+//
+//     let file = File::open(path).map_err(|e| format!("Failed to open genesis.ssz: {}", e))?;
+//     let mut reader = BufReader::new(file);
+//     let mut buf = vec![];
+//     reader
+//         .read_to_end(&mut buf)
+//         .map_err(|e| format!("Failed to read genesis.ssz: {}", e))?;
+//     Ok(buf)
+// }
 
 fn load_boot_enr(network_config_dir: &Path) -> Result<Vec<Enr>, String> {
     let path = network_config_dir.join("boot_enr.yaml");

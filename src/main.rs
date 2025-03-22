@@ -76,22 +76,25 @@ fn main() {
 
     // Eth2NetworkConfig
     info!("Initializing Eth2NetworkConfig...");
-    let eth2_network_config = Eth2NetworkConfig::constant("prater")
+    let eth2_network_config = Eth2NetworkConfig::constant("holesky")
         .expect("Initiating the network config never fail")
         .expect("wrong network name");
-    info!(network = "prater", "Initialized Eth2NetworkConfig.");
+    info!(network = "holesky", "Initialized Eth2NetworkConfig.");
 
     // Environment
     info!("Building Environment...");
-    let environment = EnvironmentBuilder::mainnet()
-        .initialize_logger(LoggerConfig::default())
-        .expect("initialize_logger")
-        .multi_threaded_tokio_runtime()
-        .expect("multi_threaded_tokio_runtime")
-        .eth2_network_config(eth2_network_config)
-        .expect("optional_eth2_network_config")
-        .build()
-        .expect("environment builder");
+    let environment = {
+        let (builder, _file_logging_layer, _stdout_logging_layer, _sse_logging_layer_opt) =
+            EnvironmentBuilder::mainnet().init_tracing(LoggerConfig::default(), "beacon_node");
+
+        builder
+            .multi_threaded_tokio_runtime()
+            .expect("multi_threaded_tokio_runtime")
+            .eth2_network_config(eth2_network_config)
+            .expect("optional_eth2_network_config")
+            .build()
+            .expect("environment builder")
+    };
     info!(spec = "mainnet", "Built Environment.");
 
     // BeaconChain
@@ -122,14 +125,13 @@ fn main() {
                 &freezer_db_path,
                 &blobs_db_path,
                 client_config.store.clone(),
-                runtime_context.log().clone(),
             )
             .expect("disk_store")
             .beacon_chain_builder(
                 // Ethereum Beacon Chain checkpoint sync endpoints
                 // https://eth-clients.github.io/checkpoint-sync-endpoints/
                 ClientGenesis::CheckpointSyncUrl {
-                    url: "http://unstable.prater.beacon-api.nimbus.team"
+                    url: "https://checkpoint-sync.holesky.ethpandaops.io/"
                         .parse()
                         .expect("checkpoint sync url should be parsed correctly."),
                 },

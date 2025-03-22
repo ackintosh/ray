@@ -28,11 +28,11 @@ pub(crate) struct ReceivedRequest {
     pub(crate) connection_id: ConnectionId,
     pub(crate) substream_id: SubstreamId,
     #[allow(dead_code)]
-    pub(crate) request: lighthouse_network::rpc::protocol::InboundRequest<MainnetEthSpec>,
+    pub(crate) request: lighthouse_network::rpc::protocol::RequestType<MainnetEthSpec>,
 }
 
 #[derive(Debug)]
 pub(crate) struct ReceivedResponse {
     pub(crate) peer_id: PeerId,
-    pub(crate) response: lighthouse_network::rpc::methods::RPCResponse<MainnetEthSpec>,
+    pub(crate) response: lighthouse_network::rpc::methods::RpcResponse<MainnetEthSpec>,
 }
