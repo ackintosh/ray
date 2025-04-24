@@ -27,7 +27,7 @@ tokio-io-timeout = "1.2.0"
 # NOTE: Build fails if we upadte tokio-util >= 0.7.0.
 # -> RpcProtocol::upgrade_inbound()
 # https://github.com/tokio-rs/tokio/blob/master/tokio-util/CHANGELOG.md
-tokio-util = { version = "0.7.14", features = ["codec", "compat"] }
+tokio-util = { version = "0.7.15", features = ["codec", "compat"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 
