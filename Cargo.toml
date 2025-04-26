@@ -38,7 +38,7 @@ beacon_chain = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a05
 client = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
 environment = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
 eth2_network_config = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
-ethereum_ssz = "0.8.3"
+ethereum_ssz = "0.9.0"
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
 
 [build-dependencies]
