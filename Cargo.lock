@@ -669,7 +669,7 @@ dependencies = [
  "kzg",
  "lighthouse_version",
  "logging",
- "lru",
+ "lru 0.12.5",
  "merkle_proof",
  "metrics",
  "oneshot_broadcast",
@@ -1849,7 +1849,7 @@ dependencies = [
  "hkdf",
  "lazy_static",
  "libp2p-identity",
- "lru",
+ "lru 0.12.5",
  "more-asserts",
  "multiaddr",
  "parking_lot",
@@ -2406,7 +2406,7 @@ dependencies = [
  "kzg",
  "lighthouse_version",
  "logging",
- "lru",
+ "lru 0.12.5",
  "metrics",
  "parking_lot",
  "pretty_reqwest_error",
@@ -3240,7 +3240,7 @@ dependencies = [
  "lighthouse_network",
  "lighthouse_version",
  "logging",
- "lru",
+ "lru 0.12.5",
  "metrics",
  "network",
  "operation_pool",
@@ -4241,7 +4241,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-identity",
  "libp2p-swarm-derive",
- "lru",
+ "lru 0.12.5",
  "multistream-select",
  "once_cell",
  "rand 0.8.5",
@@ -4434,7 +4434,7 @@ dependencies = [
  "lighthouse_version",
  "local-ip-address",
  "logging",
- "lru",
+ "lru 0.12.5",
  "lru_cache",
  "metrics",
  "parking_lot",
@@ -4577,6 +4577,15 @@ name = "lru"
 version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "234cf4f4a04dc1f57e24b96cc0cd600cf2af460d4161ac5ecdd0af8e1f3b2a38"
+dependencies = [
+ "hashbrown 0.15.2",
+]
+
+[[package]]
+name = "lru"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f8cc7106155f10bdf99a6f379688f543ad6596a415375b36a59a054ceda1198"
 dependencies = [
  "hashbrown 0.15.2",
 ]
@@ -5982,7 +5991,7 @@ dependencies = [
  "home",
  "libp2p",
  "lighthouse_network",
- "lru",
+ "lru 0.14.0",
  "parking_lot",
  "serde_yaml",
  "smallvec",
@@ -6938,7 +6947,7 @@ dependencies = [
  "ethereum_ssz_derive",
  "filesystem",
  "flate2",
- "lru",
+ "lru 0.12.5",
  "metrics",
  "parking_lot",
  "rand 0.8.5",
@@ -7140,7 +7149,7 @@ dependencies = [
  "itertools 0.10.5",
  "leveldb",
  "logging",
- "lru",
+ "lru 0.12.5",
  "metrics",
  "parking_lot",
  "safe_arith",
