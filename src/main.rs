@@ -26,6 +26,7 @@ use eth2_network_config::Eth2NetworkConfig;
 use parking_lot::RwLock;
 use ssz::Encode;
 use std::sync::Arc;
+use std::time::Duration;
 use tracing::info;
 
 // Target number of peers to connect to.
@@ -98,14 +99,26 @@ fn main() {
     info!(spec = "mainnet", "Built Environment.");
 
     // BeaconChain
-    info!("Building BeaconChain...");
     let lh_beacon_chain = runtime.block_on(async {
+        let span = tracing::info_span!("Building BeaconChain");
+        let _enter = span.enter();
+
         let client_config = {
             let mut data_dir = home::home_dir().expect("home dir");
             data_dir.push(".ray");
-            info!(data_dir = ?data_dir.display(), "Building the core configuration of a beacon node.");
+            let sync_eth1_chain = false;
+
+            info!(
+                data_dir = ?data_dir.display(),
+                sync_eth1_chain,
+                "Building the core configuration of a beacon node."
+            );
+
             let mut client_config = Config::default();
             client_config.set_data_dir(data_dir);
+            client_config.sync_eth1_chain = sync_eth1_chain;
+            client_config.genesis_state_url_timeout = Duration::from_secs(300);
+            client_config.chain.checkpoint_sync_url_timeout = 240;
             client_config
         };
 
@@ -116,6 +129,16 @@ fn main() {
         let blobs_db_path = client_config.create_blobs_db_path().expect("blob_db_path");
 
         let runtime_context = environment.core_context();
+
+        // Ethereum Beacon Chain checkpoint sync endpoints
+        // https://eth-clients.github.io/checkpoint-sync-endpoints/
+        let checkpoint_sync_url = "https://checkpoint-sync.holesky.ethpandaops.io/";
+        info!(
+            genesis_state_url_timeout = ?client_config.genesis_state_url_timeout,
+            checkpoint_sync_url,
+            checkpoint_sync_url_timeout = client_config.chain.checkpoint_sync_url_timeout,
+            "Starting checkpoint sync"
+        );
 
         let client_builder = ClientBuilder::new(MainnetEthSpec)
             .chain_spec(runtime_context.eth2_config.spec.clone())
@@ -128,10 +151,8 @@ fn main() {
             )
             .expect("disk_store")
             .beacon_chain_builder(
-                // Ethereum Beacon Chain checkpoint sync endpoints
-                // https://eth-clients.github.io/checkpoint-sync-endpoints/
                 ClientGenesis::CheckpointSyncUrl {
-                    url: "https://checkpoint-sync.holesky.ethpandaops.io/"
+                    url: checkpoint_sync_url
                         .parse()
                         .expect("checkpoint sync url should be parsed correctly."),
                 },
