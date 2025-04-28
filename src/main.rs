@@ -32,12 +32,13 @@ use tracing::info;
 // Target number of peers to connect to.
 const TARGET_PEERS_COUNT: usize = 50;
 
+const NETWORK: &str = "holesky";
+
 fn main() {
     tracing_subscriber::fmt::init();
     info!("Starting Ray v{}", env!("CARGO_PKG_VERSION"));
 
     // Keys
-    info!("Generating keys...");
     let enr_key = CombinedKey::generate_secp256k1();
     let key_pair: libp2p::identity::Keypair = {
         match enr_key {
@@ -53,16 +54,19 @@ fn main() {
             CombinedKey::Ed25519(_) => unreachable!(), // not implemented as the ENR key is generated with secp256k1
         }
     };
-    info!("Generated ENR keys.");
 
     // NetworkConfig
     // Ref: https://github.com/sigp/lighthouse/blob/b6493d5e2400234ce7148e3a400d6663c3f0af89/common/clap_utils/src/lib.rs#L20
-    info!("Loading NetworkConfig...");
-    let network_config = NetworkConfig::new().expect("should load network config");
-    info!("Loaded NetworkConfig.");
+    let network_config = {
+        let span = tracing::info_span!("Loading NetworkConfig");
+        let _enter = span.enter();
+
+        let nc = NetworkConfig::new().expect("should load network config");
+        info!("Done");
+        nc
+    };
 
     // tokio Runtime
-    info!("Building tokio runtime...");
     let runtime = Arc::new(
         tokio::runtime::Builder::new_multi_thread()
             .thread_name("ray")
@@ -70,33 +74,39 @@ fn main() {
             .build()
             .unwrap(),
     );
-    info!("Built tokio runtime.");
 
     // PeerDB
     let peer_db = Arc::new(RwLock::new(PeerDB::new()));
 
     // Eth2NetworkConfig
-    info!("Initializing Eth2NetworkConfig...");
-    let eth2_network_config = Eth2NetworkConfig::constant("holesky")
-        .expect("Initiating the network config never fail")
-        .expect("wrong network name");
-    info!(network = "holesky", "Initialized Eth2NetworkConfig.");
+    let eth2_network_config = {
+        let span = tracing::info_span!("Initializing Eth2NetworkConfig");
+        let _enter = span.enter();
+
+        let c = Eth2NetworkConfig::constant(NETWORK)
+            .expect("Initiating the network config never fail")
+            .expect("wrong network name");
+        info!(network = NETWORK, "Done");
+        c
+    };
 
     // Environment
-    info!("Building Environment...");
     let environment = {
+        let span = tracing::info_span!("Building Environment");
+        let _enter = span.enter();
+
         let (builder, _file_logging_layer, _stdout_logging_layer, _sse_logging_layer_opt) =
             EnvironmentBuilder::mainnet().init_tracing(LoggerConfig::default(), "beacon_node");
-
-        builder
+        let env = builder
             .multi_threaded_tokio_runtime()
             .expect("multi_threaded_tokio_runtime")
             .eth2_network_config(eth2_network_config)
             .expect("optional_eth2_network_config")
             .build()
-            .expect("environment builder")
+            .expect("environment builder");
+        info!(spec = "mainnet", "Done");
+        env
     };
-    info!(spec = "mainnet", "Built Environment.");
 
     // BeaconChain
     let lh_beacon_chain = runtime.block_on(async {
@@ -167,47 +177,64 @@ fn main() {
             .build_beacon_chain()
             .expect("build_beacon_chain");
 
-        client_builder.beacon_chain.expect("beacon_chain")
+        let bc = client_builder.beacon_chain.expect("beacon_chain");
+        info!("Done");
+        bc
     });
-    info!("Built BeaconChain.");
 
     let (network_sender, network_receiver) = tokio::sync::mpsc::unbounded_channel();
 
     // SyncManager
-    info!("Building SyncManager...");
-    let sync_sender = sync::spawn(
-        runtime.clone(),
-        peer_db.clone(),
-        lh_beacon_chain.clone(),
-        network_sender,
-    );
-    info!("Built and spawned SyncManager.");
+    let sync_sender = {
+        let span = tracing::info_span!("Building SyncManager");
+        let _enter = span.enter();
 
-    // construct a local ENR
+        let sender = sync::spawn(
+            runtime.clone(),
+            peer_db.clone(),
+            lh_beacon_chain.clone(),
+            network_sender,
+        );
+        info!("Done");
+        sender
+    };
+
+    // Local ENR
     // TODO: update local ENR on a new fork
     // https://github.com/sigp/lighthouse/blob/878027654f0ebc498168c7d9f0646fc1d7f5d710/beacon_node/network/src/service.rs#L483
-    let enr_fork_id = lh_beacon_chain.enr_fork_id();
-    let enr = Enr::builder()
-        .add_value("eth2", &enr_fork_id.as_ssz_bytes())
-        .build(&enr_key)
-        .unwrap();
-    info!("Local ENR: {}", enr);
+    let enr = {
+        let span = tracing::info_span!("Constructing local ENR");
+        let _enter = span.enter();
+
+        let enr_fork_id = lh_beacon_chain.enr_fork_id();
+        let enr = Enr::builder()
+            .add_value("eth2", &enr_fork_id.as_ssz_bytes())
+            .build(&enr_key)
+            .unwrap();
+
+        info!(%enr, "Done");
+        enr
+    };
 
     // Network
-    info!("Building Network...");
-    let network = runtime.block_on(Network::new(
-        network_receiver,
-        lh_beacon_chain,
-        sync_sender,
-        key_pair,
-        enr,
-        enr_key,
-        network_config,
-        peer_db,
-        runtime.clone(),
-    ));
-    runtime.block_on(network.spawn(runtime.clone()));
-    info!("Built and spawned Network");
+    {
+        let span = tracing::info_span!("Building Network");
+        let _enter = span.enter();
+
+        let network = runtime.block_on(Network::new(
+            network_receiver,
+            lh_beacon_chain,
+            sync_sender,
+            key_pair,
+            enr,
+            enr_key,
+            network_config,
+            peer_db,
+            runtime.clone(),
+        ));
+        runtime.block_on(network.spawn(runtime.clone()));
+        info!("Done");
+    }
 
     // block until shutdown requested
     let message = crate::signal::block_until_shutdown_requested(runtime);
