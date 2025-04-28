@@ -20,7 +20,7 @@ libp2p = { version = "0.55.0", default-features = false, features = ["dns", "tok
 lru = "0.14.0"
 parking_lot = "0.12.3"
 serde_yaml = "0.9.34"
-smallvec = "1.13.2"
+smallvec = "1.15.0"
 tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 tokio = { version = "1.44.2", features = ["full"] }
 tokio-io-timeout = "1.2.0"
