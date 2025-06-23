@@ -42,4 +42,4 @@ ethereum_ssz = "0.8.3"
 types = { git = "https://github.com/ackintosh/lighthouse.git", rev = "a0595c4204d73bb02c43dbf23b706f7acf6e39fd" }
 
 [build-dependencies]
-zip = "2.6.1"
+zip = "4.2.0"
