@@ -1848,6 +1848,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "discv5"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f170f4f6ed0e1df52bf43b403899f0081917ecf1500bfe312505cc3b515a8899"
+dependencies = [
+ "aes 0.8.4",
+ "aes-gcm",
+ "alloy-rlp",
+ "arrayvec",
+ "ctr 0.9.2",
+ "delay_map",
+ "enr",
+ "fnv",
+ "futures",
+ "hashlink 0.9.1",
+ "hex",
+ "hkdf",
+ "lazy_static",
+ "lru 0.12.5",
+ "more-asserts",
+ "parking_lot",
+ "rand 0.8.5",
+ "smallvec",
+ "socket2",
+ "tokio",
+ "tracing",
+ "uint 0.10.0",
+ "zeroize",
+]
+
+[[package]]
 name = "displaydoc"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2188,7 +2219,7 @@ version = "0.2.0"
 source = "git+https://github.com/ackintosh/lighthouse.git?rev=a0595c4204d73bb02c43dbf23b706f7acf6e39fd#a0595c4204d73bb02c43dbf23b706f7acf6e39fd"
 dependencies = [
  "bytes",
- "discv5",
+ "discv5 0.9.1",
  "eth2_config",
  "kzg",
  "pretty_reqwest_error",
@@ -4440,7 +4471,7 @@ dependencies = [
  "delay_map",
  "directory",
  "dirs",
- "discv5",
+ "discv5 0.9.1",
  "either",
  "eth2",
  "ethereum_ssz",
@@ -5981,7 +6012,7 @@ dependencies = [
  "beacon_chain",
  "client",
  "delay_map",
- "discv5",
+ "discv5 0.10.2",
  "environment",
  "eth2_network_config",
  "ethereum_ssz",
